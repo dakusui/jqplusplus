@@ -1,15 +1,22 @@
-APP_NAME=jq++
-SRC=main.go
+# Makefile for jqplusplus (standard Go project layout)
 
-.PHONY: all build run clean
+BINARY_NAME=jq++
+BINARY_PATH=bin/$(BINARY_NAME)
+CMD_PATH=jqplusplus/cmd/jqplusplus
+
+.PHONY: all build run clean fmt
 
 all: build
 
 build:
-	go build -o $(APP_NAME) $(SRC)
+	@mkdir -p bin
+	go build -o $(BINARY_PATH) ./$(CMD_PATH)
 
-run: build
-	./$(APP_NAME)
+run:
+	go run ./$(CMD_PATH)
 
 clean:
-	rm -f $(APP_NAME) 
+	rm -rf bin
+
+fmt:
+	gofmt -w . 
