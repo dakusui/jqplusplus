@@ -15,8 +15,12 @@ build:
 run:
 	go run ./$(CMD_PATH)
 
+doc:
+	./tools/gendoc.sh
+
 clean:
 	rm -rf bin
+	rm -rf docs/*.html
 
 fmt:
 	gofmt -w . 

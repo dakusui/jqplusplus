@@ -1,23 +1,32 @@
 # jqplusplus
 
-A CLI tool written in Go.
+This project follows the standard Go project layout.
 
-## Building
+## Project Structure
 
+- `cmd/jqplusplus/main.go`: Application entry point
+- `internal/`: Private application and library code
+- `pkg/`: Public libraries (if any)
+- `go.mod`, `LICENSE`, `README.md`, `Makefile`: Project metadata and configuration
+
+## Building and Running
+
+To build the main application:
+
+```sh
+make build
 ```
-go build -o jqplusplus main.go
+
+This will create the executable as `bin/jq++`.
+
+To run the program:
+
+```sh
+./bin/jq++
 ```
 
-## Running
+Or run directly without building:
 
-Print hello message:
-
-```
-./jqplusplus
-```
-
-Print version:
-
-```
-./jqplusplus --version
+```sh
+make run
 ``` 
