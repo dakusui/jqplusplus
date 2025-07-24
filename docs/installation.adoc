@@ -1,0 +1,42 @@
+== Installation
+
+=== Ubuntu
+
+Download an https://github.com/dakusui/jq-front/releases[archive] or clone the https://github.com/dakusui/jq-front.git[repository].
+And place the file `jq-front`, `lib`, and `schema` in a directory which is on your `PATH`.
+Following dependencies will be required by `jq-front`
+
+* `bash`
+* `jq`
+* `ajv-cli`
+  ** `npm`
+* `yq`
+  ** python-pip
+  ** python
+
+WARNING: The version of `yq` installed through, `snap install yq` doesn't work for `jq-front`.
+Visit https://yq.readthedocs.io/en/latest/[yq] site to know it more.
+
+NOTE: All the direct and indirect dependencies are found in the ``Dockerfile``.
+
+=== With Docker (recommended)
+
+If you are already using `docker` and `bash`, this is the easiest way to use `jq-front`.
+To install docker, visit
+
+* https://docs.docker.com/docker-for-windows/[windows]
+* https://docs.docker.com/docker-for-mac/install/[mac]
+* https://docs.docker.com/install/linux/docker-ce/ubuntu/[ubuntu]
+* https://docs.docker.com/install/linux/docker-ce/centos/[centos]
+
+Add a following entry to your `.bashrc` or a file sourced through it (such as `.profile` on Mac OSX).
+
+[source,shell script]
+include::../jq-front_aliases[]
+
+NOTE:: This approach only allows you to process files under `$HOME` directory.
+
+To install `bash` on windows, https://itsfoss.com/install-bash-on-windows/[install-bash-on-windows] will be helpful.
+
+[.text-right]
+link:index.html[top]

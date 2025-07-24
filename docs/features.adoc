@@ -1,0 +1,416 @@
+== Features
+
+With `jq-front`, you can build a JSON object reusing other JSON objects by its inheritance mechanism.
+To specify JSON objects to be inherited, `jq-front` searches for keys which have special names in a given object.
+`$extends` and `$local` are keywords used for this purpose.
+
+Not only that, it allows you to construct a node by referencing other nodes and executing commands.
+
+Basic features offered by the product are following
+
+* Inheritance
+** File-level Inheritance
+** Node-level Inheritance
+** Reverse Inheritance
+** Script-output Inheritance
+** Yaml inheritance
+* Templating ("eval" feature)
+* Validation
+
+And usage of them will be discussed in this section.
+
+In this section, we introduce features of the product using following data.
+
+* link:examples/A.json[A.json]
+[source,json]
+include::examples/A.json[]
+
+* link:examples/AA.json[AA.json]
+[source,json]
+include::examples/AA.json[]
+
+* link:examples/B.json[B.json]
+[source,json]
+include::examples/B.json[]
+
+* link:examples/T.json[T.json]
+[source,json]
+include::examples/T.json[]
+
+=== Inheritance
+
+==== File-level Inheritance
+
+In programming languages, inheritance is an indispensable technique to reuse a component.
+`jq-front` offers it for the purpose.
+A usage example is as follows.
+
+[source,json]
+.I.json
+----
+{
+  "$extends": [ "A.json" ],
+  "o": "hello world"
+}
+----
+
+----
+jq-front I.json
+----
+
+`I.json` will be rendered into the following JSON object with this command line.
+
+[source,json]
+.File-level Inheritance output
+----
+{
+  "a": "A",
+  "o": "hello world"
+}
+----
+
+As you see in the example, the attribute `o` whose value is set to `"A"` in `A.json`, is overridden by the value in `I.json`.
+
+Multiple inheritance is also supported by `jq-front`.
+Just by listing file names of JSONs to be inherited, multiple inheritance happens, like `"$extends": ["A.json", "B.json"]`.
+When both `A.json` and `B.json` have attributes at the same path, `A.json` side's value will be used.
+
+[source,json]
+.J.json
+----
+{
+  "$extends": [ "A.json", "B.json" ]
+}
+----
+
+That is, `J.json` will be rendered into following output.
+
+[source,json]
+.File-level Multiple Inheritance output
+----
+{
+  "a": "A",
+  "b": "B",
+  "o": "A"
+}
+----
+
+As it is so in normal programming language that supports multiple inheritance, avoiding diamond inheritance is a good idea.
+Multiple inheritance was implemented to cope with a situation where you want to reuse two JSON objects defined for completely different purposes.
+For instance, one is for authentication information and the other is for GUI flavor.
+
+JSON objects that are inherited can also inherit some other JSON files.
+
+[source,json]
+.K.json
+----
+{
+  "$extends": [ "AA.json", "B.json" ]
+}
+----
+
+That is, `K.json` is rendered into a following JSON file.
+
+[source,json]
+.File-level Inheritance output (2)
+----
+{
+  "a": "A",
+  "aa": "AA",
+  "b": "B",
+  "o": "A"
+}
+----
+
+CAUTION: Ensure that inheritance hierarchy does not have any cyclic dependencies.
+It will be checked and result in an error.
+
+=== Node-level Inheritance
+
+"Node-level Inheritance" refers to an inheritance happens on an internal (object) node of a given JSON file.
+Although it is implemented as a separate mechanism from the file-level one as it will be discussed in "Design" section, it behaves almost the same as the "file-level" one.
+
+[source,json]
+.L.json
+----
+{
+  "a": {
+    "$extends": [ "A.json" ],
+    "a": "L"
+  }
+}
+----
+
+[source,json]
+.Node-level Inheritance output
+----
+{
+  "a": {
+    "a": "L",
+    "o": "A"
+  }
+}
+----
+
+As it worked for File-level Inheritance, multiple inheritance works also for Node-level Inheritance.
+
+However, for internal nodes, you can also reference "local" nodes not only external files.
+
+[source,json]
+.P.json
+----
+{
+  "$local": {
+    "nodeA": {
+       "aa": "aa"
+    },
+    "nodeB": {
+    }
+  },
+  "a": {
+    "$extends": ["nodeA"],
+    "a": "a"
+  }
+}
+----
+
+These nodes can be referenced through "node-level inheritance feature" as shown in the example.
+Note that you do not need to specify `.json` extension.
+And `P.json` will result in following output.
+
+[source,json]
+.Local Node Inheritance output
+----
+{
+  "a": {
+    "aa": "aa",
+    "a": "a"
+  }
+}
+----
+
+==== Reverse Inheritance
+
+When you design a data structure using JSON (or YAML), you often find that you want to define a template, where user custom files are inserted.
+
+[source,json]
+----
+{
+  "company": "SPQR",
+  "laptopSpec": {
+    "cpu": "M1",
+    "mem": "16GB",
+    "storage": "512GB"
+  },
+  "userConfig" : {
+    "userName": "eval:$(whoami)",
+    "preferredShell": "zsh",
+    "preferredWindowManager": "twm"
+  }
+}
+----
+
+Suppose that your users have their user preference files at `/userhome/.yourapp/config` as a JSON file.
+You are thinking of overriding the elements under `userConfig` by the JSON config file.
+But using the normal inheritance (`$extends`) here will not help.
+Because the values you define in the base file as default values will override the user specific configuration.
+Not the other way around.
+What you can do here is "reverse inheritance" with the `$includes` keyword.
+
+[source,json]
+----
+{
+  "company": "SPQR",
+  "laptopSpec": {
+    "cpu": "M1",
+    "mem": "16GB",
+    "storage": "512GB"
+  },
+  "userConfig" : {
+    "$includes": [ "/userhome/.yourapp/config" ],
+    "userName": "eval:$(whoami)",
+    "preferredShell": "zsh",
+    "preferredWindowManager": "twm"
+  }
+}
+----
+
+==== Script Inheritance
+
+`jq-front` can use the output from your shell as a file to be extended if it is a JSON node.
+
+For instance, if you have a following script file: `S.sh`, which prints something like `{"S":"shell"}`.
+
+[source,bash]
+.S.sh
+----
+echo '{"S":"shell-'${1}'"}'
+----
+
+The output from the script can be extended by a following file, for instance.
+
+[source,json]
+----
+{
+  "i": {
+    "$extends": [
+      "S.sh;bash -eu;hello"
+    ],
+    "o": "hello world"
+  }
+}
+----
+
+This results in a file as follows.
+
+[source,json]
+----
+{
+  "i": {
+    "S": "hello",
+    "o": "hello world"
+  }
+}
+----
+
+The component `bash -eu` is a program with which the script (`S.sh`) is executed.
+This feature is still experimental.
+
+==== Yaml file inheritance
+
+`jq-front` can handle YAML files also.
+If you have following two files,
+
+[source,yaml]
+.A.yml
+----
+---
+a: A
+o: A
+y: Y
+----
+
+[source,json]
+----
+{
+  "$extends": [ "A.yml" ],
+  "o": "hello world"
+}
+----
+
+The output will be like following
+
+[source,json]
+----
+{
+  "a": "A",
+  "o": "hello world",
+  "y": "Y"
+}
+----
+
+This feature is still experimental.
+
+=== Templating
+
+Sometimes we need to compose a value of text node from a value of another.
+Following is such an example.
+
+[source,json]
+.Version file
+----
+{
+  "releaseVersion": "2.12.0",
+  "snapshotVersion": "2.12.0-SNAPSHOT"
+}
+----
+
+In this example, the version to be released next is `2.12.0`, however the version under the development for it has a suffix `-SNAPSHOT`
+
+To follow the principle of D-R-Y, how should we fix it?
+Templating is a feature to offer a solution to this challenge.
+
+We can describe this relationship by using the templating feature of `jq-front`.
+
+[source,json]
+.T.json
+----
+{
+  "releaseVersion": "2.12.0",
+  "snapshotVersion": "eval:$(ref .releaseVersion)-SNAPSHOT"
+}
+----
+
+Once you render this file with `jq-front`, you will get the first file (Version file).
+
+`$ref` is a built-in function of `jq-front`, which expands the value of the node specified by the path given as an argument.
+Not only built-in functions but also any commands (bash expressions) valid on a platform on which `jq-front` is running can be used here.
+
+For instance, following is a valid input to `jq-front`.
+[source,json]
+
+----
+{
+  "releaseVersion": "2.12.0",
+  "snapshotVersion": "eval:$(ref .releaseVersion)-$(date \"+%Y-%m-%d\")"
+}
+----
+
+And this will result in an output below.
+[source,json]
+
+----
+{
+  "releaseVersion": "2.12.0",
+  "snapshotVersion": "2.12.0-2019-08-28"
+}
+----
+
+This feature can be disabled by `-d` (`--disable-templating`) option.
+And to enable it explicitly, you can use `-e` (`--enable-templating`) in case `JF_TEMPLATING_ENABLED` is set to `no`.
+
+This feature can be used for the key side, also.
+
+That is, if the following JSON object is given as input:
+
+[source, json]
+----
+{
+  "eval:$(echo helloBase)": {
+    "a": [
+      "Hello"
+    ],
+    "b": [
+      "World"
+    ],
+    "arr": "eval:array:$(array_append \"$(ref $(cur).a)\" \"$(ref $(cur).b)\")"
+  }
+}
+----
+
+it will be converted as as follows:
+
+[source, json]
+----
+{
+  "helloBase": {
+    "a": [
+      "Hello"
+    ],
+    "b": [
+      "World"
+    ],
+    "arr": [
+      "Hello",
+      "World"
+    ]
+  }
+}
+----
+
+Note that the key-side templating happens first and then the value-side templating will follow.
+Also note that you need to use key-side templating carefully, because it may  confuse you sometimes, otherwise.
+For instance, if you create a key which results in the same string as another key, the outcome isn't specified.
+
+[.text-right]
+link:index.html[top]

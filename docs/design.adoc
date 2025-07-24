@@ -1,0 +1,205 @@
+== Design
+
+Following is a diagram that illustrates `jq-front` 's processing pipeline design.
+
+[[Pipeline]]
+[ditaa,target="images/pipeline"]
+.jq-front's pipeline
+----
+Inheritance mechanism
++--------------------------------------------------------------------------------------+
+|                                                                                      |
+|          file-level inheritance             local node materialization               |
+|                 +----+                               +-----+                         |
+|   +-------------+ {o}+-=----------+     +------------+ {o} +-=-----------+           |
+|   |             +----+            |     |            +-----+             | 0...n     |
+|   V                               V     V                                V           |
+| +------+                         +-------+                         +------------+    |
+| |Source|                         |Work(1)|                         |LocalNodes  |    |
+| |{d}   |                         |{d}    |                         |{d}         |    |
+| +------+                         +-------+                         +------------+    |
+|                                      ^        node-level inheritance     ^           |
+|                                      |              +-----+              |           |
+|                                      +--------------+ {o} +--------------+           |
+|                                                     +--+--+                          |
+|                                                        |                             |
++--------------------------------------------------------|-----------------------------+
+                                                         :
+                                                         V
+                                                    +----+----+
+                                                    |Work(2 a)|
+                                                    |{d}      |
+                                                    +----+----+
+                                                         ^
+                                                         |
+                                              +----------|---------+templating (optional)
+                                              |          |         |
+                                              |       +--+--+      |
+                                              |       | {o} |      |key-side processing
+                                              |       +--+--+      |
+                                              |          |         |
+                                              |          :         |
+                                              |          V         |
+                                              |+---------+--------+|
+                                              ||    Work(2 b)     ||
+                                              ||internal variable ||
+                                              |+---------+--------+|
+                                              |          ^         |
+                                              |          |         |
+                                              |          |         |
+                                              |       +--+--+      |
+                                              |       | {o} |      |value-side processing
+                                              |       +--+--+      |
+                                              |          :         |
+                                              +----------|---------+
+  +----+       +----+                                    |
+  |A{o}+-=---->+B{o}| (A writes to B)                    :
+  +----+       +----+                                    V
+                                                     +---+---+
+  +----+       +----+                                |Output |
+  |A{o}+------>+B{o}| (A reads from B)               |{d}    |
+  +----+       +----+                                +---+---+
+
+----
+
+As shown, it consists of four main components, which are "file-level inheritance", "local node materialization", "node-level inheritance", and "templating".
+
+Designs of those components will be described in the rest of this section.
+
+For both of file-level and node-level inheritances, the inheritance mechanism (the large box in the diagram) is invoked recursively.
+That is, when a file which has `$extends` attribute, the mechanism will be applied repeatedly until it reaches a file that doesn't have any.
+In case a cyclic inheritance is found, `jq-front` will report it and abort.
+
+=== File-level Inheritance
+
+'File-level Inheritance' composes a new JSON file from a given one by expanding the files provided through the top-level `$extends` attribute.
+
+At the end of this process, the attribute is removed and copied to the output, "Work(1)" in the diagram.
+
+=== Local node Materialization
+
+If the file, "Work(1)" has `$local` attribute whose value is an object node, nodes associated with keys under the attribute are dumped under a temporary directory.
+The temporary directory is called 'local node directory'.
+The 'local node directory' and its contents are utilized by the "node-level inheritance' mechanism.
+
+=== Node-level Inheritance
+
+Node-level Inheritance mechanism is a bit more complicated than the file-level one.
+
+1. Create a base JSON object by the following procedure.
+a. Scan paths of all internal nodes.
+b. For each path, if it ends with `"$extends"`, expand the files specified by the attribute.
+c. Assign the JSON node created in step b. to the parent of the `$extends` attribute.
+2. Overlay the JSON object created in the step. 1 with an original JSON object.
+3. Remove nodes, i.e., `$extends` and `$local` nodes from the JSON object created in the step 2.
+
+'Local node directory' is inserted before the first entry of `JF_PATH` environment variable when a file to be expanded is searched during the step 1. b.
+
+=== Templating
+
+Templating is executed by performing `eval` on every text node whose value starts with `eval:` in JSON objects `Work(2 a)` and `Work(2 b)`.
+The order where it is applied is determined by `jq` 's `path(..)` function.
+Note that it is not defined in `jq` 's manual<<jq>> how keys are sorted within an object node, although they seem to be sorted by dictionary order.
+
+This happens in two steps.
+The first one processes "keys" in the JSON object, while the second only processes the other (values and arrays).
+
+See link:features.html#_templating[Templating] to know more about it.
+
+=== Temporary Files
+
+`jq-front` creates temporary files under a directory specified by `TMPDIR` environment variable.
+
+----
+TMPDIR/
+  .jq-front/             <1>
+    session-XXXXXX/
+      inprogress/        <2>
+      localnodes-XXXXX/  <3>
+      nodepool/          <4>
+      source_files/      <5>
+      templating/        <6>
+      misc/              <7>
+----
+<1> Tools used by `jq-front` write their temporary files.
+<2> a directory to store "mark" files to manage on-going inheritance processing.
+<3> a directory to store paths to "local nodes" as files.
+<4> a directory to store cached files for inheritance processing.
+<5> a directory to store script files to be "sourced", when `SOURCE` specified in `$extends` or `$includes`.
+<6> a directory used during "templating"
+<7> other temporary files generated by `jq-front` itself.
+
+==== `inprogress` directory
+
+In this directory, empty files of the following names are created.:
+
+- `inheritance-$(hashcode _filename)`
+- `reference-$(hashcode _filename)`
+
+Those are to detect cyclic dependencies during `jq-front` 's processing.
+The `hashcode` part is computed by `md5sum` command from the absolute path of a file.
+If `jq-front` finds another file `/your/another/file` is inherited by a currently processed file, it will create a file `inheritance-$(hashcode /your/another/file)`.
+If a file to be created found existing already, `jq-front` will consider that there is a cyclic dependency and aborts the process with an error message.
+`jq-front` will then process `/your/another/file` recursively and once its process is finished, the temporary file will be removed.
+
+==== `nodepool` directory
+
+This is a directory to store files whose all inheritances are all expanded.
+Under this directory, `$(hashcode _filename)` is created with the expanded content.
+Following is an example of the file:
+
+./tmp/.jq-front/session-XXXXXX/nodepool/$(hashcode parent.json)
+----
+{"a":{"a":"eval:string:$(echo 'A')","b":"eval:string:$(echo 'B')","o":"eval:string:$(ref $(cur).a)-$(ref $(cur).b)"}}
+----
+
+The content of the file `parent.json` and the file it extends before the inheritance expansion may look like following:
+
+.parent.json
+----
+{
+  "a": {
+    "$extends": [
+      "input/A.json"
+    ]
+  }
+}
+----
+
+.A.json
+----
+{
+  "a": "eval:string:$(echo 'A')",
+  "b": "eval:string:$(echo 'B')",
+  "o": "eval:string:$(ref $(cur).a)-$(ref $(cur).b)"
+}
+----
+
+Note that the references are not processed in the step of inheritance expansion yet as illustrated in the <<Pipeline>>.
+
+==== `localnodes-XXXXX` directory
+
+The node-level inheritance feature allows you to extend not only local nodes, which are defined inside JSON files, but also independent files[<<NodeLevelInheritanceExample>>].
+
+[[NodeLevelInheritanceExample]]
+[source, json]
+.Node level Inheritance Example
+----
+{
+  "$local": {
+    "localNode": {
+      "k": "v"
+    }
+  },
+  "A": {
+    "$extends": [
+      "localNode", "externalFile.json"
+    ]
+  }
+}
+----
+This is a main difference between file level inheritance and node level inheritance mechanism.
+To make this possible, `jq-front` "materializes" the local nodes, that is, those local nodes are turned into files and then the files will be processed indifferently.
+
+[.text-right]
+link:index.html[top]

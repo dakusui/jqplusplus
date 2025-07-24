@@ -1,0 +1,3 @@
+= A doc for style
+
+This file is used to generate style element for `index.sh`.
