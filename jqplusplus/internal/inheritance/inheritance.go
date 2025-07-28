@@ -3,9 +3,10 @@ package inheritance
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/dakusui/jqplusplus/jqplusplus/internal/app"
+	"github.com/dakusui/jqplusplus/jqplusplus/internal/utils"
 	"os"
 	"path/filepath"
-	"strings"
 )
 
 // LoadAndResolve loads a JSON file, resolves inheritance, and returns the merged result as a map.
@@ -37,7 +38,7 @@ func loadAndResolveRecursive(filename string, visited map[string]bool) (map[stri
 	// Check for $extends
 	extends, ok := obj["$extends"]
 	if ok {
-		parentFiles, err := parseExtendsField(extends)
+		parentFiles, err := parseExtendsField(extends, false)
 		if err != nil {
 			return nil, err
 		}
@@ -63,10 +64,8 @@ func loadAndResolveRecursive(filename string, visited map[string]bool) (map[stri
 }
 
 // parseExtendsField parses the $extends field, which can be a string or array of strings.
-func parseExtendsField(val interface{}) ([]string, error) {
+func parseExtendsField(val interface{}, reverseOrder bool) ([]string, error) {
 	switch v := val.(type) {
-	case string:
-		return []string{v}, nil
 	case []interface{}:
 		var result []string
 		for _, item := range v {
@@ -74,11 +73,15 @@ func parseExtendsField(val interface{}) ([]string, error) {
 			if !ok {
 				return nil, fmt.Errorf("$extends array must contain only strings")
 			}
-			result = append(result, str)
+			if reverseOrder {
+				result = append(result, str)
+			} else {
+				result = utils.Insert(result, 0, str)
+			}
 		}
 		return result, nil
 	default:
-		return nil, fmt.Errorf("$extends must be a string or array of strings")
+		return nil, fmt.Errorf("$extends must be an array of strings")
 	}
 }
 
@@ -119,18 +122,8 @@ const (
 // 4. Splits on :
 // 5. Returns the list of directories
 // 6. Prepend the search paths with the directories in JF_PATH
-func ListSearchPaths(currentFile string) []string {
-	dir := filepath.Dir(currentFile)
-
-	searchPaths := []string{dir}
-
-	paths := os.Getenv("JF_PATH")
-	if paths == "" {
-		return searchPaths
-	}
-
-	searchPaths = append(strings.Split(paths, ":"), searchPaths...)
-	return searchPaths
+func ListSearchPaths(app app.App, currentFile string) []string {
+	return append(app.SearchPaths(), filepath.Dir(currentFile))
 }
 
 // ResolveFilePath finds the full path of a referenced file from a list of directories.
