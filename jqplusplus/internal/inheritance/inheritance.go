@@ -3,7 +3,6 @@ package inheritance
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/dakusui/jqplusplus/jqplusplus/internal/app"
 	"github.com/dakusui/jqplusplus/jqplusplus/internal/utils"
 	"os"
 	"path/filepath"
@@ -12,12 +11,13 @@ import (
 // LoadAndResolve loads a JSON file, resolves inheritance, and returns the merged result as a map.
 func LoadAndResolve(filename string) (map[string]interface{}, error) {
 	visited := map[string]bool{}
-	return loadAndResolveRecursive(filename, visited)
+	return loadAndResolveRecursive(filename, visited, Extends)
 }
 
 // loadAndResolveRecursive loads a JSON file, resolves $extends recursively, and merges parents.
-func loadAndResolveRecursive(filename string, visited map[string]bool) (map[string]interface{}, error) {
+func loadAndResolveRecursive(filename string, visited map[string]bool, mergeType InheritType) (map[string]interface{}, error) {
 	absPath, err := filepath.Abs(filename)
+	dir := filepath.Dir(absPath)
 	if err != nil {
 		return nil, err
 	}
@@ -35,45 +35,53 @@ func loadAndResolveRecursive(filename string, visited map[string]bool) (map[stri
 		return nil, err
 	}
 
-	// Check for $extends
-	extends, ok := obj["$extends"]
+	// Check for $extends or $includes
+	inherits, ok := obj[mergeType.String()]
 	if ok {
-		parentFiles, err := parseExtendsField(extends, false)
+		parentFiles, err := parseInheritsField(inherits, mergeType)
 		if err != nil {
 			return nil, err
 		}
 		var mergedParents map[string]interface{}
 		for i, parent := range parentFiles {
-			parentObj, err := loadAndResolveRecursive(filepath.Join(filepath.Dir(absPath), parent), visited)
+			parentObj, err := loadAndResolveRecursive(filepath.Join(dir, parent), visited, mergeType)
 			if err != nil {
 				return nil, err
 			}
-			if i == 0 {
-				mergedParents = parentObj
+			if !mergeType.IsOrderReversed() {
+				if i == 0 {
+					mergedParents = parentObj
+				} else {
+					mergedParents = mergeObjects(mergedParents, parentObj)
+				}
 			} else {
-				mergedParents = mergeObjects(mergedParents, parentObj)
+				if i == 0 {
+					mergedParents = mergeObjects(parentObj, mergedParents)
+				} else {
+					mergedParents = mergeObjects(mergedParents, parentObj)
+				}
 			}
 		}
 		if mergedParents != nil {
 			obj = mergeObjects(mergedParents, obj)
 		}
-		delete(obj, "$extends")
+		delete(obj, mergeType.String())
 	}
 
 	return obj, nil
 }
 
-// parseExtendsField parses the $extends field, which can be a string or array of strings.
-func parseExtendsField(val interface{}, reverseOrder bool) ([]string, error) {
+// parseInheritsField parses the $extends field, which can be a string or array of strings.
+func parseInheritsField(val interface{}, inherits InheritType) ([]string, error) {
 	switch v := val.(type) {
 	case []interface{}:
 		var result []string
 		for _, item := range v {
 			str, ok := item.(string)
 			if !ok {
-				return nil, fmt.Errorf("$extends array must contain only strings")
+				return nil, fmt.Errorf("%s array must contain only strings", inherits.String())
 			}
-			if reverseOrder {
+			if inherits.IsOrderReversed() {
 				result = append(result, str)
 			} else {
 				result = utils.Insert(result, 0, str)
@@ -81,7 +89,7 @@ func parseExtendsField(val interface{}, reverseOrder bool) ([]string, error) {
 		}
 		return result, nil
 	default:
-		return nil, fmt.Errorf("$extends must be an array of strings")
+		return nil, fmt.Errorf("%s must be an array of strings", inherits.String())
 	}
 }
 
@@ -107,23 +115,33 @@ func mergeObjects(parent, child map[string]interface{}) map[string]interface{} {
 	return result
 }
 
-type MergeType int
+type InheritType int
 
 const (
-	MergeIncludes MergeType = iota
-	MergeExtends
+	Includes InheritType = iota
+	Extends
 )
 
-// ListSearchPaths generates the list of directories to search when resolving a file.
-// This function works in the following way:
-// 1. Resolve the directory of the current file
-// 2. Add the directory of the current file to the search paths
-// 3. Reads environment variable JF_PATH
-// 4. Splits on :
-// 5. Returns the list of directories
-// 6. Prepend the search paths with the directories in JF_PATH
-func ListSearchPaths(app app.App, currentFile string) []string {
-	return append(app.SearchPaths(), filepath.Dir(currentFile))
+func (m InheritType) String() string {
+	switch m {
+	case Includes:
+		return "$includes"
+	case Extends:
+		return "$extends"
+	default:
+		panic("unknown merge type")
+	}
+}
+
+func (m InheritType) IsOrderReversed() bool {
+	switch m {
+	case Includes:
+		return true
+	case Extends:
+		return false
+	default:
+		panic(fmt.Sprintf("unknown merge type: %s", m))
+	}
 }
 
 // ResolveFilePath finds the full path of a referenced file from a list of directories.
