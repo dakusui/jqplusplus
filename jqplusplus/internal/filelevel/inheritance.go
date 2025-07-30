@@ -1,4 +1,4 @@
-package inheritance
+package filelevel
 
 import (
 	"encoding/json"
@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 )
 
-// LoadAndResolve loads a JSON file, resolves inheritance, and returns the merged result as a map.
+// LoadAndResolve loads a JSON file, resolves filelevel, and returns the merged result as a map.
 func LoadAndResolve(filename string) (map[string]interface{}, error) {
 	visited := map[string]bool{}
 	return loadAndResolveRecursive(filename, visited, Extends)
@@ -22,7 +22,7 @@ func loadAndResolveRecursive(filename string, visited map[string]bool, mergeType
 		return nil, err
 	}
 	if visited[absPath] {
-		return nil, fmt.Errorf("circular inheritance detected: %s", absPath)
+		return nil, fmt.Errorf("circular filelevel detected: %s", absPath)
 	}
 	visited[absPath] = true
 

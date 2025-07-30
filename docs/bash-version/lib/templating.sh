@@ -217,7 +217,7 @@ function _compose_error_message_for_render_text_node() {
 
 ####
 #
-# Function intended to be used on 'script inheritance'.
+# Function intended to be used on 'script filelevel'.
 # Search for a file from an environment variable "_JF_PATH" and prints an absolute path of it if found.
 # In case it is not found, 1 will be returned.
 #

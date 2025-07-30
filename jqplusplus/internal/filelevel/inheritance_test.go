@@ -1,4 +1,4 @@
-package inheritance
+package filelevel
 
 import (
 	"os"
@@ -90,7 +90,7 @@ func TestLoadAndResolve_CircularExtends(t *testing.T) {
 	_ = writeTempJSON(t, dir, "p2.json", `{"$extends": ["p1.json"]}`)
 	_, err := LoadAndResolve(filepath.Join(dir, "p1.json"))
 	if err == nil || err.Error() == "" {
-		t.Errorf("expected error for circular inheritance, got: %v", err)
+		t.Errorf("expected error for circular filelevel, got: %v", err)
 	}
 }
 

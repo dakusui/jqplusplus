@@ -51,7 +51,7 @@ function expand_filelevel_inheritances() {
   is_debug_enabled && debug "content='${_content}'"
   _cur="${_content}"
   local -a _parents
-  # BEGIN: normal inheritance
+  # BEGIN: normal filelevel
   # shellcheck disable=SC2016
   mapfile -t _parents <<<"$(value_at '."$extends"' "${_content}" '[]' | jq -c -r '.[]')"
   if ! is_effectively_empty_array "${_parents[@]}"; then
@@ -68,8 +68,8 @@ function expand_filelevel_inheritances() {
       _cur="${_c}"
     done
   fi
-  # END: normal inheritance
-  # BEGIN: reverse inheritance
+  # END: normal filelevel
+  # BEGIN: reverse filelevel
   # shellcheck disable=SC2016
   mapfile -t _children <<<"$(value_at '."$includes"' "${_content}" '[]' | jq -c -r '.[]')"
   if ! is_effectively_empty_array "${_children[@]}"; then
@@ -85,7 +85,7 @@ function expand_filelevel_inheritances() {
       _cur="${_c}"
     done
   fi
-  # END: reverse inheritance
+  # END: reverse filelevel
   # remove reserved keywords
   echo "${_cur}" | jq -r -c '.|del(.["$extends"])' | jq -r -c '.|del(.["$includes"])'
   perf "end"

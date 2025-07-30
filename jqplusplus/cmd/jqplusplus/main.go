@@ -7,7 +7,7 @@ import (
 	"log"
 	"os"
 
-	"github.com/dakusui/jqplusplus/jqplusplus/internal/inheritance"
+	"github.com/dakusui/jqplusplus/jqplusplus/internal/filelevel"
 	"github.com/itchyny/gojq"
 )
 
@@ -32,7 +32,7 @@ func runGoJQDemo() {
 
 func main() {
 	versionFlag := flag.Bool("version", false, "Print the version and exit")
-	inputFile := flag.String("input", "", "Input JSON file to process inheritance")
+	inputFile := flag.String("input", "", "Input JSON file to process filelevel")
 	flag.Parse()
 
 	if *versionFlag {
@@ -41,7 +41,7 @@ func main() {
 	}
 
 	if *inputFile != "" {
-		result, err := inheritance.LoadAndResolve(*inputFile)
+		result, err := filelevel.LoadAndResolve(*inputFile)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 			os.Exit(1)
