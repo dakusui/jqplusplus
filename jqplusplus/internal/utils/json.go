@@ -10,6 +10,14 @@ import (
 	"sync"
 )
 
+func ReadFileAsObjectNode(nodeUnit NodeUnit) (any, error) {
+	switch nodeUnit.converter {
+	case "json":
+
+	}
+	return nil, nil
+}
+
 func Find(n any, pexp string) (any, error) {
 	path, err := PexpToPath(pexp)
 	if err != nil {
