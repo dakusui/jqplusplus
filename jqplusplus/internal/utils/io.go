@@ -11,22 +11,22 @@ import (
 	"sigs.k8s.io/yaml" // go get sigs.k8s.io/yaml
 )
 
-// FindInPath searches rel (relative path) under each base directory in paths, in order.
+// FindFileInPath searches rel (relative path) under each base directory in paths, in order.
 // Returns the absolute path of the first regular file that exists.
-func FindInPath(paths []string, rel string) (string, error) {
-	if rel == "" {
-		return "", errors.New("empty rel")
+func FindFileInPath(file string, paths []string) (string, error) {
+	if file == "" {
+		return "", errors.New("empty file")
 	}
-	// If rel is absolute, just check it directly.
-	if filepath.IsAbs(rel) {
-		if isRegularFile(rel) {
-			return filepath.Clean(rel), nil
+	// If file is absolute, just check it directly.
+	if filepath.IsAbs(file) {
+		if isRegularFile(file) {
+			return filepath.Clean(file), nil
 		}
 		return "", os.ErrNotExist
 	}
 
 	for _, base := range paths {
-		full := filepath.Join(base, rel)
+		full := filepath.Join(base, file)
 		if isRegularFile(full) {
 			abs, err := filepath.Abs(full)
 			if err != nil {
@@ -114,5 +114,16 @@ func AutoReadFileAsJSONObject(filename string, useNumber bool) (map[string]any, 
 		return ReadFileAsJSONObject(filename, YAMLDecoder{useNumber: useNumber})
 	default: // ".json" or anything else → try JSON
 		return ReadFileAsJSONObject(filename, JSONDecoder{useNumber: useNumber})
+	}
+}
+
+func CreateDecoder(decoderName string, args []string) (Decoder, error) {
+	switch decoderName {
+	case "json", "default":
+		return JSONDecoder{}, nil
+	case "yaml":
+		return YAMLDecoder{}, nil
+	default:
+		return nil, fmt.Errorf("unknown decoder: %s%s", decoderName, args)
 	}
 }

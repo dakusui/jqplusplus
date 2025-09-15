@@ -12,9 +12,9 @@ import (
 var parseNodeUnitRegex = regexp.MustCompile(`^([^;]+)(?:;([^;]+)(?:;(.+))?)?$`)
 
 type NodeUnit struct {
-	name      string
-	converter string
-	args      []string
+	name    string
+	decoder string
+	args    []string
 }
 
 func (n NodeUnit) Hash() string {
@@ -22,13 +22,13 @@ func (n NodeUnit) Hash() string {
 }
 
 func (n NodeUnit) String() string {
-	return fmt.Sprintf("%s|%s|%s", n.name, n.converter, fmt.Sprint(n.args))
+	return fmt.Sprintf("%s|%s|%s", n.name, n.decoder, fmt.Sprint(n.args))
 }
 
 // Equal method to compare two NodeUnit values
 func (n NodeUnit) Equal(other NodeUnit) bool {
-	// First compare name and converter fields (string fields are directly comparable)
-	if n.name != other.name || n.converter != other.converter {
+	// First compare name and decoder fields (string fields are directly comparable)
+	if n.name != other.name || n.decoder != other.decoder {
 		return false
 	}
 
@@ -53,12 +53,12 @@ func ParseNodeUnit(e string) (*NodeUnit, error) {
 		return nil, fmt.Errorf("invalid node unit string: %s", e)
 	}
 	ret := NodeUnit{
-		name:      matches[1],
-		converter: "",
-		args:      []string{},
+		name:    matches[1],
+		decoder: "",
+		args:    []string{},
 	}
 	if len(matches) > 2 {
-		ret.converter = matches[2]
+		ret.decoder = matches[2]
 	}
 	if len(matches) > 3 {
 		ret.args = strings.Split(matches[3], ":")
