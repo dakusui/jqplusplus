@@ -13,16 +13,53 @@ type ObjectNode struct {
 	objectNode map[string]interface{}
 }
 
-func (*ObjectNode) Get(pexp string) (interface{}, error) {
+func (n *ObjectNode) Has(key string) bool {
+	_, ok := n.objectNode[key]
+	if ok {
+		return true
+	}
+	return false
+}
+
+func (n *ObjectNode) Keys() []string {
+	keys := make([]string, 0, len(n.objectNode))
+	for k := range n.objectNode {
+		keys = append(keys, k)
+	}
+	return keys
+}
+
+func (n *ObjectNode) Get(key string) interface{} {
+	v, ok := n.objectNode[key]
+	if !ok {
+		panic("Unknown key was given: '" + key + "'")
+	}
+	return v
+}
+
+func (n *ObjectNode) Find(pexp string) (interface{}, error) {
 	path, err := PexpToPath(pexp)
 	if err != nil {
 		return nil, err
 	}
-	// FIXME
-	for _, nil := range path {
-		return nil, fmt.Errorf("path %q is not an object", pexp)
+	var ret any
+	ret = n
+	for _, k := range path {
+		switch t := k.(type) {
+		case string:
+			if !n.Has(k.(string)) {
+				return nil, fmt.Errorf("path %q is not an object", pexp)
+			}
+			ret = n.Get(k.(string))
+			break
+		case int:
+			break
+		default:
+			msg, _ := fmt.Printf("unknown type: %T", t)
+			panic(msg)
+		}
 	}
-	return nil, nil
+	return ret, nil
 }
 
 func PathToPexp(segments []any) string {
