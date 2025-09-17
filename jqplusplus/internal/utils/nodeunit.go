@@ -12,9 +12,9 @@ import (
 var parseNodeUnitRegex = regexp.MustCompile(`^([^;]+)(?:;([^;]+)(?:;(.+))?)?$`)
 
 type NodeUnit struct {
-	name    string
-	decoder string
-	args    []string
+	Name    string
+	Decoder string
+	Args    []string
 }
 
 func (n NodeUnit) Hash() string {
@@ -22,24 +22,24 @@ func (n NodeUnit) Hash() string {
 }
 
 func (n NodeUnit) String() string {
-	return fmt.Sprintf("%s|%s|%s", n.name, n.decoder, fmt.Sprint(n.args))
+	return fmt.Sprintf("%s|%s|%s", n.Name, n.Decoder, fmt.Sprint(n.Args))
 }
 
 // Equal method to compare two NodeUnit values
 func (n NodeUnit) Equal(other NodeUnit) bool {
-	// First compare name and decoder fields (string fields are directly comparable)
-	if n.name != other.name || n.decoder != other.decoder {
+	// First compare Name and Decoder fields (string fields are directly comparable)
+	if n.Name != other.Name || n.Decoder != other.Decoder {
 		return false
 	}
 
-	// Compare args slices; check if sizes are different first
-	if len(n.args) != len(other.args) {
+	// Compare Args slices; check if sizes are different first
+	if len(n.Args) != len(other.Args) {
 		return false
 	}
 
-	// Create sorted copies of args slices
-	sortedArgs1 := append([]string{}, n.args...)
-	sortedArgs2 := append([]string{}, other.args...)
+	// Create sorted copies of Args slices
+	sortedArgs1 := append([]string{}, n.Args...)
+	sortedArgs2 := append([]string{}, other.Args...)
 	sort.Strings(sortedArgs1)
 	sort.Strings(sortedArgs2)
 
@@ -53,15 +53,15 @@ func ParseNodeUnit(e string) (*NodeUnit, error) {
 		return nil, fmt.Errorf("invalid node unit string: %s", e)
 	}
 	ret := NodeUnit{
-		name:    matches[1],
-		decoder: "",
-		args:    []string{},
+		Name:    matches[1],
+		Decoder: "",
+		Args:    []string{},
 	}
 	if len(matches) > 2 {
-		ret.decoder = matches[2]
+		ret.Decoder = matches[2]
 	}
 	if len(matches) > 3 {
-		ret.args = strings.Split(matches[3], ":")
+		ret.Args = strings.Split(matches[3], ":")
 	}
 	return &ret, nil
 }

@@ -8,7 +8,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
-	"sigs.k8s.io/yaml" // go get sigs.k8s.io/yaml
+	"sigs.k8s.io/yaml" // go get sigs.k8s.cli/yaml
 )
 
 // FindFileInPath searches rel (relative path) under each base directory in paths, in order.
@@ -69,7 +69,7 @@ func (d JSONDecoder) Decode(r io.Reader) (any, error) {
 
 /* -------------------- YAML -------------------- */
 
-// YAMLDecoder converts YAML → JSON bytes → reuses JSON decoder (keeps behavior consistent).
+// YAMLDecoder converts YAML → JSON bytes → reuses JSON Decoder (keeps behavior consistent).
 type YAMLDecoder struct{ useNumber bool }
 
 func (d YAMLDecoder) Name() string { return "yaml" }
@@ -88,21 +88,21 @@ func (d YAMLDecoder) Decode(r io.Reader) (any, error) {
 
 /* -------------------- Public API -------------------- */
 
-// Registry of decoder factories
+// Registry of Decoder factories
 var decoderRegistry = map[string]func(args []string) Decoder{}
 
-// RegisterDecoder allows registration of a decoder constructor
+// RegisterDecoder allows registration of a Decoder constructor
 func RegisterDecoder(name string, ctor func(args []string) Decoder) {
 	decoderRegistry[name] = ctor
 }
 
 // ToDecoder : Factory method that converts NodeUnit into a Decoder
 func ToDecoder(n NodeUnit) (Decoder, error) {
-	ctor, ok := decoderRegistry[n.decoder]
+	ctor, ok := decoderRegistry[n.Decoder]
 	if !ok {
-		return nil, fmt.Errorf("unknown decoder: %s", n.decoder)
+		return nil, fmt.Errorf("unknown Decoder: %s", n.Decoder)
 	}
-	return ctor(n.args), nil
+	return ctor(n.Args), nil
 }
 
 // ReadFileAsJSONObject reads a file using the given Decoder and enforces that the root is an object.
@@ -124,7 +124,7 @@ func ReadFileAsJSONObject(filename string, dec Decoder) (map[string]any, error) 
 	return obj, nil
 }
 
-// AutoReadFileAsJSONObject picks a decoder by extension (json|yaml|yml). Defaults to JSON.
+// AutoReadFileAsJSONObject picks a Decoder by extension (json|yaml|yml). Defaults to JSON.
 func AutoReadFileAsJSONObject(filename string, useNumber bool) (map[string]any, error) {
 	switch ext := filepath.Ext(filename); ext {
 	case ".yaml", ".yml":
@@ -141,6 +141,6 @@ func CreateDecoder(decoderName string, args []string) (Decoder, error) {
 	case "yaml":
 		return YAMLDecoder{}, nil
 	default:
-		return nil, fmt.Errorf("unknown decoder: %s%s", decoderName, args)
+		return nil, fmt.Errorf("unknown Decoder: %s%s", decoderName, args)
 	}
 }

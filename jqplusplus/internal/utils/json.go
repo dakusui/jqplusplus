@@ -11,7 +11,7 @@ import (
 )
 
 func ReadFileAsObjectNode(nodeUnit NodeUnit) (any, error) {
-	switch nodeUnit.decoder {
+	switch nodeUnit.Decoder {
 	case "json":
 
 	}

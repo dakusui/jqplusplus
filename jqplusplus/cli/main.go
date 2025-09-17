@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"flag"
 	"github.com/dakusui/jqplusplus/jqplusplus/internal/utils"
-	"io"
 	"log"
 	"os"
 )
@@ -19,11 +18,12 @@ func main() {
 	}
 
 	// Example: use standard JSON decoder here
-	obj, err := utils.ReadFileAsObjectNode(*file, func(data []byte) (map[string]any, error) {
-		var m map[string]any
-		err := json.Unmarshal(data, &m)
-		return m, err
-	})
+	unit := utils.NodeUnit{
+		Name:    "file.json",
+		Decoder: "json",
+		Args:    []string{},
+	}
+	obj, err := utils.ReadFileAsObjectNode(unit)
 	if err != nil {
 		log.Fatalf("Failed to read file: %v", err)
 	}
