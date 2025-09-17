@@ -3,18 +3,11 @@ package main
 import (
 	"encoding/json"
 	"flag"
+	"github.com/dakusui/jqplusplus/jqplusplus/internal/utils"
+	"io"
 	"log"
 	"os"
 )
-
-// Assume this is already implemented in your project
-func ReadFileAsJsonObject(filename string, decoder func([]byte) (map[string]any, error)) (map[string]any, error) {
-	data, err := os.ReadFile(filename)
-	if err != nil {
-		return nil, err
-	}
-	return decoder(data)
-}
 
 func main() {
 	// Define CLI flag
@@ -26,7 +19,7 @@ func main() {
 	}
 
 	// Example: use standard JSON decoder here
-	obj, err := ReadFileAsJsonObject(*file, func(data []byte) (map[string]any, error) {
+	obj, err := utils.ReadFileAsObjectNode(*file, func(data []byte) (map[string]any, error) {
 		var m map[string]any
 		err := json.Unmarshal(data, &m)
 		return m, err

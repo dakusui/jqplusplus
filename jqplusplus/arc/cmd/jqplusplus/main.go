@@ -4,10 +4,10 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"github.com/dakusui/jqplusplus/jqplusplus/arc/internal/filelevel"
 	"log"
 	"os"
 
-	"github.com/dakusui/jqplusplus/jqplusplus/internal/filelevel"
 	"github.com/itchyny/gojq"
 )
 

@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"github.com/dakusui/jqplusplus/jqplusplus/internal/nodelevel"
+	nodelevel2 "github.com/dakusui/jqplusplus/jqplusplus/arc/internal/nodelevel"
 	"log"
 	"os"
 )
@@ -36,7 +36,7 @@ func main() {
 	}
 
 	// Call the function to expand node-level filelevel
-	expandedContent, err := nodelevel.ExpandNodeLevelInheritances(nodeContent, nodelevel.FetchParentNodeMock)
+	expandedContent, err := nodelevel2.ExpandNodeLevelInheritances(nodeContent, nodelevel2.FetchParentNodeMock)
 	if err != nil {
 		log.Fatalf("Failed to expand node-level filelevel: %v", err)
 	}
