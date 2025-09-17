@@ -88,6 +88,23 @@ func (d YAMLDecoder) Decode(r io.Reader) (any, error) {
 
 /* -------------------- Public API -------------------- */
 
+// Registry of decoder factories
+var decoderRegistry = map[string]func(args []string) Decoder{}
+
+// RegisterDecoder allows registration of a decoder constructor
+func RegisterDecoder(name string, ctor func(args []string) Decoder) {
+	decoderRegistry[name] = ctor
+}
+
+// ToDecoder : Factory method that converts NodeUnit into a Decoder
+func ToDecoder(n NodeUnit) (Decoder, error) {
+	ctor, ok := decoderRegistry[n.decoder]
+	if !ok {
+		return nil, fmt.Errorf("unknown decoder: %s", n.decoder)
+	}
+	return ctor(n.args), nil
+}
+
 // ReadFileAsJSONObject reads a file using the given Decoder and enforces that the root is an object.
 func ReadFileAsJSONObject(filename string, dec Decoder) (map[string]any, error) {
 	f, err := os.Open(filename)
