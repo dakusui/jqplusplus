@@ -12,9 +12,17 @@ import (
 var parseNodeUnitRegex = regexp.MustCompile(`^([^;]+)(?:;([^;]+)(?:;(.+))?)?$`)
 
 type NodeUnit struct {
-	Name    string
-	Decoder string
-	Args    []string
+	name    string
+	decoder string
+	args    []string
+}
+
+func NewNodeUnit(name string, decoder string, args []string) NodeUnit {
+	return NodeUnit{
+		name:    name,
+		decoder: decoder,
+		args:    args,
+	}
 }
 
 func (n NodeUnit) Hash() string {
@@ -22,24 +30,24 @@ func (n NodeUnit) Hash() string {
 }
 
 func (n NodeUnit) String() string {
-	return fmt.Sprintf("%s|%s|%s", n.Name, n.Decoder, fmt.Sprint(n.Args))
+	return fmt.Sprintf("%s|%s|%s", n.name, n.decoder, fmt.Sprint(n.args))
 }
 
 // Equal method to compare two NodeUnit values
 func (n NodeUnit) Equal(other NodeUnit) bool {
-	// First compare Name and Decoder fields (string fields are directly comparable)
-	if n.Name != other.Name || n.Decoder != other.Decoder {
+	// First compare name and decoder fields (string fields are directly comparable)
+	if n.name != other.name || n.decoder != other.decoder {
 		return false
 	}
 
-	// Compare Args slices; check if sizes are different first
-	if len(n.Args) != len(other.Args) {
+	// Compare args slices; check if sizes are different first
+	if len(n.args) != len(other.args) {
 		return false
 	}
 
-	// Create sorted copies of Args slices
-	sortedArgs1 := append([]string{}, n.Args...)
-	sortedArgs2 := append([]string{}, other.Args...)
+	// Create sorted copies of args slices
+	sortedArgs1 := append([]string{}, n.args...)
+	sortedArgs2 := append([]string{}, other.args...)
 	sort.Strings(sortedArgs1)
 	sort.Strings(sortedArgs2)
 
@@ -53,15 +61,15 @@ func ParseNodeUnit(e string) (*NodeUnit, error) {
 		return nil, fmt.Errorf("invalid node unit string: %s", e)
 	}
 	ret := NodeUnit{
-		Name:    matches[1],
-		Decoder: "",
-		Args:    []string{},
+		name:    matches[1],
+		decoder: "",
+		args:    []string{},
 	}
 	if len(matches) > 2 {
-		ret.Decoder = matches[2]
+		ret.decoder = matches[2]
 	}
 	if len(matches) > 3 {
-		ret.Args = strings.Split(matches[3], ":")
+		ret.args = strings.Split(matches[3], ":")
 	}
 	return &ret, nil
 }

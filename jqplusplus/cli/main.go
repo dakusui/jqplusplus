@@ -15,17 +15,15 @@ func main() {
 
 	if *file == "" {
 		log.Fatal("Please provide --file argument")
+		panic("Please provide --file argument")
 	}
 
 	// Example: use standard JSON decoder here
-	unit := utils.NodeUnit{
-		Name:    "file.json",
-		Decoder: "json",
-		Args:    []string{},
-	}
+	unit := utils.NewNodeUnit(*file, "json", []string{})
 	obj, err := utils.ReadFileAsObjectNode(unit)
 	if err != nil {
 		log.Fatalf("Failed to read file: %v", err)
+		panic(err)
 	}
 
 	// Pretty print the object
@@ -33,5 +31,6 @@ func main() {
 	enc.SetIndent("", "  ")
 	if err := enc.Encode(obj); err != nil {
 		log.Fatalf("Failed to print JSON: %v", err)
+		panic(err)
 	}
 }

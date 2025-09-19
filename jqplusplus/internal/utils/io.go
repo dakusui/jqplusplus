@@ -98,11 +98,11 @@ func RegisterDecoder(name string, ctor func(args []string) Decoder) {
 
 // ToDecoder : Factory method that converts NodeUnit into a Decoder
 func ToDecoder(n NodeUnit) (Decoder, error) {
-	ctor, ok := decoderRegistry[n.Decoder]
+	ctor, ok := decoderRegistry[n.decoder]
 	if !ok {
-		return nil, fmt.Errorf("unknown Decoder: %s", n.Decoder)
+		return nil, fmt.Errorf("unknown decoder: %s", n.decoder)
 	}
-	return ctor(n.Args), nil
+	return ctor(n.args), nil
 }
 
 // ReadFileAsJSONObject reads a file using the given Decoder and enforces that the root is an object.
@@ -141,6 +141,6 @@ func CreateDecoder(decoderName string, args []string) (Decoder, error) {
 	case "yaml":
 		return YAMLDecoder{}, nil
 	default:
-		return nil, fmt.Errorf("unknown Decoder: %s%s", decoderName, args)
+		return nil, fmt.Errorf("unknown decoder: %s%s", decoderName, args)
 	}
 }
