@@ -33,4 +33,6 @@ func main() {
 		log.Fatalf("Failed to print JSON: %v", err)
 		panic(err)
 	}
+
+	println(obj)
 }

@@ -11,11 +11,26 @@ import (
 )
 
 func ReadFileAsObjectNode(nodeUnit NodeUnit) (any, error) {
+	// Check if the decoder is "json"
 	switch nodeUnit.decoder {
 	case "json":
+		// Read the file content from the given NodeUnit
+		data, err := nodeUnit.ReadFile()
+		if err != nil {
+			return nil, fmt.Errorf("failed to read file: %w", err)
+		}
 
+		// Parse the JSON content into Go object (map[string]any or []any)
+		var result any
+		if err := json.Unmarshal(data, &result); err != nil {
+			return nil, fmt.Errorf("failed to decode JSON: %w", err)
+		}
+
+		return result, nil
+
+	default:
+		return nil, fmt.Errorf("unsupported decoder type: %s", nodeUnit.decoder)
 	}
-	return nil, nil
 }
 
 func Find(n any, pexp string) (any, error) {

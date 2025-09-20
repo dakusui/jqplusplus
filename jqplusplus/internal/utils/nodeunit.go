@@ -8,9 +8,6 @@ import (
 	"strings"
 )
 
-// Precompiled regular expression
-var parseNodeUnitRegex = regexp.MustCompile(`^([^;]+)(?:;([^;]+)(?:;(.+))?)?$`)
-
 type NodeUnit struct {
 	name    string
 	decoder string
@@ -55,16 +52,15 @@ func (n NodeUnit) Equal(other NodeUnit) bool {
 	return reflect.DeepEqual(sortedArgs1, sortedArgs2)
 }
 
+// Precompiled regular expression
+var parseNodeUnitRegex = regexp.MustCompile(`^([^;]+)(?:;([^;]+)(?:;(.+))?)?$`)
+
 func ParseNodeUnit(e string) (*NodeUnit, error) {
 	matches := parseNodeUnitRegex.FindStringSubmatch(e)
 	if matches == nil {
 		return nil, fmt.Errorf("invalid node unit string: %s", e)
 	}
-	ret := NodeUnit{
-		name:    matches[1],
-		decoder: "",
-		args:    []string{},
-	}
+	ret := NewNodeUnit(matches[1], "", []string{})
 	if len(matches) > 2 {
 		ret.decoder = matches[2]
 	}
