@@ -11,6 +11,48 @@ import (
 	"sigs.k8s.io/yaml" // go get sigs.k8s.cli/yaml
 )
 
+// ReadFile reads the contents of the specified file into memory and returns it as a []byte.
+// If there is an error, it returns an error instead.
+func ReadFile(filePath string) ([]byte, error) {
+	// Open the file for reading
+	file, err := os.Open(filePath)
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
+
+	// Read the file's content into memory
+	data, err := io.ReadAll(file)
+	if err != nil {
+		return nil, err
+	}
+
+	return data, nil
+}
+
+// CreateJSONFromBytes parses the given []byte data into a generic JSON structure.
+// It returns the parsed JSON as `any`, which can be a map, slice, or other JSON-compatible type.
+// If the data is not valid JSON, it returns an error.
+func CreateJSONFromBytes(data []byte) (any, error) {
+	var result any
+
+	// Unmarshal the []byte JSON data into a generic Go structure
+	err := json.Unmarshal(data, &result)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse JSON: %w", err)
+	}
+
+	return result, nil
+}
+
+func ReadFileAsJsonElement(filePath string) (any, error) {
+	data, err := ReadFile(filePath)
+	if err != nil {
+		return nil, err
+	}
+	return CreateJSONFromBytes(data)
+}
+
 // FindFileInPath searches rel (relative path) under each base directory in paths, in order.
 // Returns the absolute path of the first regular file that exists.
 func FindFileInPath(file string, paths []string) (string, error) {

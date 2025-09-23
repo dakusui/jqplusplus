@@ -10,65 +10,59 @@ import (
 	"sync"
 )
 
-func ReadFileAsObjectNode(nodeUnit NodeUnit) (any, error) {
-	// Check if the decoder is "json"
-	switch nodeUnit.decoder {
-	case "json":
-		// Read the file content from the given NodeUnit
-		data, err := nodeUnit.ReadFile()
-		if err != nil {
-			return nil, fmt.Errorf("failed to read file: %w", err)
-		}
-
-		// Parse the JSON content into Go object (map[string]any or []any)
-		var result any
-		if err := json.Unmarshal(data, &result); err != nil {
-			return nil, fmt.Errorf("failed to decode JSON: %w", err)
-		}
-
-		return result, nil
-
-	default:
-		return nil, fmt.Errorf("unsupported decoder type: %s", nodeUnit.decoder)
-	}
-}
-
-func Find(n any, pexp string) (any, error) {
+func FindByPathExpression(n any, pexp string) (any, error) {
 	path, err := PexpToPath(pexp)
 	if err != nil {
 		return nil, err
 	}
-	ret := n
-	for _, k := range path {
-		switch k.(type) {
-		case string:
-			switch ret.(type) {
-			case map[string]any:
-				r, ok := ret.(map[string]any)[k.(string)]
-				if !ok {
-					return nil, fmt.Errorf("path %q is not an object", pexp)
-				}
-				ret = r
-			default:
-				return nil, fmt.Errorf("type mismatch: %T", n)
-			}
-		case int:
-			switch ret.(type) {
-			case []any:
-				if k.(int) < 0 || k.(int) >= len(ret.([]any)) {
-					return nil, fmt.Errorf("index out of range")
-				}
-				r := ret.([]any)[k.(int)]
-				ret = r
-			}
-			break
-		default:
-			msg, _ := fmt.Printf("unknown type: %T", k)
-			panic(msg)
-		}
+	ret, errOnFindByPathArray := FindByPathArray(n, path)
+	if errOnFindByPathArray != nil {
+		return nil, errOnFindByPathArray
 	}
 	return ret, nil
+}
 
+func FindByPathArray(n any, path []any) (any, error) {
+	// Start traversal from the root of the JSON structure
+	current := n
+	i := 0
+
+	// Traverse each key/index in the path
+	for _, key := range path {
+		i = i + 1
+		p := path[0:i]
+		switch k := key.(type) {
+		case string:
+			// If the current element is a map, access its value by string key
+			if m, ok := current.(map[string]any); ok {
+				val, exists := m[k]
+				if !exists {
+					return nil, NewJsonNotFound(PathToPexp(p))
+				}
+				current = val
+			} else {
+				return nil, NewJsonTypeError(PathToPexp(p), "object", fmt.Sprintf("%s", m))
+			}
+
+		case int:
+			// If the current element is a slice, access its value by index
+			if s, ok := current.([]any); ok {
+				if k < 0 || k >= len(s) {
+					return nil, fmt.Errorf("index %d out of range for JSON array", k)
+				}
+				current = s[k]
+			} else {
+				return nil, fmt.Errorf("expected a JSON array (slice) but found: %T", current)
+			}
+
+		default:
+			// Handle unexpected path segment types
+			return nil, fmt.Errorf("unexpected path segment type: %T", k)
+		}
+	}
+
+	// Return the final element after traversing the path
+	return current, nil
 }
 
 func PathToPexp(segments []any) string {

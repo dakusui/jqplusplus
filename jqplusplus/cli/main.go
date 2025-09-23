@@ -19,13 +19,31 @@ func main() {
 	}
 
 	// Example: use standard JSON decoder here
-	unit := utils.NewNodeUnit(*file, "json", []string{})
-	obj, err := utils.ReadFileAsObjectNode(unit)
+	elem, err := utils.ReadFileAsJsonElement(*file)
 	if err != nil {
 		log.Fatalf("Failed to read file: %v", err)
 		panic(err)
 	}
 
+	prettyPrint(elem)
+	extends, err := utils.FindByPathExpression(elem, ".\"$extends\"")
+
+	if err != nil {
+		switch err.(type) {
+		case *utils.JsonNotFound:
+			break
+		case *utils.JsonTypeError:
+		default:
+			panic(err)
+		}
+	}
+
+	prettyPrint(extends)
+
+	println(elem)
+}
+
+func prettyPrint(obj any) {
 	// Pretty print the object
 	enc := json.NewEncoder(os.Stdout)
 	enc.SetIndent("", "  ")
@@ -33,6 +51,4 @@ func main() {
 		log.Fatalf("Failed to print JSON: %v", err)
 		panic(err)
 	}
-
-	println(obj)
 }
