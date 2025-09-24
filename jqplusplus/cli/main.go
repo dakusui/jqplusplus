@@ -39,6 +39,13 @@ func main() {
 	}
 
 	prettyPrint(extends)
+	v, err := utils.AsStringArray(extends, nil)
+	if err != nil {
+		panic(err)
+	}
+	for _, each := range v {
+		println(each)
+	}
 
 	println(elem)
 }

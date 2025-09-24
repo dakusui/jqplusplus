@@ -22,6 +22,76 @@ func FindByPathExpression(n any, pexp string) (any, error) {
 	return ret, nil
 }
 
+func AsString(n any, err error) (string, error) {
+	if err != nil {
+		return "", err
+	}
+	if n == nil {
+		return "", nil
+	}
+	if s, ok := n.(string); ok {
+		return s, nil
+	}
+	return "", fmt.Errorf("expected a JSON string but found: %T", n)
+}
+func AsArray(n any, err error) ([]any, error) {
+	if err != nil {
+		return nil, err
+	}
+	if n == nil {
+		return nil, nil
+	}
+	if s, ok := n.([]any); ok {
+		return s, nil
+	}
+	return nil, fmt.Errorf("expected a JSON array (slice) but found: %T", n)
+}
+func AsObject(n any, err error) (map[string]any, error) {
+	if err != nil {
+		return nil, err
+	}
+	if n == nil {
+		return nil, nil
+	}
+	if s, ok := n.(map[string]any); ok {
+		return s, nil
+	}
+	return nil, fmt.Errorf("expected a JSON object (map) but found: %T", n)
+}
+func AsNumber(n any, err error) (json.Number, error) {
+	if err != nil {
+		return "", err
+	}
+	if n == nil {
+		return "", nil
+	}
+	if s, ok := n.(json.Number); ok {
+		return s, nil
+	}
+	return "", fmt.Errorf("expected a JSON number but found: %T", n)
+}
+func AsBool(n any, err error) (bool, error) {
+	if err != nil {
+		return false, err
+	}
+	if n == nil {
+		return false, nil
+	}
+	if s, ok := n.(bool); ok {
+		return s, nil
+	}
+	return false, fmt.Errorf("expected a JSON boolean but found: %T", n)
+}
+func NonNull[T any](n T, err error) (T, error) {
+	if err != nil {
+		return n, err
+	}
+	if any(n) == nil {
+		return n, fmt.Errorf("expected a non-null value but found: %T", n)
+	}
+	return n, nil
+}
+
 func FindByPathArray(n any, path []any) (any, error) {
 	// Start traversal from the root of the JSON structure
 	current := n
@@ -255,4 +325,28 @@ func MergeObjectNodes(a, b map[string]interface{}) (map[string]interface{}, erro
 		return nil, fmt.Errorf("unexpected jq result type: %T", v)
 	}
 	return out, nil
+}
+
+func AsStringArray(v any, err error) ([]string, error) {
+	if err != nil {
+		return nil, err
+	}
+	v, err = NonNull(v, nil)
+	v, err = AsArray(v, err)
+	if err != nil {
+		return nil, err
+	}
+	var arr []any
+	arr = v.([]any)
+
+	ret := make([]string, len(arr))
+	for i, each := range arr {
+		each, err := AsString(each, nil)
+		each, err = NonNull(each, err)
+		if err != nil {
+			return nil, fmt.Errorf("non-string element was found at %d: '%s'", i, each)
+		}
+		ret[i] = each
+	}
+	return ret, nil
 }
