@@ -350,3 +350,29 @@ func AsStringArray(v any, err error) ([]string, error) {
 	}
 	return ret, nil
 }
+
+// MergeObjects merges two JSON objects (b overrides a by default).
+func MergeObjects(a, b map[string]interface{}, policy MergePolicy) map[string]interface{} {
+	result := make(map[string]interface{})
+	for k, v := range a {
+		result[k] = v
+	}
+	for k, v := range b {
+		if av, ok := result[k].(map[string]interface{}); ok {
+			if bv, ok := v.(map[string]interface{}); ok {
+				result[k] = MergeObjects(av, bv, policy)
+				continue
+			}
+		}
+		result[k] = v
+	}
+	return result
+}
+
+// MergePolicy defines the policy for merging objects.
+type MergePolicy int
+
+const (
+	MergePolicyDefault MergePolicy = iota
+	// Add more policies as needed
+)

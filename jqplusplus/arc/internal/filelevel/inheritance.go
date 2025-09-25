@@ -189,34 +189,8 @@ func ExtractIncludesField(obj map[string]interface{}) ([]string, error) {
 	return nil, nil
 }
 
-// MergePolicy defines the policy for merging objects.
-type MergePolicy int
-
-const (
-	MergePolicyDefault MergePolicy = iota
-	// Add more policies as needed
-)
-
-// MergeObjects merges two JSON objects (b overrides a by default).
-func MergeObjects(a, b map[string]interface{}, policy MergePolicy) map[string]interface{} {
-	result := make(map[string]interface{})
-	for k, v := range a {
-		result[k] = v
-	}
-	for k, v := range b {
-		if av, ok := result[k].(map[string]interface{}); ok {
-			if bv, ok := v.(map[string]interface{}); ok {
-				result[k] = MergeObjects(av, bv, policy)
-				continue
-			}
-		}
-		result[k] = v
-	}
-	return result
-}
-
 // MergeMultiple merges a list of JSON objects in order (or reverse).
-func MergeMultiple(objs []map[string]interface{}, reverse bool, policy MergePolicy) map[string]interface{} {
+func MergeMultiple(objs []map[string]interface{}, reverse bool, policy utils.MergePolicy) map[string]interface{} {
 	// TODO: implement
 	return nil
 }

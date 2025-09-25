@@ -9,6 +9,18 @@ type NodeLoader interface {
 	LoadNode(n NodeUnit) (map[string]interface{}, error)
 }
 
+type simpleNodeLoader struct {
+	paths []string
+}
+
+func NewSimpleNodeLoader() *simpleNodeLoader {
+	return &simpleNodeLoader{}
+}
+
+func (l *simpleNodeLoader) LoadNode(n NodeUnit) (map[string]interface{}, error) {
+	return nil, nil
+}
+
 func NewNodePool(loader NodeLoader) *NodePool {
 	return &NodePool{
 		cache:  map[string]map[string]interface{}{},
