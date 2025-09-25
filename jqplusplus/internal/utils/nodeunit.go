@@ -60,11 +60,11 @@ func ParseNodeUnit(e string) (*NodeUnit, error) {
 	if matches == nil {
 		return nil, fmt.Errorf("invalid node unit string: %s", e)
 	}
-	ret := NewNodeUnit(matches[1], "", []string{})
-	if len(matches) > 2 {
+	ret := NewNodeUnit(matches[1], "default", []string{})
+	if matches[2] != "" {
 		ret.decoder = matches[2]
 	}
-	if len(matches) > 3 {
+	if matches[3] != "" {
 		ret.args = strings.Split(matches[3], ":")
 	}
 	return &ret, nil

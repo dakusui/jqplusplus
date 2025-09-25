@@ -13,12 +13,24 @@ type simpleNodeLoader struct {
 	paths []string
 }
 
-func NewSimpleNodeLoader() *simpleNodeLoader {
-	return &simpleNodeLoader{}
+func NewSimpleNodeLoader(paths []string) *simpleNodeLoader {
+	return &simpleNodeLoader{paths: paths}
 }
 
 func (l *simpleNodeLoader) LoadNode(n NodeUnit) (map[string]interface{}, error) {
-	return nil, nil
+	f, err := FindFileInPath(n.name, l.paths)
+	if err != nil {
+		return nil, err
+	}
+	decoder, err := CreateDecoder(n.decoder, n.args)
+	if err != nil {
+		return nil, err
+	}
+	ret, err := ReadFileAsJSONObject(f, decoder)
+	if err != nil {
+		return nil, err
+	}
+	return ret, nil
 }
 
 func NewNodePool(loader NodeLoader) *NodePool {
@@ -26,6 +38,10 @@ func NewNodePool(loader NodeLoader) *NodePool {
 		cache:  map[string]map[string]interface{}{},
 		loader: loader,
 	}
+}
+
+func NewNodePoolWithSimpleLoader(paths []string) *NodePool {
+	return NewNodePool(NewSimpleNodeLoader(paths))
 }
 
 func (p *NodePool) GetNode(n NodeUnit) (map[string]interface{}, error) {

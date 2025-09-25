@@ -1,6 +1,6 @@
    {
      "name": "Child",
-     "$extends": ["parent1", "parent2"],
+     "$extends": ["parent1.json", "parent2.json"],
      "config": {
        "custom": true
      }
