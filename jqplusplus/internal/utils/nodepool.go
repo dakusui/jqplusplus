@@ -1,24 +1,25 @@
 package utils
 
+import (
+	"path/filepath"
+)
+
 type NodePool struct {
 	cache  map[string]map[string]interface{}
 	loader NodeLoader
 }
 
 type NodeLoader interface {
-	LoadNode(n NodeUnit) (map[string]interface{}, error)
+	LoadNode(n NodeUnit, by string) (map[string]interface{}, error)
 }
 
 type simpleNodeLoader struct {
 	paths []string
 }
 
-func NewSimpleNodeLoader(paths []string) *simpleNodeLoader {
-	return &simpleNodeLoader{paths: paths}
-}
-
-func (l *simpleNodeLoader) LoadNode(n NodeUnit) (map[string]interface{}, error) {
-	f, err := FindFileInPath(n.name, l.paths)
+func (l simpleNodeLoader) LoadNode(n NodeUnit, by string) (map[string]interface{}, error) {
+	parent := filepath.Dir(by)
+	f, err := FindFileInPath(n.name, Insert(l.paths, 0, parent))
 	if err != nil {
 		return nil, err
 	}
@@ -33,6 +34,11 @@ func (l *simpleNodeLoader) LoadNode(n NodeUnit) (map[string]interface{}, error) 
 	return ret, nil
 }
 
+func NewSimpleNodeLoader(paths []string) NodeLoader {
+	ret := &simpleNodeLoader{paths: paths}
+	return ret
+}
+
 func NewNodePool(loader NodeLoader) *NodePool {
 	return &NodePool{
 		cache:  map[string]map[string]interface{}{},
@@ -44,10 +50,10 @@ func NewNodePoolWithSimpleLoader(paths []string) *NodePool {
 	return NewNodePool(NewSimpleNodeLoader(paths))
 }
 
-func (p *NodePool) GetNode(n NodeUnit) (map[string]interface{}, error) {
+func (p *NodePool) GetNode(n NodeUnit, by string) (map[string]interface{}, error) {
 	value, ok := p.cache[n.String()]
 	if !ok {
-		v, err := p.loader.LoadNode(n)
+		v, err := p.loader.LoadNode(n, by)
 		if err != nil {
 			return nil, err
 		}

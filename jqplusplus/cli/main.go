@@ -66,7 +66,7 @@ func mainBody() error {
 		if err != nil {
 			return err
 		}
-		obj, err := nodePool.GetNode(*nodeUnit)
+		obj, err := nodePool.GetNode(*nodeUnit, *file)
 		if err != nil {
 			return err
 		}
@@ -82,6 +82,5 @@ func prettyPrint(obj any) {
 	enc.SetIndent("", "  ")
 	if err := enc.Encode(obj); err != nil {
 		log.Fatalf("Failed to print JSON: %v", err)
-		panic(err)
 	}
 }

@@ -153,7 +153,9 @@ func ReadFileAsJSONObject(filename string, dec Decoder) (map[string]any, error) 
 	if err != nil {
 		return nil, err
 	}
-	defer f.Close()
+	defer func(f *os.File) {
+		_ = f.Close()
+	}(f)
 
 	v, err := dec.Decode(f)
 	if err != nil {
