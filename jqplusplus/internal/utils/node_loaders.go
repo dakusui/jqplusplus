@@ -1,17 +1,6 @@
 package utils
 
-import (
-	"path/filepath"
-)
-
-type NodePool struct {
-	cache  map[string]map[string]interface{}
-	loader NodeLoader
-}
-
-type NodeLoader interface {
-	LoadNode(n NodeUnit, by string) (map[string]interface{}, error)
-}
+import "path/filepath"
 
 type simpleNodeLoader struct {
 	paths []string
@@ -44,21 +33,4 @@ func NewNodePool(loader NodeLoader) *NodePool {
 		cache:  map[string]map[string]interface{}{},
 		loader: loader,
 	}
-}
-
-func NewNodePoolWithSimpleLoader(paths []string) *NodePool {
-	return NewNodePool(NewSimpleNodeLoader(paths))
-}
-
-func (p *NodePool) GetNode(n NodeUnit, by string) (map[string]interface{}, error) {
-	value, ok := p.cache[n.String()]
-	if !ok {
-		v, err := p.loader.LoadNode(n, by)
-		if err != nil {
-			return nil, err
-		}
-		p.cache[n.String()] = v
-		value = v
-	}
-	return value, nil
 }
