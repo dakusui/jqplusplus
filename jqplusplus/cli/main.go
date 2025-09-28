@@ -59,7 +59,10 @@ func mainBody() error {
 	}
 	paths := []string{filepath.Dir(*file), dir + "/" + "testdata"}
 	reverse(v)
-	cur := utils.NewEmptyObject()
+	cur, err := utils.AsObject(elem, err)
+	if err != nil {
+		return nil
+	}
 	for _, each := range v {
 		println(each)
 		nodeUnit, err := utils.ParseNodeUnit(each)
