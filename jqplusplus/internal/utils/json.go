@@ -21,7 +21,9 @@ func FindByPathExpression(n any, pexp string) (any, error) {
 	}
 	return ret, nil
 }
-
+func NewEmptyObject() map[string]any {
+	return map[string]any{}
+}
 func AsString(n any, err error) (string, error) {
 	if err != nil {
 		return "", err
@@ -82,6 +84,7 @@ func AsBool(n any, err error) (bool, error) {
 	}
 	return false, fmt.Errorf("expected a JSON boolean but found: %T", n)
 }
+
 func NonNull[T any](n T, err error) (T, error) {
 	if err != nil {
 		return n, err
@@ -288,7 +291,7 @@ func ensureCompiled() error {
 			compileErr = fmt.Errorf("parse jq: %w", err)
 			return
 		}
-		c, err := gojq.Compile(q, gojq.WithVariables([]string{"a", "b"}))
+		c, err := gojq.Compile(q, gojq.WithVariables([]string{"$a", "$b"}))
 		if err != nil {
 			compileErr = fmt.Errorf("compile jq: %w", err)
 			return

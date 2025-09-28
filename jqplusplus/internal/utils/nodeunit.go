@@ -26,6 +26,18 @@ func (n NodeUnit) Hash() string {
 	return n.String()
 }
 
+func (n NodeUnit) Name() string {
+	return n.name
+}
+
+func (n NodeUnit) Decoder() string {
+	return n.decoder
+}
+
+func (n NodeUnit) Args() []string {
+	return n.args
+}
+
 func (n NodeUnit) String() string {
 	return fmt.Sprintf("%s|%s|%s", n.name, n.decoder, fmt.Sprint(n.args))
 }

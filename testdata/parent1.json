@@ -1,3 +1,4 @@
 {
-  "name": "parent1"
+  "name": "parent1",
+  "parent1": "hi"
 }
