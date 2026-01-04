@@ -14,10 +14,10 @@ func LoadAndResolve(filename string) (map[string]interface{}, error) {
 	return loadAndResolveRecursive(filename, visited, Extends)
 }
 
-// loadAndResolveRecursive loads a JSON file, resolves $extends recursively, and merges parents.
+// loadAndResolveRecursive loads a JSON file, resolves $extends or $includes recursively, and merges parents.
 func loadAndResolveRecursive(filename string, visited map[string]bool, mergeType InheritType) (map[string]interface{}, error) {
 	absPath, err := filepath.Abs(filename)
-	dir := filepath.Dir(absPath)
+	baseDir := filepath.Dir(absPath)
 	if err != nil {
 		return nil, err
 	}
@@ -44,7 +44,7 @@ func loadAndResolveRecursive(filename string, visited map[string]bool, mergeType
 		}
 		var mergedParents map[string]interface{}
 		for i, parent := range parentFiles {
-			parentObj, err := loadAndResolveRecursive(filepath.Join(dir, parent), visited, mergeType)
+			parentObj, err := loadAndResolveRecursive(filepath.Join(baseDir, parent), visited, mergeType)
 			if err != nil {
 				return nil, err
 			}
@@ -79,7 +79,7 @@ func parseInheritsField(val interface{}, inherits InheritType) ([]string, error)
 		for _, item := range v {
 			str, ok := item.(string)
 			if !ok {
-				return nil, fmt.Errorf("%s array must contain only strings", inherits.String())
+				return nil, fmt.Errorf("%s array must contain only strings: %v", inherits.String(), v)
 			}
 			if inherits.IsOrderReversed() {
 				result = append(result, str)

@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"strings"
 	"testing"
 )
 
@@ -42,6 +43,45 @@ func TestLoadAndResolve_SingleExtends(t *testing.T) {
 	expected := map[string]interface{}{"a": float64(1), "b": float64(3), "c": float64(4)}
 	if !reflect.DeepEqual(result, expected) {
 		t.Errorf("expected %v, got %v", expected, result)
+	}
+}
+
+func TestLoadAndResolve_SingleExtendsNonExisting_ThenFail(t *testing.T) {
+	dir := t.TempDir()
+	_ = writeTempJSON(t, dir, "parent.json", `{"a": 1, "b": 2}`)
+	child := writeTempJSON(t, dir, "child.json", `{"$extends": ["nonExisting.json"], "b": 3, "c": 4}`)
+	result, err := LoadAndResolve(child)
+	if err == nil {
+		t.Fatalf("expected error was not raised: %v", result)
+	}
+	if !strings.Contains(err.Error(), "no such file or directory") || !strings.Contains(err.Error(), "nonExisting") {
+		t.Fatalf("unexpected error message: %v", err.Error())
+	}
+}
+
+func TestLoadAndResolve_SingleExtendsWithNonString_ThenFail(t *testing.T) {
+	dir := t.TempDir()
+	_ = writeTempJSON(t, dir, "parent.json", `{"a": 1, "b": 2}`)
+	child := writeTempJSON(t, dir, "child.json", `{"$extends": [1234], "b": 3, "c": 4}`)
+	result, err := LoadAndResolve(child)
+	if err == nil {
+		t.Fatalf("expected error was not raised: %v", result)
+	}
+	if !strings.Contains(err.Error(), "$extends array must contain only strings") || !strings.Contains(err.Error(), "1234") {
+		t.Fatalf("unexpected error message: %v", err.Error())
+	}
+}
+
+func TestLoadAndResolve_SingleExtendsMalformed_ThenFail(t *testing.T) {
+	dir := t.TempDir()
+	_ = writeTempJSON(t, dir, "malformed.json", `xyz`)
+	child := writeTempJSON(t, dir, "child.json", `{"$extends": ["malformed.json"], "b": 3, "c": 4}`)
+	result, err := LoadAndResolve(child)
+	if err == nil {
+		t.Fatalf("expected error was not raised: %v", result)
+	}
+	if !strings.Contains(err.Error(), "invalid character 'x' looking for beginning of value") {
+		t.Fatalf("unexpected error message: %v", err.Error())
 	}
 }
 
