@@ -1,12 +1,13 @@
 package filelevel
 
 import (
-	"github.com/dakusui/jqplusplus/jqplusplus/internal/utils"
 	"os"
 	"path/filepath"
 	"reflect"
 	"strings"
 	"testing"
+
+	"github.com/dakusui/jqplusplus/jqplusplus/internal/utils"
 )
 
 func writeTempJSON(t *testing.T, dir, name string, data string) string {
