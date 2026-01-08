@@ -11,22 +11,49 @@ import (
 // LoadAndResolve loads a JSON file, resolves filelevel, and returns the merged result as a map.
 func LoadAndResolve(filename string) (map[string]interface{}, error) {
 	visited := map[string]bool{}
-	return loadAndResolveRecursive(filename, visited, Extends)
-}
-
-// loadAndResolveRecursive loads a JSON file, resolves $extends or $includes recursively, and merges parents.
-func loadAndResolveRecursive(filename string, visited map[string]bool, mergeType InheritType) (map[string]interface{}, error) {
 	absPath, err := filepath.Abs(filename)
 	baseDir := filepath.Dir(absPath)
 	if err != nil {
 		return nil, err
 	}
-	if visited[absPath] {
-		return nil, fmt.Errorf("circular filelevel detected: %s", absPath)
-	}
-	visited[absPath] = true
 
-	data, err := os.ReadFile(absPath)
+	targetFileAbsPath := toAbsPath(absPath, baseDir)
+	if visited[targetFileAbsPath] {
+		return nil, fmt.Errorf("circular filelevel detected: %s", targetFileAbsPath)
+	}
+	visited[targetFileAbsPath] = true
+
+	obj, err := loadJsonObject(targetFileAbsPath)
+	if err != nil {
+		return nil, err
+	}
+
+	tmp, err := resolveInheritances(obj, baseDir, Extends, visited)
+	if err != nil {
+		return nil, err
+	}
+	ret, err := resolveInheritances(tmp, baseDir, Includes, visited)
+	return ret, err
+}
+
+// loadAndResolveRecursive loads a JSON file, resolves $extends or $includes recursively, and merges parents.
+func loadAndResolveRecursive(baseDir string, targetFile string, visited map[string]bool, mergeType InheritType) (map[string]interface{}, error) {
+	targetFileAbsPath := toAbsPath(targetFile, baseDir)
+	if visited[targetFileAbsPath] {
+		return nil, fmt.Errorf("circular filelevel detected: %s", targetFileAbsPath)
+	}
+	visited[targetFileAbsPath] = true
+
+	obj, err := loadJsonObject(targetFileAbsPath)
+	if err != nil {
+		return nil, err
+	}
+
+	return resolveInheritances(obj, baseDir, mergeType, visited)
+}
+
+func loadJsonObject(targetFileAbsPath string) (map[string]interface{}, error) {
+	data, err := os.ReadFile(targetFileAbsPath)
 	if err != nil {
 		return nil, err
 	}
@@ -34,7 +61,10 @@ func loadAndResolveRecursive(filename string, visited map[string]bool, mergeType
 	if err := json.Unmarshal(data, &obj); err != nil {
 		return nil, err
 	}
+	return obj, nil
+}
 
+func resolveInheritances(obj map[string]interface{}, baseDir string, mergeType InheritType, visited map[string]bool) (map[string]interface{}, error) {
 	// Check for $extends or $includes
 	inherits, ok := obj[mergeType.String()]
 	if ok {
@@ -44,7 +74,7 @@ func loadAndResolveRecursive(filename string, visited map[string]bool, mergeType
 		}
 		var mergedParents map[string]interface{}
 		for i, parent := range parentFiles {
-			parentObj, err := loadAndResolveRecursive(filepath.Join(baseDir, parent), visited, mergeType)
+			parentObj, err := loadAndResolveRecursive(baseDir, parent, visited, mergeType)
 			if err != nil {
 				return nil, err
 			}
@@ -91,6 +121,13 @@ func parseInheritsField(val interface{}, inherits InheritType) ([]string, error)
 	default:
 		return nil, fmt.Errorf("%s must be an array of strings", inherits.String())
 	}
+}
+
+func toAbsPath(path, baseDir string) string {
+	if filepath.IsAbs(path) {
+		return path
+	}
+	return filepath.Join(baseDir, path)
 }
 
 // mergeObjects merges parent and child objects, with child values taking precedence.

@@ -224,3 +224,17 @@ func TestMergeObjects(t *testing.T) {
 		}
 	})
 }
+
+func TestLoadAndResolve_SingleIncludes(t *testing.T) {
+	dir := t.TempDir()
+	_ = writeTempJSON(t, dir, "child.json", `{"a": 1, "b": 2}`)
+	parent := writeTempJSON(t, dir, "parent.json", `{"$includes": ["child.json"], "b": 3, "c": 4}`)
+	result, err := LoadAndResolve(parent)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	expected := map[string]interface{}{"a": float64(1), "b": float64(3), "c": float64(4)}
+	if !reflect.DeepEqual(result, expected) {
+		t.Errorf("expected %v, got %v", expected, result)
+	}
+}
