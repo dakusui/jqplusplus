@@ -3,7 +3,10 @@ package filelevel
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/BurntSushi/toml"
 	"github.com/dakusui/jqplusplus/jqplusplus/internal/utils"
+	"github.com/titanous/json5"
+	"gopkg.in/yaml.v3"
 	"os"
 	"path/filepath"
 	"strings"
@@ -19,7 +22,7 @@ func LoadAndResolveInheritances(filename string, searchPaths []string) (map[stri
 
 	visited[absPath] = true
 
-	obj, err := loadJsonObject(absPath)
+	obj, err := LoadFileAsRawJSON(absPath)
 	if err != nil {
 		return nil, err
 	}
@@ -43,24 +46,12 @@ func loadAndResolveRecursive(baseDir string, targetFile string, visited map[stri
 	}
 	visited[targetFileAbsPath] = true
 
-	obj, err := loadJsonObject(targetFileAbsPath)
+	obj, err := LoadFileAsRawJSON(targetFileAbsPath)
 	if err != nil {
 		return nil, err
 	}
 
 	return resolveInheritances(obj, bDir, mergeType, visited, searchPaths)
-}
-
-func loadJsonObject(targetFileAbsPath string) (map[string]interface{}, error) {
-	data, err := os.ReadFile(targetFileAbsPath)
-	if err != nil {
-		return nil, err
-	}
-	var obj map[string]interface{}
-	if err := json.Unmarshal(data, &obj); err != nil {
-		return nil, err
-	}
-	return obj, nil
 }
 
 func resolveInheritances(obj map[string]interface{}, baseDir string, mergeType InheritType, visited map[string]bool, searchPaths []string) (map[string]interface{}, error) {
@@ -119,13 +110,6 @@ func parseInheritsField(val interface{}, inherits InheritType) ([]string, error)
 	default:
 		return nil, fmt.Errorf("%s must be an array of strings", inherits.String())
 	}
-}
-
-func toAbsPath(path, baseDir string) string {
-	if filepath.IsAbs(path) {
-		return path
-	}
-	return filepath.Join(baseDir, path)
 }
 
 // mergeObjects merges parent and child objects, with child values taking precedence.
@@ -225,32 +209,100 @@ func SearchPaths() []string {
 	return strings.Split(v, ":")
 }
 
+type FileType string
+
+const (
+	JSON  FileType = "json"
+	YAML  FileType = "yaml"
+	TOML  FileType = "toml"
+	JSON5 FileType = "json5"
+	HCL   FileType = "hcl"
+)
+
+func detectFileType(name string) (FileType, bool) {
+	ext := strings.ToLower(filepath.Ext(name))
+
+	switch ext {
+	case ".json":
+		return JSON, true
+	case ".yaml", ".yml":
+		return YAML, true
+	case ".toml":
+		return TOML, true
+	case ".json5":
+		return JSON5, true
+	case ".hcl":
+		return HCL, true
+	default:
+		return "", false
+	}
+}
+
 // LoadFileAsRawJSON loads and parses a file (JSON, YAML, etc.) into a gojq-compatible object.
-func LoadFileAsRawJSON(path string, formatOpt string) (map[string]interface{}, error) {
-	// TODO: implement
-	return nil, nil
+func LoadFileAsRawJSON(path string) (map[string]interface{}, error) {
+	ft, ok := detectFileType(path)
+	if !ok {
+		return nil, fmt.Errorf("unsupported file type: %q", filepath.Ext(path))
+	}
+
+	switch ft {
+	case JSON:
+		return readJSON(path)
+	case YAML:
+		return readYAML(path)
+	case TOML:
+		return readTOML(path)
+	case JSON5:
+		return readJSON5(path)
+	case HCL:
+		return nil, fmt.Errorf("unsupported file type: %q (%s)", ft, path)
+	default:
+		return nil, fmt.Errorf("unsupported file type: %q (%s)", ft, path)
+	}
 }
 
-// ExtractExtendsField returns the list of $extends references from a JSON object.
-func ExtractExtendsField(obj map[string]interface{}) ([]string, error) {
-	// TODO: implement
-	return nil, nil
+func readJSON(targetFileAbsPath string) (map[string]interface{}, error) {
+	data, err := os.ReadFile(targetFileAbsPath)
+	if err != nil {
+		return nil, err
+	}
+	var obj map[string]interface{}
+	if err := json.Unmarshal(data, &obj); err != nil {
+		return nil, err
+	}
+	return obj, nil
 }
 
-// ExtractIncludesField returns the list of $includes references from a JSON object.
-func ExtractIncludesField(obj map[string]interface{}) ([]string, error) {
-	// TODO: implement
-	return nil, nil
+func readYAML(path string) (map[string]interface{}, error) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil, err
+	}
+
+	var m map[string]interface{}
+	if err := yaml.Unmarshal(data, &m); err != nil {
+		return nil, err
+	}
+	return m, nil
 }
 
-// MergeMultiple merges a list of JSON objects in order (or reverse).
-func MergeMultiple(objs []map[string]interface{}, reverse bool, policy utils.MergePolicy) map[string]interface{} {
-	// TODO: implement
-	return nil
+func readTOML(path string) (map[string]interface{}, error) {
+	var m map[string]interface{}
+	if _, err := toml.DecodeFile(path, &m); err != nil {
+		return nil, err
+	}
+	return m, nil
 }
 
-// ResolveInheritance is the top-level interface: load file and resolve all $extends and $includes.
-func ResolveInheritance(path string) (map[string]interface{}, error) {
-	// TODO: implement
-	return nil, nil
+func readJSON5(path string) (map[string]any, error) {
+	b, err := os.ReadFile(path)
+	if err != nil {
+		return nil, err
+	}
+
+	var m map[string]any
+	if err := json5.Unmarshal(b, &m); err != nil {
+		return nil, err
+	}
+	return m, nil
 }

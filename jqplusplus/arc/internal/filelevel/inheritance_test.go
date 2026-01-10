@@ -257,6 +257,55 @@ func TestLoadAndResolveInheritances_MultipleIncludes(t *testing.T) {
 	}
 }
 
+func TestLoadAndResolveInheritancesWithYaml_NoExtends(t *testing.T) {
+	dir := t.TempDir()
+	file := writeTempJSON(t, dir, "base.yaml", `
+a: 1
+b: 2
+`)
+	result, err := LoadAndResolveInheritances(file, []string{})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	expected := map[string]interface{}{"a": int(1), "b": int(2)}
+	if !reflect.DeepEqual(result, expected) {
+		t.Errorf("expected %v, got %v", expected, result)
+	}
+}
+
+func TestLoadAndResolveInheritancesWithToml_NoExtends(t *testing.T) {
+	dir := t.TempDir()
+	file := writeTempJSON(t, dir, "base.toml", `
+	a = 1
+	b = 2
+	`)
+	result, err := LoadAndResolveInheritances(file, []string{})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	expected := map[string]interface{}{"a": int64(1), "b": int64(2)}
+	if !reflect.DeepEqual(result, expected) {
+		t.Errorf("expected %v, got %v", expected, result)
+	}
+}
+
+func TestLoadAndResolveInheritancesWithJSON5_NoExtends(t *testing.T) {
+	dir := t.TempDir()
+	file := writeTempJSON(t, dir, "base.json5", `
+	{
+	  a: 1,
+	  b: 2,
+	}`)
+	result, err := LoadAndResolveInheritances(file, []string{})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	expected := map[string]interface{}{"a": float64(1), "b": float64(2)}
+	if !reflect.DeepEqual(result, expected) {
+		t.Errorf("expected %v, got %v", expected, result)
+	}
+}
+
 func TestSearchPaths(t *testing.T) {
 	t.Setenv("JF_PATH", "/tmp/p1:/tmp/p2")
 	searchPaths := SearchPaths()
