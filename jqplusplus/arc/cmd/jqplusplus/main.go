@@ -41,7 +41,7 @@ func main() {
 	}
 
 	if *inputFile != "" {
-		result, err := filelevel.LoadAndResolve(*inputFile)
+		result, err := filelevel.LoadAndResolveInheritances(*inputFile, []string{})
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 			os.Exit(1)

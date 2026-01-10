@@ -20,10 +20,10 @@ func writeTempJSON(t *testing.T, dir, name string, data string) string {
 	return path
 }
 
-func TestLoadAndResolve_NoExtends(t *testing.T) {
+func TestLoadAndResolveInheritances_NoExtends(t *testing.T) {
 	dir := t.TempDir()
 	file := writeTempJSON(t, dir, "base.json", `{"a": 1, "b": 2}`)
-	result, err := LoadAndResolve(file)
+	result, err := LoadAndResolveInheritances(file, []string{})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -33,11 +33,11 @@ func TestLoadAndResolve_NoExtends(t *testing.T) {
 	}
 }
 
-func TestLoadAndResolve_SingleExtends(t *testing.T) {
+func TestLoadAndResolveInheritances_SingleExtends(t *testing.T) {
 	dir := t.TempDir()
 	_ = writeTempJSON(t, dir, "parent.json", `{"a": 1, "b": 2}`)
 	child := writeTempJSON(t, dir, "child.json", `{"$extends": ["parent.json"], "b": 3, "c": 4}`)
-	result, err := LoadAndResolve(child)
+	result, err := LoadAndResolveInheritances(child, []string{})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -47,61 +47,13 @@ func TestLoadAndResolve_SingleExtends(t *testing.T) {
 	}
 }
 
-func TestLoadAndResolve_SingleExtendsNonExisting_ThenFail(t *testing.T) {
-	dir := t.TempDir()
-	_ = writeTempJSON(t, dir, "parent.json", `{"a": 1, "b": 2}`)
-	child := writeTempJSON(t, dir, "child.json", `{"$extends": ["nonExisting.json"], "b": 3, "c": 4}`)
-	result, err := LoadAndResolve(child)
-	if err == nil {
-		t.Fatalf("expected error was not raised: %v", result)
-	}
-	if !strings.Contains(err.Error(), "no such file or directory") || !strings.Contains(err.Error(), "nonExisting") {
-		t.Fatalf("unexpected error message: %v", err.Error())
-	}
-}
-
-func TestLoadAndResolve_SingleExtendsWithNonString_ThenFail(t *testing.T) {
-	dir := t.TempDir()
-	_ = writeTempJSON(t, dir, "parent.json", `{"a": 1, "b": 2}`)
-	child := writeTempJSON(t, dir, "child.json", `{"$extends": [1234], "b": 3, "c": 4}`)
-	result, err := LoadAndResolve(child)
-	if err == nil {
-		t.Fatalf("expected error was not raised: %v", result)
-	}
-	if !strings.Contains(err.Error(), "$extends array must contain only strings") || !strings.Contains(err.Error(), "1234") {
-		t.Fatalf("unexpected error message: %v", err.Error())
-	}
-}
-
-func TestLoadAndResolve_SingleExtendsMalformed_ThenFail(t *testing.T) {
-	dir := t.TempDir()
-	_ = writeTempJSON(t, dir, "malformed.json", `xyz`)
-	child := writeTempJSON(t, dir, "child.json", `{"$extends": ["malformed.json"], "b": 3, "c": 4}`)
-	result, err := LoadAndResolve(child)
-	if err == nil {
-		t.Fatalf("expected error was not raised: %v", result)
-	}
-	if !strings.Contains(err.Error(), "invalid character 'x' looking for beginning of value") {
-		t.Fatalf("unexpected error message: %v", err.Error())
-	}
-}
-
-func TestLoadAndResolve_SingleExtendsWithString_ThenFail(t *testing.T) {
-	dir := t.TempDir()
-	_ = writeTempJSON(t, dir, "parent.json", `{"a": 1, "b": 2}`)
-	child := writeTempJSON(t, dir, "child.json", `{"$extends": "parent.json", "b": 3, "c": 4}`)
-	result, err := LoadAndResolve(child)
-	if err == nil {
-		t.Fatalf("error expected but returned: %v", result)
-	}
-}
-
-func TestLoadAndResolve_MultipleExtends(t *testing.T) {
+func TestLoadAndResolveInheritances_MultipleExtends(t *testing.T) {
 	dir := t.TempDir()
 	_ = writeTempJSON(t, dir, "p1.json", `{"a": 1, "b": 2}`)
 	_ = writeTempJSON(t, dir, "p2.json", `{"b": 20, "c": 30}`)
-	child := writeTempJSON(t, dir, "child.json", `{"$extends": ["p1.json", "p2.json"], "c": 300, "d": 400}`)
-	result, err := LoadAndResolve(child)
+	_ = writeTempJSON(t, dir, "p3.json", `{"b": 21}`)
+	child := writeTempJSON(t, dir, "child.json", `{"$extends": ["p1.json", "p2.json", "p3.json"], "c": 300, "d": 400}`)
+	result, err := LoadAndResolveInheritances(child, []string{})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -111,12 +63,61 @@ func TestLoadAndResolve_MultipleExtends(t *testing.T) {
 	}
 }
 
-func TestLoadAndResolve_NestedExtends(t *testing.T) {
+func TestLoadAndResolveInheritances_SingleExtendsNonExisting_ThenFail(t *testing.T) {
+	dir := t.TempDir()
+	_ = writeTempJSON(t, dir, "parent.json", `{"a": 1, "b": 2}`)
+	child := writeTempJSON(t, dir, "child.json", `{"$extends": ["nonExisting.json"], "b": 3, "c": 4}`)
+	result, err := LoadAndResolveInheritances(child, []string{})
+	if err == nil {
+		t.Fatalf("expected error was not raised: %v", result)
+	}
+	if !strings.Contains(err.Error(), "file not found") || !strings.Contains(err.Error(), "nonExisting") {
+		t.Fatalf("unexpected error message: %v", err.Error())
+	}
+}
+
+func TestLoadAndResolveInheritances_SingleExtendsWithNonString_ThenFail(t *testing.T) {
+	dir := t.TempDir()
+	_ = writeTempJSON(t, dir, "parent.json", `{"a": 1, "b": 2}`)
+	child := writeTempJSON(t, dir, "child.json", `{"$extends": [1234], "b": 3, "c": 4}`)
+	result, err := LoadAndResolveInheritances(child, []string{})
+	if err == nil {
+		t.Fatalf("expected error was not raised: %v", result)
+	}
+	if !strings.Contains(err.Error(), "$extends array must contain only strings") || !strings.Contains(err.Error(), "1234") {
+		t.Fatalf("unexpected error message: %v", err.Error())
+	}
+}
+
+func TestLoadAndResolveInheritances_SingleExtendsMalformed_ThenFail(t *testing.T) {
+	dir := t.TempDir()
+	_ = writeTempJSON(t, dir, "malformed.json", `xyz`)
+	child := writeTempJSON(t, dir, "child.json", `{"$extends": ["malformed.json"], "b": 3, "c": 4}`)
+	result, err := LoadAndResolveInheritances(child, []string{})
+	if err == nil {
+		t.Fatalf("expected error was not raised: %v", result)
+	}
+	if !strings.Contains(err.Error(), "invalid character 'x' looking for beginning of value") {
+		t.Fatalf("unexpected error message: %v", err.Error())
+	}
+}
+
+func TestLoadAndResolveInheritances_SingleExtendsWithString_ThenFail(t *testing.T) {
+	dir := t.TempDir()
+	_ = writeTempJSON(t, dir, "parent.json", `{"a": 1, "b": 2}`)
+	child := writeTempJSON(t, dir, "child.json", `{"$extends": "parent.json", "b": 3, "c": 4}`)
+	result, err := LoadAndResolveInheritances(child, []string{})
+	if err == nil {
+		t.Fatalf("error expected but returned: %v", result)
+	}
+}
+
+func TestLoadAndResolveInheritances_NestedExtends(t *testing.T) {
 	dir := t.TempDir()
 	_ = writeTempJSON(t, dir, "grand.json", `{"a": 1}`)
 	_ = writeTempJSON(t, dir, "parent.json", `{"$extends": ["grand.json"], "b": 2}`)
 	child := writeTempJSON(t, dir, "child.json", `{"$extends": ["parent.json"], "c": 3}`)
-	result, err := LoadAndResolve(child)
+	result, err := LoadAndResolveInheritances(child, []string{})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -126,11 +127,11 @@ func TestLoadAndResolve_NestedExtends(t *testing.T) {
 	}
 }
 
-func TestLoadAndResolve_CircularExtends(t *testing.T) {
+func TestLoadAndResolveInheritances_CircularExtends(t *testing.T) {
 	dir := t.TempDir()
 	_ = writeTempJSON(t, dir, "p1.json", `{"$extends": ["p2.json"]}`)
 	_ = writeTempJSON(t, dir, "p2.json", `{"$extends": ["p1.json"]}`)
-	_, err := LoadAndResolve(filepath.Join(dir, "p1.json"))
+	_, err := LoadAndResolveInheritances(filepath.Join(dir, "p1.json"), []string{})
 	if err == nil || err.Error() == "" {
 		t.Errorf("expected error for circular filelevel, got: %v", err)
 	}
@@ -226,16 +227,46 @@ func TestMergeObjects(t *testing.T) {
 	})
 }
 
-func TestLoadAndResolve_SingleIncludes(t *testing.T) {
+func TestLoadAndResolveInheritances_SingleIncludes(t *testing.T) {
 	dir := t.TempDir()
-	_ = writeTempJSON(t, dir, "child.json", `{"a": 1, "b": 2}`)
-	parent := writeTempJSON(t, dir, "parent.json", `{"$includes": ["child.json"], "b": 3, "c": 4}`)
-	result, err := LoadAndResolve(parent)
+	_ = writeTempJSON(t, dir, "parent.json", `{"a": 1, "b": 2}`)
+	parent := writeTempJSON(t, dir, "child.json", `{"$includes": ["parent.json"], "b": 3, "c": 4}`)
+	result, err := LoadAndResolveInheritances(parent, []string{})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	expected := map[string]interface{}{"a": float64(1), "b": float64(3), "c": float64(4)}
+	expected := map[string]interface{}{"a": float64(1), "b": float64(2), "c": float64(4)}
 	if !reflect.DeepEqual(result, expected) {
 		t.Errorf("expected %v, got %v", expected, result)
+	}
+}
+
+func TestLoadAndResolveInheritances_MultipleIncludes(t *testing.T) {
+	dir := t.TempDir()
+	_ = writeTempJSON(t, dir, "p1.json", `{"a": 1, "b": 2}`)
+	_ = writeTempJSON(t, dir, "p2.json", `{"b": 20, "c": 30}`)
+	_ = writeTempJSON(t, dir, "p3.json", `{"b": 21}`)
+	child := writeTempJSON(t, dir, "child.json", `{"$includes": ["p1.json", "p2.json", "p3.json"], "c": 300, "d": 400}`)
+	result, err := LoadAndResolveInheritances(child, []string{})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	expected := map[string]interface{}{"a": float64(1), "b": float64(21), "c": float64(30), "d": float64(400)}
+	if !reflect.DeepEqual(result, expected) {
+		t.Errorf("expected %v, got %v", expected, result)
+	}
+}
+
+func TestSearchPaths(t *testing.T) {
+	t.Setenv("JF_PATH", "/tmp/p1:/tmp/p2")
+	searchPaths := SearchPaths()
+	if len(searchPaths) != 2 {
+		t.Fatalf("expected 2 search paths, got %d", len(searchPaths))
+	}
+	if searchPaths[0] != "/tmp/p1" {
+		t.Fatalf("expected /tmp/p1, got %s", searchPaths[0])
+	}
+	if searchPaths[1] != "/tmp/p2" {
+		t.Fatalf("expected /tmp/p2, got %s", searchPaths[1])
 	}
 }

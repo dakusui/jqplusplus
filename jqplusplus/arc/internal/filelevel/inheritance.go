@@ -6,39 +6,38 @@ import (
 	"github.com/dakusui/jqplusplus/jqplusplus/internal/utils"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
-// LoadAndResolve loads a JSON file, resolves filelevel, and returns the merged result as a map.
-func LoadAndResolve(filename string) (map[string]interface{}, error) {
+// LoadAndResolveInheritances loads a JSON file, resolves filelevel, and returns the merged result as a map.
+func LoadAndResolveInheritances(filename string, searchPaths []string) (map[string]interface{}, error) {
 	visited := map[string]bool{}
-	absPath, err := filepath.Abs(filename)
-	baseDir := filepath.Dir(absPath)
+	absPath, baseDir, err := ResolveFilePath(filename, "", searchPaths)
 	if err != nil {
 		return nil, err
 	}
 
-	targetFileAbsPath := toAbsPath(absPath, baseDir)
-	if visited[targetFileAbsPath] {
-		return nil, fmt.Errorf("circular filelevel detected: %s", targetFileAbsPath)
-	}
-	visited[targetFileAbsPath] = true
+	visited[absPath] = true
 
-	obj, err := loadJsonObject(targetFileAbsPath)
+	obj, err := loadJsonObject(absPath)
 	if err != nil {
 		return nil, err
 	}
 
-	tmp, err := resolveInheritances(obj, baseDir, Extends, visited)
+	tmp, err := resolveInheritances(obj, baseDir, Extends, visited, searchPaths)
 	if err != nil {
 		return nil, err
 	}
-	ret, err := resolveInheritances(tmp, baseDir, Includes, visited)
+	ret, err := resolveInheritances(tmp, baseDir, Includes, visited, searchPaths)
 	return ret, err
 }
 
 // loadAndResolveRecursive loads a JSON file, resolves $extends or $includes recursively, and merges parents.
-func loadAndResolveRecursive(baseDir string, targetFile string, visited map[string]bool, mergeType InheritType) (map[string]interface{}, error) {
-	targetFileAbsPath := toAbsPath(targetFile, baseDir)
+func loadAndResolveRecursive(baseDir string, targetFile string, visited map[string]bool, mergeType InheritType, searchPaths []string) (map[string]interface{}, error) {
+	targetFileAbsPath, bDir, err := ResolveFilePath(targetFile, baseDir, searchPaths)
+	if err != nil {
+		return nil, err
+	}
 	if visited[targetFileAbsPath] {
 		return nil, fmt.Errorf("circular filelevel detected: %s", targetFileAbsPath)
 	}
@@ -49,7 +48,7 @@ func loadAndResolveRecursive(baseDir string, targetFile string, visited map[stri
 		return nil, err
 	}
 
-	return resolveInheritances(obj, baseDir, mergeType, visited)
+	return resolveInheritances(obj, bDir, mergeType, visited, searchPaths)
 }
 
 func loadJsonObject(targetFileAbsPath string) (map[string]interface{}, error) {
@@ -64,7 +63,7 @@ func loadJsonObject(targetFileAbsPath string) (map[string]interface{}, error) {
 	return obj, nil
 }
 
-func resolveInheritances(obj map[string]interface{}, baseDir string, mergeType InheritType, visited map[string]bool) (map[string]interface{}, error) {
+func resolveInheritances(obj map[string]interface{}, baseDir string, mergeType InheritType, visited map[string]bool, searchPaths []string) (map[string]interface{}, error) {
 	// Check for $extends or $includes
 	inherits, ok := obj[mergeType.String()]
 	if ok {
@@ -72,33 +71,36 @@ func resolveInheritances(obj map[string]interface{}, baseDir string, mergeType I
 		if err != nil {
 			return nil, err
 		}
+		if mergeType.IsOrderReversed() {
+			reverse(parentFiles)
+		}
 		var mergedParents map[string]interface{}
 		for i, parent := range parentFiles {
-			parentObj, err := loadAndResolveRecursive(baseDir, parent, visited, mergeType)
+			parentObj, err := loadAndResolveRecursive(baseDir, parent, visited, mergeType, searchPaths)
 			if err != nil {
 				return nil, err
 			}
-			if !mergeType.IsOrderReversed() {
-				if i == 0 {
-					mergedParents = parentObj
-				} else {
-					mergedParents = mergeObjects(mergedParents, parentObj)
-				}
+			if i == 0 {
+				mergedParents = parentObj
 			} else {
-				if i == 0 {
-					mergedParents = mergeObjects(parentObj, mergedParents)
-				} else {
-					mergedParents = mergeObjects(mergedParents, parentObj)
-				}
+				mergedParents = mergeObjects(mergedParents, parentObj)
 			}
 		}
-		if mergedParents != nil {
+		if !mergeType.IsOrderReversed() {
 			obj = mergeObjects(mergedParents, obj)
+		} else {
+			obj = mergeObjects(obj, mergedParents)
 		}
 		delete(obj, mergeType.String())
 	}
 
 	return obj, nil
+}
+
+func reverse[T any](s []T) {
+	for i, j := 0, len(s)-1; i < j; i, j = i+1, j-1 {
+		s[i], s[j] = s[j], s[i]
+	}
 }
 
 // parseInheritsField parses the $extends field, which can be a string or array of strings.
@@ -111,11 +113,7 @@ func parseInheritsField(val interface{}, inherits InheritType) ([]string, error)
 			if !ok {
 				return nil, fmt.Errorf("%s array must contain only strings: %v", inherits.String(), v)
 			}
-			if inherits.IsOrderReversed() {
-				result = append(result, str)
-			} else {
-				result = utils.Insert(result, 0, str)
-			}
+			result = utils.Insert(result, 0, str)
 		}
 		return result, nil
 	default:
@@ -190,22 +188,41 @@ func (m InheritType) IsOrderReversed() bool {
 //  4. If it is a directory, return an error.
 //
 // 2. If the file is not found, return an error.
-func ResolveFilePath(name string, searchPaths []string) (string, error) {
+func ResolveFilePath(filename string, baseDir string, searchPaths []string) (string, string, error) {
+	if filepath.IsAbs(filename) {
+		return filename, filepath.Dir(filename), nil
+	}
+	beginning := 0
+	if baseDir != "" {
+		beginning = -1
+	}
 	// Iterate over the search paths
-	for _, path := range searchPaths {
+	for i := beginning; i < len(searchPaths); i++ {
+		var path string
+		if i == -1 {
+			path = baseDir
+		} else {
+			path = searchPaths[i]
+		}
+
 		// Check if the path exists.
 		// 	If exists, return it.
-		fullPath := filepath.Join(path, name)
+		fullPath := filepath.Join(path, filename)
 		if _, err := os.Stat(fullPath); err == nil {
 			// If it is a true file, return it.
 			if !os.IsNotExist(err) {
-				return fullPath, nil
+				return fullPath, filepath.Dir(fullPath), nil
 			}
 			// If it is a directory, return an error.
-			return "", fmt.Errorf("file is a directory: %s", fullPath)
+			return "", "", fmt.Errorf("file is a directory: %s", fullPath)
 		}
 	}
-	return "", fmt.Errorf("file not found: %s", name)
+	return "", "", fmt.Errorf("file not found: %s", filename)
+}
+
+func SearchPaths() []string {
+	v := os.Getenv("JF_PATH")
+	return strings.Split(v, ":")
 }
 
 // LoadFileAsRawJSON loads and parses a file (JSON, YAML, etc.) into a gojq-compatible object.
