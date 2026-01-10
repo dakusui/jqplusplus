@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/BurntSushi/toml"
 	"github.com/dakusui/jqplusplus/jqplusplus/internal/utils"
+	"github.com/gurkankaymak/hocon"
 	"github.com/titanous/json5"
 	"gopkg.in/yaml.v3"
 	"os"
@@ -217,6 +218,7 @@ const (
 	TOML  FileType = "toml"
 	JSON5 FileType = "json5"
 	HCL   FileType = "hcl"
+	HOCON FileType = "hocon"
 )
 
 func detectFileType(name string) (FileType, bool) {
@@ -233,6 +235,8 @@ func detectFileType(name string) (FileType, bool) {
 		return JSON5, true
 	case ".hcl":
 		return HCL, true
+	case ".conf", ".hocon":
+		return HOCON, true
 	default:
 		return "", false
 	}
@@ -256,6 +260,8 @@ func LoadFileAsRawJSON(path string) (map[string]interface{}, error) {
 		return readJSON5(path)
 	case HCL:
 		return nil, fmt.Errorf("unsupported file type: %q (%s)", ft, path)
+	case HOCON:
+		return readHOCON(path)
 	default:
 		return nil, fmt.Errorf("unsupported file type: %q (%s)", ft, path)
 	}
@@ -305,4 +311,61 @@ func readJSON5(path string) (map[string]any, error) {
 		return nil, err
 	}
 	return m, nil
+}
+
+// readHOCON reads a HOCON file and returns it as a JSON-compatible map.
+// Top-level must be an object.
+func readHOCON(path string) (map[string]interface{}, error) {
+	conf, err := hocon.ParseResource(path)
+	if err != nil {
+		return nil, err
+	}
+
+	root := conf.GetRoot() // Value
+	obj, ok := root.(hocon.Object)
+	if !ok {
+		return nil, fmt.Errorf("HOCON top-level must be an object")
+	}
+
+	return objectToMap(obj), nil
+}
+
+func objectToMap(o hocon.Object) map[string]interface{} {
+	out := make(map[string]interface{}, len(o))
+	for k, v := range o {
+		out[k] = valueToAny(v)
+	}
+	return out
+}
+
+func arrayToSlice(a hocon.Array) []interface{} {
+	out := make([]interface{}, 0, len(a))
+	for _, v := range a {
+		out = append(out, valueToAny(v))
+	}
+	return out
+}
+
+func valueToAny(v hocon.Value) interface{} {
+	switch x := v.(type) {
+	case hocon.Object:
+		return objectToMap(x)
+	case hocon.Array:
+		return arrayToSlice(x)
+	case hocon.String:
+		return string(x)
+	case hocon.Int:
+		return int(x)
+	case hocon.Float64:
+		return float64(x)
+	case hocon.Float32:
+		return float32(x)
+	case hocon.Boolean:
+		return bool(x)
+	case hocon.Null:
+		return nil
+	default:
+		// Fallback: keep it JSON-safe as a string (covers substitutions/concatenations, etc.)
+		return v.String()
+	}
 }

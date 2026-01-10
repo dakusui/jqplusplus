@@ -306,6 +306,22 @@ func TestLoadAndResolveInheritancesWithJSON5_NoExtends(t *testing.T) {
 	}
 }
 
+func TestLoadAndResolveInheritancesWithHOCON_NoExtends(t *testing.T) {
+	dir := t.TempDir()
+	file := writeTempJSON(t, dir, "base.hocon", `
+a = 1
+b = 2
+`)
+	result, err := LoadAndResolveInheritances(file, []string{})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	expected := map[string]interface{}{"a": int(1), "b": int(2)}
+	if !reflect.DeepEqual(result, expected) {
+		t.Errorf("expected %v, got %v", expected, result)
+	}
+}
+
 func TestSearchPaths(t *testing.T) {
 	t.Setenv("JF_PATH", "/tmp/p1:/tmp/p2")
 	searchPaths := SearchPaths()

@@ -14,6 +14,7 @@ require (
 
 require (
 	github.com/google/go-cmp v0.6.0 // indirect
+	github.com/gurkankaymak/hocon v1.2.23 // indirect
 	github.com/itchyny/timefmt-go v0.1.6 // indirect
 	go.yaml.in/yaml/v2 v2.4.2 // indirect
 	golang.org/x/text v0.25.0 // indirect
