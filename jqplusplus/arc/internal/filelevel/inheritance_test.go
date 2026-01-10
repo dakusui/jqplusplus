@@ -23,7 +23,7 @@ func writeTempJSON(t *testing.T, dir, name string, data string) string {
 func TestLoadAndResolveInheritances_NoExtends(t *testing.T) {
 	dir := t.TempDir()
 	file := writeTempJSON(t, dir, "base.json", `{"a": 1, "b": 2}`)
-	result, err := LoadAndResolveInheritances(file, []string{})
+	result, err := LoadAndResolveInheritances(filepath.Dir(file), filepath.Base(file), []string{})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -37,7 +37,7 @@ func TestLoadAndResolveInheritances_SingleExtends(t *testing.T) {
 	dir := t.TempDir()
 	_ = writeTempJSON(t, dir, "parent.json", `{"a": 1, "b": 2}`)
 	child := writeTempJSON(t, dir, "child.json", `{"$extends": ["parent.json"], "b": 3, "c": 4}`)
-	result, err := LoadAndResolveInheritances(child, []string{})
+	result, err := LoadAndResolveInheritances(filepath.Dir(child), filepath.Base(child), []string{})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -53,7 +53,7 @@ func TestLoadAndResolveInheritances_MultipleExtends(t *testing.T) {
 	_ = writeTempJSON(t, dir, "p2.json", `{"b": 20, "c": 30}`)
 	_ = writeTempJSON(t, dir, "p3.json", `{"b": 21}`)
 	child := writeTempJSON(t, dir, "child.json", `{"$extends": ["p1.json", "p2.json", "p3.json"], "c": 300, "d": 400}`)
-	result, err := LoadAndResolveInheritances(child, []string{})
+	result, err := LoadAndResolveInheritances(filepath.Dir(child), filepath.Base(child), []string{})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -67,7 +67,7 @@ func TestLoadAndResolveInheritances_SingleExtendsNonExisting_ThenFail(t *testing
 	dir := t.TempDir()
 	_ = writeTempJSON(t, dir, "parent.json", `{"a": 1, "b": 2}`)
 	child := writeTempJSON(t, dir, "child.json", `{"$extends": ["nonExisting.json"], "b": 3, "c": 4}`)
-	result, err := LoadAndResolveInheritances(child, []string{})
+	result, err := LoadAndResolveInheritances(filepath.Dir(child), filepath.Base(child), []string{})
 	if err == nil {
 		t.Fatalf("expected error was not raised: %v", result)
 	}
@@ -80,7 +80,7 @@ func TestLoadAndResolveInheritances_SingleExtendsWithNonString_ThenFail(t *testi
 	dir := t.TempDir()
 	_ = writeTempJSON(t, dir, "parent.json", `{"a": 1, "b": 2}`)
 	child := writeTempJSON(t, dir, "child.json", `{"$extends": [1234], "b": 3, "c": 4}`)
-	result, err := LoadAndResolveInheritances(child, []string{})
+	result, err := LoadAndResolveInheritances(filepath.Dir(child), filepath.Base(child), []string{})
 	if err == nil {
 		t.Fatalf("expected error was not raised: %v", result)
 	}
@@ -93,7 +93,7 @@ func TestLoadAndResolveInheritances_SingleExtendsMalformed_ThenFail(t *testing.T
 	dir := t.TempDir()
 	_ = writeTempJSON(t, dir, "malformed.json", `xyz`)
 	child := writeTempJSON(t, dir, "child.json", `{"$extends": ["malformed.json"], "b": 3, "c": 4}`)
-	result, err := LoadAndResolveInheritances(child, []string{})
+	result, err := LoadAndResolveInheritances(filepath.Dir(child), filepath.Base(child), []string{})
 	if err == nil {
 		t.Fatalf("expected error was not raised: %v", result)
 	}
@@ -106,7 +106,7 @@ func TestLoadAndResolveInheritances_SingleExtendsWithString_ThenFail(t *testing.
 	dir := t.TempDir()
 	_ = writeTempJSON(t, dir, "parent.json", `{"a": 1, "b": 2}`)
 	child := writeTempJSON(t, dir, "child.json", `{"$extends": "parent.json", "b": 3, "c": 4}`)
-	result, err := LoadAndResolveInheritances(child, []string{})
+	result, err := LoadAndResolveInheritances(filepath.Dir(child), filepath.Base(child), []string{})
 	if err == nil {
 		t.Fatalf("error expected but returned: %v", result)
 	}
@@ -117,7 +117,7 @@ func TestLoadAndResolveInheritances_NestedExtends(t *testing.T) {
 	_ = writeTempJSON(t, dir, "grand.json", `{"a": 1}`)
 	_ = writeTempJSON(t, dir, "parent.json", `{"$extends": ["grand.json"], "b": 2}`)
 	child := writeTempJSON(t, dir, "child.json", `{"$extends": ["parent.json"], "c": 3}`)
-	result, err := LoadAndResolveInheritances(child, []string{})
+	result, err := LoadAndResolveInheritances(filepath.Dir(child), filepath.Base(child), []string{})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -131,7 +131,7 @@ func TestLoadAndResolveInheritances_CircularExtends(t *testing.T) {
 	dir := t.TempDir()
 	_ = writeTempJSON(t, dir, "p1.json", `{"$extends": ["p2.json"]}`)
 	_ = writeTempJSON(t, dir, "p2.json", `{"$extends": ["p1.json"]}`)
-	_, err := LoadAndResolveInheritances(filepath.Join(dir, "p1.json"), []string{})
+	_, err := LoadAndResolveInheritances(dir, "p1.json", []string{})
 	if err == nil || err.Error() == "" {
 		t.Errorf("expected error for circular filelevel, got: %v", err)
 	}
@@ -230,8 +230,8 @@ func TestMergeObjects(t *testing.T) {
 func TestLoadAndResolveInheritances_SingleIncludes(t *testing.T) {
 	dir := t.TempDir()
 	_ = writeTempJSON(t, dir, "parent.json", `{"a": 1, "b": 2}`)
-	parent := writeTempJSON(t, dir, "child.json", `{"$includes": ["parent.json"], "b": 3, "c": 4}`)
-	result, err := LoadAndResolveInheritances(parent, []string{})
+	child := writeTempJSON(t, dir, "child.json", `{"$includes": ["parent.json"], "b": 3, "c": 4}`)
+	result, err := LoadAndResolveInheritances(filepath.Dir(child), filepath.Base(child), []string{})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -240,18 +240,48 @@ func TestLoadAndResolveInheritances_SingleIncludes(t *testing.T) {
 		t.Errorf("expected %v, got %v", expected, result)
 	}
 }
-
 func TestLoadAndResolveInheritances_MultipleIncludes(t *testing.T) {
 	dir := t.TempDir()
 	_ = writeTempJSON(t, dir, "p1.json", `{"a": 1, "b": 2}`)
 	_ = writeTempJSON(t, dir, "p2.json", `{"b": 20, "c": 30}`)
 	_ = writeTempJSON(t, dir, "p3.json", `{"b": 21}`)
 	child := writeTempJSON(t, dir, "child.json", `{"$includes": ["p1.json", "p2.json", "p3.json"], "c": 300, "d": 400}`)
-	result, err := LoadAndResolveInheritances(child, []string{})
+	result, err := LoadAndResolveInheritances(filepath.Dir(child), filepath.Base(child), []string{})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 	expected := map[string]interface{}{"a": float64(1), "b": float64(21), "c": float64(30), "d": float64(400)}
+	if !reflect.DeepEqual(result, expected) {
+		t.Errorf("expected %v, got %v", expected, result)
+	}
+}
+
+func TestLoadAndResolveInheritances_BothExtendsAndIncludes(t *testing.T) {
+	dir := t.TempDir()
+	_ = writeTempJSON(t, dir, "p1.json", `{"a": 1, "b": 2}`)
+	_ = writeTempJSON(t, dir, "p2.json", `{"b": 20, "c": 30}`)
+	child := writeTempJSON(t, dir, "child.json", `{"$extends": ["p1.json"], "$includes": ["p2.json"], "b":21, "c": 300, "d": 400}`)
+	result, err := LoadAndResolveInheritances(filepath.Dir(child), filepath.Base(child), []string{})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	expected := map[string]interface{}{"a": float64(1), "b": float64(20), "c": float64(30), "d": float64(400)}
+	if !reflect.DeepEqual(result, expected) {
+		t.Errorf("expected %v, got %v", expected, result)
+	}
+}
+
+func TestLoadAndResolveInheritances_BothExtendsAndIncludesOneLevelNested(t *testing.T) {
+	dir := t.TempDir()
+	_ = writeTempJSON(t, dir, "p1.json", `{"a": 1, "b": 2}`)
+	_ = writeTempJSON(t, dir, "p2.json", `{"b": 20, "c": 30}`)
+	_ = writeTempJSON(t, dir, "child.json", `{"$extends": ["p1.json"], "$includes": ["p2.json"], "b":21, "c": 300, "d": 400}`)
+	grandchild := writeTempJSON(t, dir, "grandchild.json", `{"$extends": ["child.json"]}`)
+	result, err := LoadAndResolveInheritances(filepath.Dir(grandchild), filepath.Base(grandchild), []string{})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	expected := map[string]interface{}{"a": float64(1), "b": float64(20), "c": float64(30), "d": float64(400)}
 	if !reflect.DeepEqual(result, expected) {
 		t.Errorf("expected %v, got %v", expected, result)
 	}
@@ -263,7 +293,7 @@ func TestLoadAndResolveInheritancesWithYaml_NoExtends(t *testing.T) {
 a: 1
 b: 2
 `)
-	result, err := LoadAndResolveInheritances(file, []string{})
+	result, err := LoadAndResolveInheritances(filepath.Dir(file), filepath.Base(file), []string{})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -279,7 +309,7 @@ func TestLoadAndResolveInheritancesWithToml_NoExtends(t *testing.T) {
 	a = 1
 	b = 2
 	`)
-	result, err := LoadAndResolveInheritances(file, []string{})
+	result, err := LoadAndResolveInheritances(filepath.Dir(file), filepath.Base(file), []string{})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -296,7 +326,7 @@ func TestLoadAndResolveInheritancesWithJSON5_NoExtends(t *testing.T) {
 	  a: 1,
 	  b: 2,
 	}`)
-	result, err := LoadAndResolveInheritances(file, []string{})
+	result, err := LoadAndResolveInheritances(filepath.Dir(file), filepath.Base(file), []string{})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -312,7 +342,7 @@ func TestLoadAndResolveInheritancesWithHOCON_NoExtends(t *testing.T) {
 a = 1
 b = 2
 `)
-	result, err := LoadAndResolveInheritances(file, []string{})
+	result, err := LoadAndResolveInheritances(filepath.Dir(file), filepath.Base(file), []string{})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}

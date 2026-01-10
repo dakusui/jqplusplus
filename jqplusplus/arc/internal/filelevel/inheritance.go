@@ -14,13 +14,19 @@ import (
 )
 
 // LoadAndResolveInheritances loads a JSON file, resolves filelevel, and returns the merged result as a map.
-func LoadAndResolveInheritances(filename string, searchPaths []string) (map[string]interface{}, error) {
-	visited := map[string]bool{}
-	absPath, baseDir, err := ResolveFilePath(filename, "", searchPaths)
+func LoadAndResolveInheritances(baseDir string, filename string, searchPaths []string) (map[string]interface{}, error) {
+	return LoadAndResolveInheritancesRecursively(baseDir, filename, map[string]bool{}, searchPaths)
+}
+
+// LoadAndResolveInheritancesRecursively loads a JSON file, resolves $extends or $includes recursively, and merges parents.
+func LoadAndResolveInheritancesRecursively(baseDir string, targetFile string, visited map[string]bool, searchPaths []string) (map[string]interface{}, error) {
+	absPath, bDir, err := ResolveFilePath(targetFile, baseDir, searchPaths)
 	if err != nil {
 		return nil, err
 	}
-
+	if visited[absPath] {
+		return nil, fmt.Errorf("circular filelevel detected: %s", absPath)
+	}
 	visited[absPath] = true
 
 	obj, err := LoadFileAsRawJSON(absPath)
@@ -28,31 +34,19 @@ func LoadAndResolveInheritances(filename string, searchPaths []string) (map[stri
 		return nil, err
 	}
 
-	tmp, err := resolveInheritances(obj, baseDir, Extends, visited, searchPaths)
-	if err != nil {
-		return nil, err
-	}
-	ret, err := resolveInheritances(tmp, baseDir, Includes, visited, searchPaths)
-	return ret, err
+	return resolveBothInheritances(obj, bDir, visited, searchPaths)
 }
 
-// loadAndResolveRecursive loads a JSON file, resolves $extends or $includes recursively, and merges parents.
-func loadAndResolveRecursive(baseDir string, targetFile string, visited map[string]bool, mergeType InheritType, searchPaths []string) (map[string]interface{}, error) {
-	targetFileAbsPath, bDir, err := ResolveFilePath(targetFile, baseDir, searchPaths)
-	if err != nil {
-		return nil, err
+func resolveBothInheritances(obj map[string]interface{}, baseDir string, visited map[string]bool, searchPaths []string) (map[string]interface{}, error) {
+	tmp := obj
+	var err error
+	for t := range []InheritType{Extends, Includes} {
+		tmp, err = resolveInheritances(tmp, baseDir, InheritType(t), visited, searchPaths)
+		if err != nil {
+			return nil, err
+		}
 	}
-	if visited[targetFileAbsPath] {
-		return nil, fmt.Errorf("circular filelevel detected: %s", targetFileAbsPath)
-	}
-	visited[targetFileAbsPath] = true
-
-	obj, err := LoadFileAsRawJSON(targetFileAbsPath)
-	if err != nil {
-		return nil, err
-	}
-
-	return resolveInheritances(obj, bDir, mergeType, visited, searchPaths)
+	return tmp, nil
 }
 
 func resolveInheritances(obj map[string]interface{}, baseDir string, mergeType InheritType, visited map[string]bool, searchPaths []string) (map[string]interface{}, error) {
@@ -68,7 +62,7 @@ func resolveInheritances(obj map[string]interface{}, baseDir string, mergeType I
 		}
 		var mergedParents map[string]interface{}
 		for i, parent := range parentFiles {
-			parentObj, err := loadAndResolveRecursive(baseDir, parent, visited, mergeType, searchPaths)
+			parentObj, err := LoadAndResolveInheritancesRecursively(baseDir, parent, visited, searchPaths)
 			if err != nil {
 				return nil, err
 			}
