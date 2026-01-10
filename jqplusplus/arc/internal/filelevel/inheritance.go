@@ -34,10 +34,10 @@ func LoadAndResolveInheritancesRecursively(baseDir string, targetFile string, vi
 		return nil, err
 	}
 
-	return resolveBothInheritances(obj, bDir, visited, searchPaths)
+	return resolveBothInheritances(bDir, obj, visited, searchPaths)
 }
 
-func resolveBothInheritances(obj map[string]interface{}, baseDir string, visited map[string]bool, searchPaths []string) (map[string]interface{}, error) {
+func resolveBothInheritances(baseDir string, obj map[string]interface{}, visited map[string]bool, searchPaths []string) (map[string]interface{}, error) {
 	tmp := obj
 	var err error
 	for t := range []InheritType{Extends, Includes} {
