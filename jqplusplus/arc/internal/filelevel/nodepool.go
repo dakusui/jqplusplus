@@ -1,18 +1,17 @@
 package filelevel
 
+import (
+	"path/filepath"
+)
+
 type NodePool interface {
 	ReadNodeEntry(baseDir, filename string) (map[string]interface{}, error)
 	IsVisited(absPath string) bool
 	MarkVisited(absPath string)
 	SearchPaths() []string
-}
-
-type StdNodePool struct {
-	baseDir              string
-	localNodeSearchPaths []string
-	baseSearchPaths      []string
-	cache                map[NodeEntry]map[string]any
-	visited              map[string]bool
+	SessionDirectory() string
+	Enter(localNodeDirectory string)
+	Leave(localNodeDirectory string)
 }
 
 type NodeEntry struct {
@@ -20,9 +19,27 @@ type NodeEntry struct {
 	baseDir  string
 }
 
-func NewStdNodePoolWithSearchPaths(baseDir string, searchPaths []string) *StdNodePool {
+func (n NodeEntry) String() string {
+	return filepath.Join(n.baseDir, n.filename)
+}
+
+func (n NodeEntry) TemporaryDirectoryUnder(sessionDirectory string) string {
+	return filepath.Join(sessionDirectory, n.String())
+}
+
+type StdNodePool struct {
+	baseDir              string
+	sessionDirectory     string
+	localNodeSearchPaths []string
+	baseSearchPaths      []string
+	cache                map[NodeEntry]map[string]any
+	visited              map[string]bool
+}
+
+func NewStdNodePoolWithBaseSearchPaths(baseDir, sessionDirectory string, searchPaths []string) *StdNodePool {
 	return &StdNodePool{
 		baseDir:              baseDir,
+		sessionDirectory:     sessionDirectory,
 		localNodeSearchPaths: []string{},
 		baseSearchPaths:      searchPaths,
 		cache:                map[NodeEntry]map[string]any{},
@@ -51,6 +68,21 @@ func (p *StdNodePool) MarkVisited(absPath string) {
 	p.visited[absPath] = true
 }
 
+func (p *StdNodePool) Enter(localNodeDirectory string) {
+	p.localNodeSearchPaths = append(p.localNodeSearchPaths, localNodeDirectory)
+}
+
+func (p *StdNodePool) Leave(localNodeDirectory string) {
+	if localNodeDirectory != p.localNodeSearchPaths[len(p.localNodeSearchPaths)-1] {
+		panic("Unexpected leave")
+	}
+	p.localNodeSearchPaths = p.localNodeSearchPaths[:len(p.localNodeSearchPaths)-1]
+}
+
+func (p *StdNodePool) SessionDirectory() string {
+	return p.sessionDirectory
+}
+
 func (p *StdNodePool) SearchPaths() []string {
 	paths := make([]string, 0, 1+len(p.localNodeSearchPaths)+len(p.baseSearchPaths))
 
@@ -60,5 +92,5 @@ func (p *StdNodePool) SearchPaths() []string {
 	paths = append(paths, p.localNodeSearchPaths...)
 	paths = append(paths, p.baseSearchPaths...)
 
-	return paths
+	return Filter(paths, func(p string) bool { return p != "" })
 }

@@ -16,7 +16,10 @@ import (
 
 // LoadAndResolveInheritances loads a JSON file, resolves filelevel, and returns the merged result as a map.
 func LoadAndResolveInheritances(baseDir string, filename string, searchPaths []string) (map[string]any, error) {
-	return NewStdNodePoolWithSearchPaths(baseDir, searchPaths).ReadNodeEntry(baseDir, filename)
+	sessionDirectory := CreateSessionDirectory()
+	defer os.RemoveAll(CreateSessionDirectory())
+
+	return NewStdNodePoolWithBaseSearchPaths(baseDir, sessionDirectory, searchPaths).ReadNodeEntry(baseDir, filename)
 }
 
 // LoadAndResolveInheritancesRecursively loads a JSON file, resolves $extends or $includes recursively, and merges parents.
@@ -40,6 +43,10 @@ func LoadAndResolveInheritancesRecursively(baseDir string, targetFile string, no
 		return nil, err
 	}
 
+	p, err := MaterializeLocalNodes(obj, nodepool.SessionDirectory())
+	delete(obj, "$local")
+	nodepool.Enter(p)
+
 	for _, p := range DistinctBy(Map(JSONPaths(obj, lastElementIsOneOf("$extends", "$includes")), DropLast[any]), pathKey) {
 		internal, ok := GetAtPath(obj, ToAnySlice(p))
 		if !ok {
@@ -55,6 +62,8 @@ func LoadAndResolveInheritancesRecursively(baseDir string, targetFile string, no
 		}
 		SetAtPath(obj, ToAnySlice(p), internalObj)
 	}
+
+	nodepool.Leave(p)
 	return obj, nil
 }
 
@@ -216,22 +225,17 @@ func ResolveFilePath(filename string, baseDir string, searchPaths []string) (str
 
 // MaterializeLocalNodes materializes obj["$local"] into files under dir.
 // Returns dir (absolute) on success.
-func MaterializeLocalNodes(obj map[string]any, dir string) (string, error) {
+func MaterializeLocalNodes(obj map[string]any, localNodeDirectoryBase string) (string, error) {
 	if obj == nil {
 		return "", errors.New("obj is nil")
 	}
-	if strings.TrimSpace(dir) == "" {
+	if strings.TrimSpace(localNodeDirectoryBase) == "" {
 		return "", errors.New("dir is empty")
 	}
 
 	localAny, ok := obj["$local"]
 	if !ok || localAny == nil {
-		// Nothing to do
-		abs, err := filepath.Abs(dir)
-		if err != nil {
-			return "", err
-		}
-		return abs, nil
+		return "", nil
 	}
 
 	localObj, ok := localAny.(map[string]any)
@@ -239,14 +243,9 @@ func MaterializeLocalNodes(obj map[string]any, dir string) (string, error) {
 		return "", fmt.Errorf(`"$local" must be an object (map[string]any), got %T`, localAny)
 	}
 
-	absDir, err := filepath.Abs(dir)
+	absDir, err := os.MkdirTemp(localNodeDirectoryBase, "localnodes-")
 	if err != nil {
-		return "", err
-	}
-
-	// Ensure base directory exists
-	if err := os.MkdirAll(absDir, 0o755); err != nil {
-		return "", fmt.Errorf("mkdir %q: %w", absDir, err)
+		return "", fmt.Errorf("mkdir temp dir: %w", err)
 	}
 
 	for name, v := range localObj {
@@ -345,6 +344,18 @@ func SearchPaths() []string {
 	return strings.Split(v, ":")
 }
 
+func CreateSessionDirectory() string {
+	v, ok := os.LookupEnv("JF_SESSION_DIR_BASE")
+	if !ok {
+		v = ""
+	}
+	ret, e := os.MkdirTemp(v, "jqplusplus-session-*")
+	if e != nil {
+		panic(fmt.Sprintf("failed to create session directory: %v", e))
+	}
+	return ret
+}
+
 type FileType string
 
 const (
@@ -360,7 +371,7 @@ func detectFileType(name string) (FileType, bool) {
 	ext := strings.ToLower(filepath.Ext(name))
 
 	switch ext {
-	case ".json":
+	case ".json", "":
 		return JSON, true
 	case ".yaml", ".yml":
 		return YAML, true

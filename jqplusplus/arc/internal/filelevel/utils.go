@@ -204,17 +204,6 @@ func SetAtPath(root any, path []any, value any) (ok bool) {
 	}
 }
 
-func newContainer(next any) any {
-	switch next.(type) {
-	case string:
-		return map[string]any{}
-	case int:
-		return []any{}
-	default:
-		panic(fmt.Sprintf("unsupported path segment type: %T", next))
-	}
-}
-
 func Filter[T any](in []T, pred func(T) bool) []T {
 	out := make([]T, 0, len(in))
 	for _, v := range in {
@@ -300,19 +289,4 @@ func ToAnySlice[T any](xs []T) []any {
 		out[i] = v
 	}
 	return out
-}
-
-func DeepCopyMap(originalMap map[string]interface{}) map[string]interface{} {
-	copyMap := make(map[string]interface{})
-	for key, value := range originalMap {
-		switch v := value.(type) {
-		case map[string]interface{}:
-			// If the value is a nested map, call DeepCopyMap recursively
-			copyMap[key] = DeepCopyMap(v)
-		default:
-			// If the value is not a map, just assign it to the new map
-			copyMap[key] = value
-		}
-	}
-	return copyMap
 }

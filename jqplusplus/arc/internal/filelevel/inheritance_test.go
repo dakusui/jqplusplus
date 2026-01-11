@@ -66,6 +66,19 @@ func TestLoadAndResolveInheritances_SingleInternalExtends(t *testing.T) {
 	}
 }
 
+func TestLoadAndResolveInheritances_SingleLocalExtends(t *testing.T) {
+	dir := t.TempDir()
+	child := writeTempJSON(t, dir, "child.json", `{"$local": {"A":{"a": 1, "b": 2}}, "x": {"$extends": ["A"], "b": 3, "c": 4}}`)
+	result, err := LoadAndResolveInheritances(filepath.Dir(child), filepath.Base(child), []string{})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	expected := map[string]any{"x": map[string]any{"a": float64(1), "b": float64(3), "c": float64(4)}}
+	if !reflect.DeepEqual(result, expected) {
+		t.Errorf("expected %v, got %v", expected, result)
+	}
+}
+
 func TestLoadAndResolveInheritances_SingleExtendsNonExisting_ThenFail(t *testing.T) {
 	dir := t.TempDir()
 	_ = writeTempJSON(t, dir, "parent.json", `{"a": 1, "b": 2}`)
