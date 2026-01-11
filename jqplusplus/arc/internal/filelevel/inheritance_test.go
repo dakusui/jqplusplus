@@ -1,24 +1,13 @@
 package filelevel
 
 import (
+	"github.com/dakusui/jqplusplus/jqplusplus/internal/utils"
 	"os"
 	"path/filepath"
 	"reflect"
 	"strings"
 	"testing"
-
-	"github.com/dakusui/jqplusplus/jqplusplus/internal/utils"
 )
-
-func writeTempJSON(t *testing.T, dir, name string, data string) string {
-	t.Helper()
-	path := filepath.Join(dir, name)
-	err := os.WriteFile(path, []byte(data), 0644)
-	if err != nil {
-		t.Fatalf("failed to write temp file: %v", err)
-	}
-	return path
-}
 
 func TestLoadAndResolveInheritances_NoExtends(t *testing.T) {
 	dir := t.TempDir()
@@ -58,6 +47,20 @@ func TestLoadAndResolveInheritances_MultipleExtends(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 	expected := map[string]interface{}{"a": float64(1), "b": float64(2), "c": float64(300), "d": float64(400)}
+	if !reflect.DeepEqual(result, expected) {
+		t.Errorf("expected %v, got %v", expected, result)
+	}
+}
+
+func TestLoadAndResolveInheritances_SingleInternalExtends(t *testing.T) {
+	dir := t.TempDir()
+	_ = writeTempJSON(t, dir, "parent.json", `{"a": 1, "b": 2}`)
+	child := writeTempJSON(t, dir, "child.json", `{"x": {"$extends": ["parent.json"], "b": 3, "c": 4}}`)
+	result, err := LoadAndResolveInheritances(filepath.Dir(child), filepath.Base(child), []string{})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	expected := map[string]any{"x": map[string]any{"a": float64(1), "b": float64(3), "c": float64(4)}}
 	if !reflect.DeepEqual(result, expected) {
 		t.Errorf("expected %v, got %v", expected, result)
 	}
@@ -137,96 +140,6 @@ func TestLoadAndResolveInheritances_CircularExtends(t *testing.T) {
 	}
 }
 
-func TestMergeObjects_DeepMerge(t *testing.T) {
-	parent := map[string]interface{}{
-		"a": 1,
-		"b": map[string]interface{}{
-			"x": 10,
-			"y": 20,
-		},
-	}
-	child := map[string]interface{}{
-		"b": map[string]interface{}{
-			"y": 200,
-			"z": 300,
-		},
-		"c": 3,
-	}
-	expected := map[string]interface{}{
-		"a": 1,
-		"b": map[string]interface{}{
-			"x": 10,
-			"y": 200,
-			"z": 300,
-		},
-		"c": 3,
-	}
-	result := mergeObjects(parent, child)
-	if !reflect.DeepEqual(result, expected) {
-		t.Errorf("expected %v, got %v", expected, result)
-	}
-}
-
-func TestMergeObjects(t *testing.T) {
-	t.Run("shallow merge", func(t *testing.T) {
-		a := map[string]interface{}{"a": 1, "b": 2}
-		b := map[string]interface{}{"b": 3, "c": 4}
-		expected := map[string]interface{}{"a": 1, "b": 3, "c": 4}
-		result := utils.MergeObjects(a, b, utils.MergePolicyDefault)
-		if !reflect.DeepEqual(result, expected) {
-			t.Errorf("expected %v, got %v", expected, result)
-		}
-	})
-
-	t.Run("deep merge", func(t *testing.T) {
-		a := map[string]interface{}{
-			"a": 1,
-			"b": map[string]interface{}{"x": 10, "y": 20},
-		}
-		b := map[string]interface{}{
-			"b": map[string]interface{}{"y": 200, "z": 300},
-			"c": 3,
-		}
-		expected := map[string]interface{}{
-			"a": 1,
-			"b": map[string]interface{}{"x": 10, "y": 200, "z": 300},
-			"c": 3,
-		}
-		result := utils.MergeObjects(a, b, utils.MergePolicyDefault)
-		if !reflect.DeepEqual(result, expected) {
-			t.Errorf("expected %v, got %v", expected, result)
-		}
-	})
-
-	t.Run("primitive overwrite", func(t *testing.T) {
-		a := map[string]interface{}{"a": 1, "b": 2}
-		b := map[string]interface{}{"b": 100}
-		expected := map[string]interface{}{"a": 1, "b": 100}
-		result := utils.MergeObjects(a, b, utils.MergePolicyDefault)
-		if !reflect.DeepEqual(result, expected) {
-			t.Errorf("expected %v, got %v", expected, result)
-		}
-	})
-
-	t.Run("empty maps", func(t *testing.T) {
-		a := map[string]interface{}{}
-		b := map[string]interface{}{"a": 1}
-		expected := map[string]interface{}{"a": 1}
-		result := utils.MergeObjects(a, b, utils.MergePolicyDefault)
-		if !reflect.DeepEqual(result, expected) {
-			t.Errorf("expected %v, got %v", expected, result)
-		}
-
-		a2 := map[string]interface{}{"a": 1}
-		b2 := map[string]interface{}{}
-		expected2 := map[string]interface{}{"a": 1}
-		result2 := utils.MergeObjects(a2, b2, utils.MergePolicyDefault)
-		if !reflect.DeepEqual(result2, expected2) {
-			t.Errorf("expected %v, got %v", expected2, result2)
-		}
-	})
-}
-
 func TestLoadAndResolveInheritances_SingleIncludes(t *testing.T) {
 	dir := t.TempDir()
 	_ = writeTempJSON(t, dir, "parent.json", `{"a": 1, "b": 2}`)
@@ -266,6 +179,20 @@ func TestLoadAndResolveInheritances_BothExtendsAndIncludes(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 	expected := map[string]interface{}{"a": float64(1), "b": float64(20), "c": float64(30), "d": float64(400)}
+	if !reflect.DeepEqual(result, expected) {
+		t.Errorf("expected %v, got %v", expected, result)
+	}
+}
+
+func TestLoadAndResolveInheritances_BothExtendsAndIncludesTheSame(t *testing.T) {
+	dir := t.TempDir()
+	_ = writeTempJSON(t, dir, "p1.json", `{"a": 1, "b": 2}`)
+	child := writeTempJSON(t, dir, "child.json", `{"$extends": ["p1.json"], "$includes": ["p1.json"], "b":21, "c": 300, "d": 400}`)
+	result, err := LoadAndResolveInheritances(filepath.Dir(child), filepath.Base(child), []string{})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	expected := map[string]interface{}{"a": float64(1), "b": float64(2), "c": float64(300), "d": float64(400)}
 	if !reflect.DeepEqual(result, expected) {
 		t.Errorf("expected %v, got %v", expected, result)
 	}
@@ -364,4 +291,104 @@ func TestSearchPaths(t *testing.T) {
 	if searchPaths[1] != "/tmp/p2" {
 		t.Fatalf("expected /tmp/p2, got %s", searchPaths[1])
 	}
+}
+
+func TestMergeObjects_DeepMerge(t *testing.T) {
+	parent := map[string]interface{}{
+		"a": 1,
+		"b": map[string]interface{}{
+			"x": 10,
+			"y": 20,
+		},
+	}
+	child := map[string]interface{}{
+		"b": map[string]interface{}{
+			"y": 200,
+			"z": 300,
+		},
+		"c": 3,
+	}
+	expected := map[string]interface{}{
+		"a": 1,
+		"b": map[string]interface{}{
+			"x": 10,
+			"y": 200,
+			"z": 300,
+		},
+		"c": 3,
+	}
+	result := mergeObjects(parent, child)
+	if !reflect.DeepEqual(result, expected) {
+		t.Errorf("expected %v, got %v", expected, result)
+	}
+}
+
+func TestMergeObjects(t *testing.T) {
+	t.Run("shallow merge", func(t *testing.T) {
+		a := map[string]interface{}{"a": 1, "b": 2}
+		b := map[string]interface{}{"b": 3, "c": 4}
+		expected := map[string]interface{}{"a": 1, "b": 3, "c": 4}
+		result := utils.MergeObjects(a, b, utils.MergePolicyDefault)
+		if !reflect.DeepEqual(result, expected) {
+			t.Errorf("expected %v, got %v", expected, result)
+		}
+	})
+
+	t.Run("deep merge", func(t *testing.T) {
+		a := map[string]interface{}{
+			"a": 1,
+			"b": map[string]interface{}{"x": 10, "y": 20},
+		}
+		b := map[string]interface{}{
+			"b": map[string]interface{}{"y": 200, "z": 300},
+			"c": 3,
+		}
+		expected := map[string]interface{}{
+			"a": 1,
+			"b": map[string]interface{}{"x": 10, "y": 200, "z": 300},
+			"c": 3,
+		}
+		result := utils.MergeObjects(a, b, utils.MergePolicyDefault)
+		if !reflect.DeepEqual(result, expected) {
+			t.Errorf("expected %v, got %v", expected, result)
+		}
+	})
+
+	t.Run("primitive overwrite", func(t *testing.T) {
+		a := map[string]interface{}{"a": 1, "b": 2}
+		b := map[string]interface{}{"b": 100}
+		expected := map[string]interface{}{"a": 1, "b": 100}
+		result := utils.MergeObjects(a, b, utils.MergePolicyDefault)
+		if !reflect.DeepEqual(result, expected) {
+			t.Errorf("expected %v, got %v", expected, result)
+		}
+	})
+
+	t.Run("empty maps", func(t *testing.T) {
+		a := map[string]interface{}{}
+		b := map[string]interface{}{"a": 1}
+		expected := map[string]interface{}{"a": 1}
+		result := utils.MergeObjects(a, b, utils.MergePolicyDefault)
+		if !reflect.DeepEqual(result, expected) {
+			t.Errorf("expected %v, got %v", expected, result)
+		}
+
+		a2 := map[string]interface{}{"a": 1}
+		b2 := map[string]interface{}{}
+		expected2 := map[string]interface{}{"a": 1}
+		result2 := utils.MergeObjects(a2, b2, utils.MergePolicyDefault)
+		if !reflect.DeepEqual(result2, expected2) {
+			t.Errorf("expected %v, got %v", expected2, result2)
+		}
+	})
+}
+
+func writeTempJSON(t *testing.T, dir, name string, data string) string {
+	t.Helper()
+	path := filepath.Join(dir, name)
+	err := os.WriteFile(path, []byte(data), 0644)
+	if err != nil {
+		t.Fatalf("failed to write temp file: %v", err)
+	}
+	return path
 }

@@ -14,42 +14,63 @@ import (
 )
 
 // LoadAndResolveInheritances loads a JSON file, resolves filelevel, and returns the merged result as a map.
-func LoadAndResolveInheritances(baseDir string, filename string, searchPaths []string) (map[string]interface{}, error) {
-	return LoadAndResolveInheritancesRecursively(baseDir, filename, map[string]bool{}, searchPaths)
+func LoadAndResolveInheritances(baseDir string, filename string, searchPaths []string) (map[string]any, error) {
+	return NewStdNodePoolWithSearchPaths(searchPaths).ReadNodeEntry(baseDir, filename)
 }
 
 // LoadAndResolveInheritancesRecursively loads a JSON file, resolves $extends or $includes recursively, and merges parents.
-func LoadAndResolveInheritancesRecursively(baseDir string, targetFile string, visited map[string]bool, searchPaths []string) (map[string]interface{}, error) {
-	absPath, bDir, err := ResolveFilePath(targetFile, baseDir, searchPaths)
+func LoadAndResolveInheritancesRecursively(baseDir string, targetFile string, nodepool NodePool) (map[string]any, error) {
+	absPath, bDir, err := ResolveFilePath(targetFile, baseDir, nodepool.SearchPaths())
 	if err != nil {
 		return nil, err
 	}
-	if visited[absPath] {
+	if nodepool.IsVisited(absPath) {
 		return nil, fmt.Errorf("circular filelevel detected: %s", absPath)
 	}
-	visited[absPath] = true
+	nodepool.MarkVisited(absPath)
 
 	obj, err := LoadFileAsRawJSON(absPath)
 	if err != nil {
 		return nil, err
 	}
 
-	return resolveBothInheritances(bDir, obj, visited, searchPaths)
+	obj, err = resolveBothInheritances(bDir, obj, nodepool)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, p := range DistinctBy(Map(JSONPaths(obj, lastElementIsOneOf("$extends", "$includes")), DropLast), pathKey) {
+		internal, ok := GetAtPath(obj, p)
+		if !ok {
+			continue
+		}
+		internalObj, ok := internal.(map[string]any)
+		if !ok {
+			continue
+		}
+		internalObj, err := resolveBothInheritances(bDir, internalObj, nodepool)
+		if err != nil {
+			return nil, err
+		}
+		SetAtPath(obj, p, internalObj)
+	}
+
+	return obj, nil
 }
 
-func resolveBothInheritances(baseDir string, obj map[string]interface{}, visited map[string]bool, searchPaths []string) (map[string]interface{}, error) {
-	tmp := obj
+func resolveBothInheritances(baseDir string, obj map[string]any, nodepool NodePool) (map[string]any, error) {
+	ret := obj
 	var err error
 	for t := range []InheritType{Extends, Includes} {
-		tmp, err = resolveInheritances(tmp, baseDir, InheritType(t), visited, searchPaths)
+		ret, err = resolveInheritances(ret, baseDir, InheritType(t), nodepool)
 		if err != nil {
 			return nil, err
 		}
 	}
-	return tmp, nil
+	return ret, nil
 }
 
-func resolveInheritances(obj map[string]interface{}, baseDir string, mergeType InheritType, visited map[string]bool, searchPaths []string) (map[string]interface{}, error) {
+func resolveInheritances(obj map[string]any, baseDir string, mergeType InheritType, nodepool NodePool) (map[string]any, error) {
 	// Check for $extends or $includes
 	inherits, ok := obj[mergeType.String()]
 	if ok {
@@ -58,11 +79,11 @@ func resolveInheritances(obj map[string]interface{}, baseDir string, mergeType I
 			return nil, err
 		}
 		if mergeType.IsOrderReversed() {
-			reverse(parentFiles)
+			Reverse(parentFiles)
 		}
-		var mergedParents map[string]interface{}
+		var mergedParents map[string]any
 		for i, parent := range parentFiles {
-			parentObj, err := LoadAndResolveInheritancesRecursively(baseDir, parent, visited, searchPaths)
+			parentObj, err := nodepool.ReadNodeEntry(baseDir, parent)
 			if err != nil {
 				return nil, err
 			}
@@ -83,16 +104,10 @@ func resolveInheritances(obj map[string]interface{}, baseDir string, mergeType I
 	return obj, nil
 }
 
-func reverse[T any](s []T) {
-	for i, j := 0, len(s)-1; i < j; i, j = i+1, j-1 {
-		s[i], s[j] = s[j], s[i]
-	}
-}
-
 // parseInheritsField parses the $extends field, which can be a string or array of strings.
-func parseInheritsField(val interface{}, inherits InheritType) ([]string, error) {
+func parseInheritsField(val any, inherits InheritType) ([]string, error) {
 	switch v := val.(type) {
-	case []interface{}:
+	case []any:
 		var result []string
 		for _, item := range v {
 			str, ok := item.(string)
@@ -108,8 +123,8 @@ func parseInheritsField(val interface{}, inherits InheritType) ([]string, error)
 }
 
 // mergeObjects merges parent and child objects, with child values taking precedence.
-func mergeObjects(parent, child map[string]interface{}) map[string]interface{} {
-	result := make(map[string]interface{})
+func mergeObjects(parent, child map[string]any) map[string]any {
+	result := make(map[string]any)
 	for k, v := range parent {
 		result[k] = v
 	}
@@ -118,8 +133,8 @@ func mergeObjects(parent, child map[string]interface{}) map[string]interface{} {
 			continue
 		}
 		// If both are maps, merge recursively
-		if pv, ok := result[k].(map[string]interface{}); ok {
-			if cv, ok := v.(map[string]interface{}); ok {
+		if pv, ok := result[k].(map[string]any); ok {
+			if cv, ok := v.(map[string]any); ok {
 				result[k] = mergeObjects(pv, cv)
 				continue
 			}
@@ -237,10 +252,10 @@ func detectFileType(name string) (FileType, bool) {
 }
 
 // LoadFileAsRawJSON loads and parses a file (JSON, YAML, etc.) into a gojq-compatible object.
-func LoadFileAsRawJSON(path string) (map[string]interface{}, error) {
+func LoadFileAsRawJSON(path string) (map[string]any, error) {
 	ft, ok := detectFileType(path)
 	if !ok {
-		return nil, fmt.Errorf("unsupported file type: %q", filepath.Ext(path))
+		return nil, fmt.Errorf("unsupported file type: %q (%s)", filepath.Ext(path), path)
 	}
 
 	switch ft {
@@ -261,33 +276,33 @@ func LoadFileAsRawJSON(path string) (map[string]interface{}, error) {
 	}
 }
 
-func readJSON(targetFileAbsPath string) (map[string]interface{}, error) {
+func readJSON(targetFileAbsPath string) (map[string]any, error) {
 	data, err := os.ReadFile(targetFileAbsPath)
 	if err != nil {
 		return nil, err
 	}
-	var obj map[string]interface{}
+	var obj map[string]any
 	if err := json.Unmarshal(data, &obj); err != nil {
 		return nil, err
 	}
 	return obj, nil
 }
 
-func readYAML(path string) (map[string]interface{}, error) {
+func readYAML(path string) (map[string]any, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return nil, err
 	}
 
-	var m map[string]interface{}
+	var m map[string]any
 	if err := yaml.Unmarshal(data, &m); err != nil {
 		return nil, err
 	}
 	return m, nil
 }
 
-func readTOML(path string) (map[string]interface{}, error) {
-	var m map[string]interface{}
+func readTOML(path string) (map[string]any, error) {
+	var m map[string]any
 	if _, err := toml.DecodeFile(path, &m); err != nil {
 		return nil, err
 	}
@@ -309,7 +324,7 @@ func readJSON5(path string) (map[string]any, error) {
 
 // readHOCON reads a HOCON file and returns it as a JSON-compatible map.
 // Top-level must be an object.
-func readHOCON(path string) (map[string]interface{}, error) {
+func readHOCON(path string) (map[string]any, error) {
 	conf, err := hocon.ParseResource(path)
 	if err != nil {
 		return nil, err
@@ -324,23 +339,23 @@ func readHOCON(path string) (map[string]interface{}, error) {
 	return objectToMap(obj), nil
 }
 
-func objectToMap(o hocon.Object) map[string]interface{} {
-	out := make(map[string]interface{}, len(o))
+func objectToMap(o hocon.Object) map[string]any {
+	out := make(map[string]any, len(o))
 	for k, v := range o {
 		out[k] = valueToAny(v)
 	}
 	return out
 }
 
-func arrayToSlice(a hocon.Array) []interface{} {
-	out := make([]interface{}, 0, len(a))
+func arrayToSlice(a hocon.Array) []any {
+	out := make([]any, 0, len(a))
 	for _, v := range a {
 		out = append(out, valueToAny(v))
 	}
 	return out
 }
 
-func valueToAny(v hocon.Value) interface{} {
+func valueToAny(v hocon.Value) any {
 	switch x := v.(type) {
 	case hocon.Object:
 		return objectToMap(x)
