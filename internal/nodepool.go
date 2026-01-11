@@ -15,6 +15,22 @@ type NodeEntry struct {
 	baseDir  string
 }
 
+func (e NodeEntry) BaseDir() string {
+	return e.baseDir
+}
+
+func (e NodeEntry) Filename() string {
+	return e.filename
+}
+
+func (e NodeEntry) String() string {
+	return e.baseDir + "/" + e.filename
+}
+
+func NewNodeEntry(baseDir, filename string) NodeEntry {
+	return NodeEntry{filename: filename, baseDir: baseDir}
+}
+
 type NodePoolImpl struct {
 	baseDir              string
 	sessionDirectory     string
