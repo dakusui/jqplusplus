@@ -2,6 +2,7 @@ package filelevel
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/BurntSushi/toml"
 	"github.com/dakusui/jqplusplus/jqplusplus/internal/utils"
@@ -15,7 +16,7 @@ import (
 
 // LoadAndResolveInheritances loads a JSON file, resolves filelevel, and returns the merged result as a map.
 func LoadAndResolveInheritances(baseDir string, filename string, searchPaths []string) (map[string]any, error) {
-	return NewStdNodePoolWithSearchPaths(searchPaths).ReadNodeEntry(baseDir, filename)
+	return NewStdNodePoolWithSearchPaths(baseDir, searchPaths).ReadNodeEntry(baseDir, filename)
 }
 
 // LoadAndResolveInheritancesRecursively loads a JSON file, resolves $extends or $includes recursively, and merges parents.
@@ -39,8 +40,8 @@ func LoadAndResolveInheritancesRecursively(baseDir string, targetFile string, no
 		return nil, err
 	}
 
-	for _, p := range DistinctBy(Map(JSONPaths(obj, lastElementIsOneOf("$extends", "$includes")), DropLast), pathKey) {
-		internal, ok := GetAtPath(obj, p)
+	for _, p := range DistinctBy(Map(JSONPaths(obj, lastElementIsOneOf("$extends", "$includes")), DropLast[any]), pathKey) {
+		internal, ok := GetAtPath(obj, ToAnySlice(p))
 		if !ok {
 			continue
 		}
@@ -52,9 +53,8 @@ func LoadAndResolveInheritancesRecursively(baseDir string, targetFile string, no
 		if err != nil {
 			return nil, err
 		}
-		SetAtPath(obj, p, internalObj)
+		SetAtPath(obj, ToAnySlice(p), internalObj)
 	}
-
 	return obj, nil
 }
 
@@ -129,7 +129,7 @@ func mergeObjects(parent, child map[string]any) map[string]any {
 		result[k] = v
 	}
 	for k, v := range child {
-		if k == "$extends" {
+		if k == "$extends" || k == "$excludes" || k == "$local" {
 			continue
 		}
 		// If both are maps, merge recursively
@@ -212,6 +212,132 @@ func ResolveFilePath(filename string, baseDir string, searchPaths []string) (str
 		}
 	}
 	return "", "", fmt.Errorf("file not found: %s", filename)
+}
+
+// MaterializeLocalNodes materializes obj["$local"] into files under dir.
+// Returns dir (absolute) on success.
+func MaterializeLocalNodes(obj map[string]any, dir string) (string, error) {
+	if obj == nil {
+		return "", errors.New("obj is nil")
+	}
+	if strings.TrimSpace(dir) == "" {
+		return "", errors.New("dir is empty")
+	}
+
+	localAny, ok := obj["$local"]
+	if !ok || localAny == nil {
+		// Nothing to do
+		abs, err := filepath.Abs(dir)
+		if err != nil {
+			return "", err
+		}
+		return abs, nil
+	}
+
+	localObj, ok := localAny.(map[string]any)
+	if !ok {
+		return "", fmt.Errorf(`"$local" must be an object (map[string]any), got %T`, localAny)
+	}
+
+	absDir, err := filepath.Abs(dir)
+	if err != nil {
+		return "", err
+	}
+
+	// Ensure base directory exists
+	if err := os.MkdirAll(absDir, 0o755); err != nil {
+		return "", fmt.Errorf("mkdir %q: %w", absDir, err)
+	}
+
+	for name, v := range localObj {
+		rel, err := sanitizeRelativePath(name)
+		if err != nil {
+			return "", fmt.Errorf("invalid $local key %q: %w", name, err)
+		}
+
+		target := filepath.Join(absDir, rel)
+
+		// Final guard: ensure the resulting path stays within absDir
+		relToBase, err := filepath.Rel(absDir, target)
+		if err != nil {
+			return "", fmt.Errorf("rel check for %q: %w", target, err)
+		}
+		if relToBase == ".." || strings.HasPrefix(relToBase, ".."+string(filepath.Separator)) {
+			return "", fmt.Errorf("path traversal detected for %q", name)
+		}
+
+		// Create parent dirs
+		if err := os.MkdirAll(filepath.Dir(target), 0o755); err != nil {
+			return "", fmt.Errorf("mkdir parent for %q: %w", target, err)
+		}
+
+		data, err := toFileBytes(v)
+		if err != nil {
+			return "", fmt.Errorf("convert content for %q: %w", name, err)
+		}
+
+		// Write file (0644); overwrite if exists
+		if err := os.WriteFile(target, data, 0o644); err != nil {
+			return "", fmt.Errorf("write %q: %w", target, err)
+		}
+	}
+
+	return absDir, nil
+}
+
+func sanitizeRelativePath(p string) (string, error) {
+	p = strings.TrimSpace(p)
+	if p == "" {
+		return "", errors.New("empty filename")
+	}
+
+	// Clean, and normalize separators via filepath.Clean later.
+	// Reject absolute paths (Unix and Windows forms).
+	if filepath.IsAbs(p) {
+		return "", errors.New("absolute paths are not allowed")
+	}
+	if vol := filepath.VolumeName(p); vol != "" {
+		// e.g. "C:" on Windows
+		return "", errors.New("volume paths are not allowed")
+	}
+
+	clean := filepath.Clean(p)
+
+	// filepath.Clean can turn "." into ".", reject it as "no file".
+	if clean == "." {
+		return "", errors.New("invalid filename")
+	}
+
+	// Reject any traversal.
+	if clean == ".." || strings.HasPrefix(clean, ".."+string(filepath.Separator)) {
+		return "", errors.New("path traversal is not allowed")
+	}
+
+	// Optional: reject paths containing NUL (can be problematic in some contexts)
+	if strings.ContainsRune(clean, '\x00') {
+		return "", errors.New("NUL byte in path")
+	}
+
+	return clean, nil
+}
+
+func toFileBytes(v any) ([]byte, error) {
+	switch x := v.(type) {
+	case nil:
+		return []byte(""), nil
+	case []byte:
+		return x, nil
+	case string:
+		return []byte(x), nil
+	default:
+		// JSON-encode other values (maps, arrays, numbers, bools, etc.)
+		b, err := json.MarshalIndent(x, "", "  ")
+		if err != nil {
+			return nil, err
+		}
+		// Add newline for nicer files
+		return append(b, '\n'), nil
+	}
 }
 
 func SearchPaths() []string {

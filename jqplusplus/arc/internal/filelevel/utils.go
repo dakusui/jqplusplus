@@ -292,3 +292,27 @@ func pathKey(p []any) string {
 	}
 	return b.String()
 }
+
+// ToAnySlice converts a []T into a []any by copying elements.
+func ToAnySlice[T any](xs []T) []any {
+	out := make([]any, len(xs))
+	for i, v := range xs {
+		out[i] = v
+	}
+	return out
+}
+
+func DeepCopyMap(originalMap map[string]interface{}) map[string]interface{} {
+	copyMap := make(map[string]interface{})
+	for key, value := range originalMap {
+		switch v := value.(type) {
+		case map[string]interface{}:
+			// If the value is a nested map, call DeepCopyMap recursively
+			copyMap[key] = DeepCopyMap(v)
+		default:
+			// If the value is not a map, just assign it to the new map
+			copyMap[key] = value
+		}
+	}
+	return copyMap
+}

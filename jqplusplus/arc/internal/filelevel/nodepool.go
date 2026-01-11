@@ -8,38 +8,37 @@ type NodePool interface {
 }
 
 type StdNodePool struct {
-	searchPaths []string
-	cache       map[string]map[string]map[string]interface{}
-	visited     map[string]bool
+	baseDir              string
+	localNodeSearchPaths []string
+	baseSearchPaths      []string
+	cache                map[NodeEntry]map[string]any
+	visited              map[string]bool
 }
 
-func NewStdNodePoolWithSearchPaths(searchPaths []string) *StdNodePool {
+type NodeEntry struct {
+	filename string
+	baseDir  string
+}
+
+func NewStdNodePoolWithSearchPaths(baseDir string, searchPaths []string) *StdNodePool {
 	return &StdNodePool{
-		searchPaths: searchPaths,
-		cache:       map[string]map[string]map[string]interface{}{},
-		visited:     map[string]bool{},
+		baseDir:              baseDir,
+		localNodeSearchPaths: []string{},
+		baseSearchPaths:      searchPaths,
+		cache:                map[NodeEntry]map[string]any{},
+		visited:              map[string]bool{},
 	}
 }
 
 func (p *StdNodePool) ReadNodeEntry(baseDir, filename string) (obj map[string]interface{}, err error) {
-	files, ok := p.cache[baseDir]
+	nodeEntry := NodeEntry{filename: filename, baseDir: baseDir}
+	ret, ok := p.cache[nodeEntry]
 	if !ok {
-		ret, err := LoadAndResolveInheritancesRecursively(baseDir, filename, p)
+		ret, err = LoadAndResolveInheritancesRecursively(baseDir, filename, p)
 		if err != nil {
 			return nil, err
 		}
-		p.cache[baseDir] = map[string]map[string]interface{}{}
-		p.cache[baseDir][filename] = ret
-		return ret, nil
-	}
-	ret, ok := files[filename]
-	if !ok {
-		ret, err := LoadAndResolveInheritancesRecursively(baseDir, filename, p)
-		if err != nil {
-			return nil, err
-		}
-		files[filename] = ret
-		return ret, nil
+		p.cache[nodeEntry] = ret
 	}
 	return ret, nil
 }
@@ -53,5 +52,13 @@ func (p *StdNodePool) MarkVisited(absPath string) {
 }
 
 func (p *StdNodePool) SearchPaths() []string {
-	return p.searchPaths
+	paths := make([]string, 0, 1+len(p.localNodeSearchPaths)+len(p.baseSearchPaths))
+
+	if p.baseDir != "" {
+		paths = append(paths, p.baseDir)
+	}
+	paths = append(paths, p.localNodeSearchPaths...)
+	paths = append(paths, p.baseSearchPaths...)
+
+	return paths
 }
