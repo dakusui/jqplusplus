@@ -1,0 +1,76 @@
+function resolve_processor() {
+  local _absfile="${1}"
+  local _processor="jq ."
+  if is_localnode "${_absfile}" || [[ ${_absfile} == *.json++ || ${_absfile} == *.json ]]; then
+    _processor="jq ."
+  elif [[ "${_absfile}" == *.yaml++ || "${_absfile}" == *.yaml || "${_absfile}" == *.yml ]]; then
+    _processor="yaml2json"
+  elif [[ "${_absfile}" == *.sh ]]; then
+    _processor="bash -eu"
+  fi
+  echo "${_processor}"
+}
+
+function _debug_abort() {
+  print_stacktrace "DEBUG: error trapped"
+  exit 1
+}
+
+function _mangle_path() {
+  local _path="${1}" _path_base="${2}"
+  local _ret=""
+  if [[ -z "${_path_base}" ]]; then
+    echo "${_path}"
+    return 0
+  fi
+  IFS=":" read -r -a _arr <<<"${_path}"
+  for i in "${_arr[@]}"; do
+    local _cur="${_path_base}"
+    if [[ ${i} == .* ]]; then
+      # _JF_CWD always starts with '/' since it is an absolute path to current working directory by definition.
+      _cur="${_cur}${i/./${_JF_CWD}}"
+    else
+      _cur="${_cur}${i}"
+    fi
+    if [[ "${_ret}" == "" ]]; then
+      _ret="${_cur}"
+    else
+      _ret="${_ret}:${_cur}"
+    fi
+  done
+  echo "${_path_base}:${_ret}"
+}
+
+function __jqfront__abort_jq_front() {
+  abort "SIGINT TRAPPED!!!!"
+}
+
+readonly _JF_CWD="${JF_CWD:-"$(pwd)"}"
+readonly _JF_PATH_BASE=${JF_PATH_BASE:-""}
+readonly _JF_PATH=$(_mangle_path "${JF_PATH:-"."}" "${_JF_PATH_BASE}")
+readonly _JF_INFO=${JF_INFO:-"disabled"}
+readonly _JF_DEBUG=${JF_DEBUG:-"disabled"}
+readonly _JF_PERF=${JF_PERF:-"${_JF_DEBUG}"}
+readonly _JF_SESSION_ID="$(date +%s.%N)"
+
+trap __jqfront__abort_jq_front SIGINT
+
+if [[ ${_JF_DEBUG} == enabled ]]; then
+  trap _debug_abort ERR
+fi
+
+readonly _JF_TMPDIR="${TMPDIR:-/tmp}/.jq-front"
+export TMPDIR="${_JF_TMPDIR}"
+[[ ! -e "$TMPDIR" ]] && mkdir -p "${TMPDIR}"
+
+####
+# Export JF_PATH_BASE, which is set for executions under Docker
+if [[ -n "${JF_PATH_BASE:+x}" ]]; then
+  export TMPDIR="${_JF_PATH_BASE}${TMPDIR}"
+  [[ -e "${TMPDIR}" ]] || mkdir -p "$TMPDIR"
+fi
+
+readonly _JF_SESSION_DIR="${_JF_TMPDIR}/session-${_JF_SESSION_ID}"
+export _JF_TMPDIR
+
+alias jq='jq -M'

@@ -1,8 +1,8 @@
-# Makefile for jqplusplus (standard Go project layout)
+# Makefile for cmd (standard Go project layout)
 
 BINARY_NAME=jq++
 BINARY_PATH=bin/$(BINARY_NAME)
-CMD_PATH=jqplusplus/cmd/jqplusplus
+CMD_PATH=cmd/jqplusplus
 
 .PHONY: all build run clean fmt
 
@@ -15,8 +15,15 @@ build:
 run:
 	go run ./$(CMD_PATH)
 
+doc:
+	./tools/gendoc.sh
+
 clean:
-	rm -rf bin
+	rm -rf bin/*
+	rm -rf docs/*.html
 
 fmt:
 	gofmt -w . 
+
+test:
+	go test ./... 

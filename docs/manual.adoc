@@ -1,0 +1,65 @@
+== Usage
+
+=== Command Line Interface
+
+[source,bash]
+----
+jq-front [-h|--help] [--validation=no|strict|lenient] [--nested-templating-levels=num] [--version] [TARGET]
+----
+
+- `-h`, `--help`: Shows this help
+- `--validation`: Validation mode.
+`no`, `strict`, and `lenient` are available.
+The default is `no`.
+- `--nested-templating-levels`: Number of times templating happens by default.
+The default is `5`.
+If templating doesn't finish within `num` times, an error will be reported.
+- `--version`: Shows a version.
+- `TARGET`: A file to be processed.
+If not given, `stdin` will be processed.
+
+=== Environment variables
+
+You can control behaviours of `jq-front` by setting environment variables described in this section.
+
+==== JF_PATH
+
+From directories listed in `JF_PATH`, `jq-front` searches for requested file.
+Entries in the variable are separated by colons(`:`).
+
+When it is searching for a file during node-level inheritance resolution, it first searches for local node directory, which is created for temporarily, and if nothing is found, it will then traverses the variable.
+
+===== Default value
+
+`.`
+
+==== JF_DEBUG
+
+If this variable is set to `enabled`, debug information will be printed to `stderr`.
+
+===== Default value
+
+`disabled`
+
+==== JF_INFO
+
+If this variable is set to `enabled`, "INFO"(information) level log will be printed to `stderr`.
+
+
+===== Default value
+
+`disabled`
+
+
+==== JF_PERF
+
+If this variable is set to `enabled`, "PERF"(performance) level log will be printed to `stderr`.
+
+
+===== Default value
+
+`disabled`
+
+
+[.text-right]
+link:index.html[top]

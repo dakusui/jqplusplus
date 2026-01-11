@@ -1,0 +1,572 @@
+== Syntax
+
+=== `$extends` keyword
+
+This keyword can be used as a key whose associated value is an array.
+Each element in the array must be a text node.
+
+The string can be one of
+
+* A file in `JF_PATH`.
+* When it is placed NOT at the top level of an object node file, a name of a "local node".
+* A script invocation directive.
+
+To create a JSON file from an existing one `A.json`, you can do following.
+
+[source,json]
+----
+{
+  "$extends": [ "A.json" ]
+}
+----
+
+As you see in the example, the name of the file is placed inside an array and it means you can do so called "multiple-inheritance".
+
+[source,json]
+----
+{
+  "$extends": [ "A.json", "B.json" ]
+}
+----
+
+If you do a multiple inheritance, an element appeared in the array earlier is more prioritized(similar to the multiple inheritance in python).
+
+In case you have nodes at the same path in `A.json` and `B.json`, value from the `A.json` wins.
+
+==== File in `JF_PATH`
+
+As long as your file is under a directory specified by an element in `JF_PATH`, you can use it.
+That is, suppose that you have `JF_PATH` and it has a value `.:dir1`.
+
+----
+dir1
+ |
+ `--- child
+      |
+      `--- J.json
+----
+
+The file `J.json` can be referenced by
+
+----
+"$extends": ["child/J.json"]
+----
+
+In case you have `child/J.json` in multiple places under elements in `JF_PATH`, the first one will be used.
+For instance, in the following example, `dir1/child/J.json` will be referenced for the example abobe.
+
+----
+dir1
+ +--- child
+ |    |
+ |     `--- J.json
+dir2
+ |
+ `--- child
+      |
+      `--- J.json
+----
+
+You can also specify names of "local nodes".
+(See the section for `$local` keyword)
+
+==== Inheriting YAML files
+
+You can specify a file on `JF_PATH` environment variable.
+If the name ends with `.yaml` or `.yml`, it will be treated as a YAML file and converted into a JSON file by `yq` command.
+
+This feature is still experimental.
+
+==== Script Invocation Directive
+
+You can specify a program which generates a JSON object with a following syntax.
+
+[source,json]
+----
+{
+  "$extends": [
+    "SS.sh;bash -eu;dir1/J.json"
+  ]
+}
+----
+
+`SS.sh` is a script file to be executed.
+`bash -eu` is a program which executes the script.
+`dir1/J.json` is an argument which is passed to the program `SS.sh`.
+
+The string is split by semicolons and the first token is treated as a name of a program to be executed.
+The program is searched from `JF_PATH`.
+The second toke is a shell with which the program is executed.
+And the rest will be passed to the program as arguments.
+
+NOTE: By inserting one or more semicolons, this syntax is triggred.
+
+=== `$local` keyword
+
+This keyword can be used as a key whose associated value is an object.
+A value in the object must be an object.
+
+This keyword can only be placed at the top-level of a file.
+
+[source,json]
+----
+{
+  "$local": {
+    "A": {
+      "a": "valueInA"
+    },
+    "B": {
+      "b": "valueInB"
+    },
+    "C": {
+      "$extends": ["A","B"]
+    }
+  },
+  "D": {
+    "$extends": ["C"]
+  }
+}
+----
+
+In this example, local nodes `A`, `B`, and `C` are defined.
+And a node at the top level, `D` extends `C`, which then extends `A` and `B`.
+This results in a following JSON object.
+
+[source,json]
+----
+{
+  "D": {
+    "a": "valueInA",
+    "b": "valueInB"
+  }
+}
+----
+
+NOTE: In case you have a local node and a file with the same name, `jq-node` picks up a local node, although you do not need to mind it usually because you do not want to give a suffix `.json` to a local node.
+
+=== `eval:` keyword
+
+This keyword can be used in a text node.
+The syntax can be defined as follows.
+
+[source]
+----
+  eval:[TYPE:]STRING
+  TYPE ::= object array string number boolean
+----
+
+If `TYPE:` is omitted, in other words `eval:` is followed by anything else than the defined `TYPE`s, `jq-front` behaves as if `string` is specified.
+
+The `STRING` is evaluated by a following command line.
+
+[source,bash]
+----
+    eval "echo \"${_body}\"" 2>"${_error}"
+----
+
+As seen in the above fragment, stderr is redirected to an internal file and the file is checked if a string ``ERROR: `` is contained in it.
+If the string is found in it, `jq-front` considers that something went wrong during the evaluation and aborts the rest of the process.
+Such a string is printed to stderr by `error` function (See its definition in <<builtin-functions>> section).
+
+Not only variables, functions, and commands visible to a bash shell on which `jq-front` runs, you can use functions provided by the processor.
+For more details, refer to <<builtin-functions>> section.
+
+CAUTION: There are similar keywords `template:`, but it is only kept for compatibility and will be removed in the future version of this product.
+Please refrain from using it.
+In case you want to define a text node that starts with the string itself, you can do ```raw:template:...```
+
+=== `raw:` keyword
+
+You may sometimes want to define a text node which starts with other keywords such as `eval:` itself.
+In such cases you can use `raw:` keyword to escape it.
+
+[source]
+----
+   raw:eval:hello
+----
+
+This results in a following output.
+
+[source]
+----
+   eval:hello
+----
+
+=== `template:` keyword
+
+Deprecated.
+A keyword that has similar effects to `eval:` keyword.
+This is kept only for compatibility.
+
+[#builtin-functions]
+== Built-in `jq-front` functions
+
+In addition to commands and functions visible to a bash shell on which `jq-front` runs, you can use functions listed in this section.
+
+=== `ref` function
+
+A function that returns a value of a node specified by an argument.
+This function can only work from inside "Work(2)" file.
+
+In case this function references a text node that starts with `eval:`, it performs templating on the node.
+This means, the `ref` function may be applied recursively.
+In case cyclic reference is found during this process, it will be reported and the process will be aborted.
+
+- parameter:
+* `_path`: path to a node in the file "Work(2)"
+- returned value (stdout):
+* A value of a node specified by `_path`
+
+==== Examples
+
+[cols="1a,1a"]
+|===
+|Input |Output
+
+|[source,json]
+.A.json
+----
+{
+  "a": {
+    "b": {
+       "c": "hello"
+    }
+  },
+  "r": "eval:string:$(ref .a.b.c), world"
+}
+----
+|[source,json]
+----
+{
+  "a": {
+    "b": {
+       "c": "hello"
+    }
+  },
+  "r": "hello, world"
+}
+----
+
+|
+[source,json]
+.B.JSON
+----
+{
+  "$extends": ["A.json"],
+  "r": "eval:string:$(ref .a.b.c), world"
+}
+----
+|[source,json]
+----
+{
+  "a": {
+    "b": {
+       "c": "hello"
+    }
+  },
+  "r": "hello, world"
+}
+----
+
+|
+[source,json]
+.C.JSON
+----
+{
+  "$extends": ["A.json"],
+  "r": "eval:object:$(ref .a.b)"
+}
+----
+|[source,json]
+----
+{
+  "a": {
+    "b": {
+       "c": "hello"
+    }
+  },
+  "r": {
+    "c": "hello"
+  }
+}
+----
+
+|===
+
+=== `self` function
+
+A function that prints the entire file content before templating.
+This function is intended for internal use.
+
+- parameter: (none)
+- returned value (stdout):
+* Content of the processed file before any templating happens.
+
+=== `curn` function
+
+A function that returns a path to the node that makes a call to this function.
+
+- parameter: (none)
+- returned value (stdout):
+* A path to the string node that makes the call to this function.
+
+==== Examples
+
+[cols="1a,1a"]
+|===
+|Input |Output
+
+|
+[source,json]
+.A.json
+----
+{
+  "a": {
+    "b": [
+       "eval:$(curn)"
+    ]
+  }
+}
+----
+|[source,json]
+----
+{
+  "a": {
+    "b": [
+       ".a.b[0]"
+    ]
+  }
+}
+----
+
+|
+[source,json]
+.A.json
+----
+{
+  "a": {
+    "b": {
+       "c": "eval:$(cur)"
+    }
+  }
+}
+----
+|[source,json]
+----
+{
+  "a": {
+    "b": {
+       "c": ".a.b.c"
+    }
+  }
+}
+----
+|===
+
+NOTE: The actual outputs of this function are escaped.
+
+=== `cur` function
+
+A function that returns a path to a container node to which the current "entry" belongs.
+An "entry" means a string element in an array or a pair of key and value in an object.
+
+- parameter: (none)
+- returned value (stdout):
+* A path to the container the node belongs to
+
+==== Examples
+
+[cols="1a,1a"]
+|===
+|Input |Output
+
+|
+[source,json]
+.A.json
+----
+{
+  "a": {
+    "b": [
+       "eval:$(cur)"
+    ]
+  }
+}
+----
+|[source,json]
+----
+{
+  "a": {
+    "b": [
+       ".a.b"
+    ]
+  }
+}
+----
+
+|
+[source,json]
+.A.json
+----
+{
+  "a": {
+    "b": {
+       "c": "eval:$(cur)"
+    }
+  }
+}
+----
+|[source,json]
+----
+{
+  "a": {
+    "b": {
+       "c": ".a.b"
+    }
+  }
+}
+----
+
+|
+[source,json]
+.X.JSON
+----
+{
+  "x": {
+    "$extends": ["A.json"]
+  }
+}
+----
+|[source,json]
+----
+{
+  "x": {
+    "a": {
+      "b": {
+         "c": ".x.a.b"
+      }
+    }
+  }
+}
+----
+
+|===
+
+NOTE: Notice that jq-front first expands all the inheritances in the input and then invokes the 'templating' mechanism.
+Thus, `cur` function calls in inherited files are evaluated based on paths where they appear in the expanded file.
+
+=== `parent` function
+
+A function that prints a path to a parent node of a given path.
+
+- parameter:
+* A path to a node
+- returned value (stdout):
+* A path to a parent of the node.
+
+==== Examples
+
+[cols="1a,1a"]
+|===
+|Input |Output
+
+|
+[source,json]
+----
+"eval:$(parent .hello.world)"
+----
+
+|[source,json]
+----
+".hello"
+----
+
+|===
+
+=== `error` function
+
+A function that prints a given error message and returns a non-zero value.
+
+- parameter:
+* An error message
+- returned value:
+** stdout
+*** (none)
+** sterr
+*** A string starts with ```ERROR: {given error message}```.
+A stack trace follows it.
+** exit code
+*** A non-zero value.
+
+NOTE: If you nest a call to a function or command that fails by another using a command substitution of `bash`, the next call will not be aborted immediately, in general.
+That is, ```"eval:$(echo $(cat missing-file))-$(echo hello)"``` will result in `-hello`.
+This is a behaviour of `bash` and its command substitution.
+However, if you use this function, ```"eval:$(echo $(cat missing-file || error 'something went wrong'))-$(echo hello)"```, `jq-front` will abort the process after evaluating this string because it finds a keyword ```ERROR: ``` in the stderr.
+
+NOTE: Functions discussed in this section check whether `$?` is zero at the beginning.
+If it is not zero, the function will abort and the string evaluation will be aborted in general.
+However, a user is still able to nest the call with another function that not necessarily performs such a check.
+In this case, the evaluation will not stop at the point and `jq-front` will abort the rest of its execution after handling the string since it will find the ```ERROR: ``` keyword.
+
+==== Examples
+
+[cols="1a,1a"]
+|===
+|Input |Output
+
+|
+[source,json]
+----
+"eval:$(error hello)"
+----
+
+|[source,console]
+----
+ERROR: hello
+  at 36 abort /home/who/Documents/jq-front/lib/shared.sh
+  at 439 _check_cyclic_dependency /home/who/Documents/jq-front/jq-front
+  at 111 _expand_nodelevel_inheritances /home/who/Documents/jq-front/jq-front
+...
+----
+
+|===
+
+[#user-functions]
+== Defining a user function for templating
+
+You can define your own function for the templating stage by following syntax.
+First, you can create a file that contains definitions of your functions.
+
+[source,bash]
+.SS.sh
+----
+function hello_world() {
+  echo "Hello, world. My Function!"
+}
+----
+
+Next you reference the file inside the `$extends` syntax.
+
+[source,json]
+----
+{
+  "$extends": [
+    "SS.sh;SOURCE"
+  ],
+  "key": "eval:string:hello_world=$(hello_world),$(echo HELLO)"
+}
+----
+
+The string `SOURCE` is the keyword that tells `jq-front` to import the file.
+And as you see, you are now able to call the function you defined, `hello_world`.
+
+[source,json]
+----
+{
+  "key": "hello_world=Hello, world. My Function!,HELLO"
+}
+----
+
+The file will be rendered as you see above.
+
+[.text-right]
+link:index.html[top]

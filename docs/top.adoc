@@ -1,0 +1,205 @@
+== `./` jq-front: JSON with inheritance and templating
+
+https://github.com/dakusui/jq-front[`jq-front`] is a simple tool to give your JSON files a power of inheritance and templating.
+It was named after *Cfront*<<Cfront>>, which is an old component of {cpp} language that converts {cpp} source code into C language.
+
+Despite that there are criticisms to use JSON<<json>> as system configuration information's format<<cr>>, JSON still has its beauty such as rich tool supports, good balance between machine's and human's readability and writability, clarity and simplicity in syntax, etc.
+
+However, surely it has some weaknesses when we try to define data structure.
+For instance, under a situation, where we need to generate similar but slightly different system configurations repeatedly, it is quite difficult to remove redundant pieces since JSON itself does not define anything about relationships between files or nodes inside files.footnote:[This is not merely a weakness of JSON but also other notations even YAML. YAML has a way to reference another object node from one,still it cannot embed a string value of a text node in another by itself.]
+
+=== For what is it useful?
+
+Haven't you ever created configuration files, each of which are slightly different?
+
+[cols="1a,1a"]
+|===
+|config for foo |config for bar
+
+|[source,json]
+----
+{
+  "foo_database": {
+    "server": {
+      "ip": "192.168.1.5",
+      "port": 2001
+    },
+    "db_name": "foo",
+    "user": {
+      "name": "root",
+      "password": "foo_root"
+    }
+  }
+}
+----
+
+|[source,json]
+----
+{
+  "bar_database": {
+    "server": {
+      "ip": "192.168.1.5",
+      "port": 2001
+    },
+    "db_name": "bar",
+    "user": {
+      "name": "root",
+      "password": "bar_root"
+    }
+  }
+}
+----
+|===
+
+Probably you want to define a JSON, which defines boring default values like this,
+
+[source,json]
+.database_default
+----
+{
+    "server": {
+      "ip": "192.168.1.5",
+      "port": 2001
+    },
+    "user": {
+      "name": "root"
+    }
+}
+----
+
+And reuse it from other files as follows
+
+[cols="1a,1a"]
+|===
+|foo.json |bar.json
+
+|[source,json]
+----
+{
+  "foo_database": {
+    "$extends": [ "database_default.json" ],
+    "db_name": "foo",
+    "user": {
+      "password": "foo_root"
+    }
+  }
+}
+----
+
+|[source,json]
+----
+{
+  "foo_database": {
+    "$extends": [ "database_default.json" ],
+    "db_name": "bar",
+    "user": {
+       "password": "bar_root"
+    }
+  }
+}
+----
+|===
+
+`jq-front` does it for you.
+Try `jq-front foo.json` from your command line and you will see the `config for foo` in the first matrix.
+
+=== YAML?
+
+There is a criticism to use JSON as a configuration language<<cr>>.
+Although I am a bit skeptical at the discussion from some view points (e.g., users will eventually end up in desiring GUI not only YAML), `jq-front` can also be used to make your YAML based configuration language more powerful.
+
+[cols="1a,1a"]
+|===
+|INPUT |OUTPUT
+
+|[source,yaml]
+----
+$local:
+  database_default:
+    server:
+      ip: 192.168.1.5
+      port: 2000
+    db_name: test
+    user:
+      name: root
+      password: root
+
+# database foo differs from default by only its port and user password
+foo_database:
+  $extends: [ database_default ]
+  server:
+    port: 2001
+  db_name: foo
+  user:
+    password: foo_root
+----
+
+|[source,yaml]
+----
+foo_database:
+  server:
+    ip: 192.168.1.5
+    port: 2001
+  db_name: foo
+  user:
+    name: root
+    password: foo_root
+----
+|===
+
+The command line to render the input is following.<<stackoverflow>>
+
+[source,shell script]
+----
+$ yq . -j in.yaml | jq-front  | yq . -y
+----
+
+=== HOCON?
+
+// suppress inspection "SpellCheckingInspection"
+HOCON<<hocon>> is another notation intended for human readability and writability.
+It also supports the data inheritance, and the node reference feature but you have still have good reasons to use `jq-front`.
+
+- The input and output of `jq-front` are both JSON, which are widely accepted standard.
+- `jq-front` allows you to define custom operations very easily by "templating".
+- The capability to structure data (data inheritance and node inheritance) and the improvements in human readability are two separate concerns, which shouldn't be confused.
+
+The last point tends to be looked over frequently but important in context of automating the system configuration, which is necessary in CI/CD.
+In order to configure your system automatically, it is important to generate the configuration file for the system programmatically.
+
+// suppress inspection "SpellCheckingInspection"
+However, HOCON is not so machine generatable format as JSON because it is a superset of JSON.
+Even if it is possible, still you end up in a problem, where you will potentially get an object looking differently after a round trip generation.
+That is, you first write a HOCON file by hand, then process it by your program.
+After that, you may notice that the output of your program doesn't respect your style.
+Style is not important for computers, but it is for human's readability and wasn't it the intention of the notation?
+This situation may come from the design of your pipeline, where you are trying to resolve two problems in a single stage by HOCON.
+// suppress inspection "GrazieInspection"
+One is human readability and the other is value resolution to structure your data.
+Instead, you can separate it into two stages, where those are executed independently.
+
+You can use `jq-front` for the second stage.
+With that, you can utilize any tools and libraries that are designed for JSON.
+// suppress inspection "GrazieInspection"
+(Remember, `jq` itself equips with a very powerful query language after which the tool was named).
+This approach delivers you another benefit, where you can select another solution to improve human readability of your configuration such as YAML.
+
+
+[bibliography]
+== References
+
+- [[[jq-front, 1]]] jq-front project in github.org. https://github.com/dakusui/jq-front[jq-front]:
+2019
+- [[[Cfront, 2]]] Cfront article in en.wikipedia.org. https://en.wikipedia.org/wiki/Cfront[Cfront]:
+2019
+- [[[cr, 3]]] Thayne McCombs. https://www.lucidchart.com/techblog/2018/07/16/why-json-isnt-a-good-configuration-language/[Why JSON isn’t a Good Configuration Language]:
+2018.
+- [[[yaml, 4]]] YAML article in en.wikipedia.org. https://en.wikipedia.org/wiki/YAML[YAML]:
+2019
+- [[[json, 5]]] json.org. http://www.json.org/[JSON]:2019
+- [[[jq, 6]]]  jq https://stedolan.github.io/jq/manual/[jq manual]:2019
+- [[[stackoverflow, 7]]] More complex inheritance in YAML? https://stackoverflow.com/questions/14184971/more-complex-inheritance-in-yaml[stackoverflow]:2019
+- [[hocon, 8]] HOCON (Human-Optimized Config Object Notation) https://github.com/lightbend/config[HOCON]:2020
+
+[.text-right]
+link:index.html[top]
