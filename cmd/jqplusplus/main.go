@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"github.com/dakusui/jqplusplus/internal"
 	"os"
 	"path/filepath"
@@ -39,7 +40,12 @@ func inputFiles(args []string) ([]internal.NodeEntry, func(), error) {
 			_, _ = os.Stderr.WriteString("Error creating temporary file: " + err.Error() + "\n")
 			return nil, exit, err
 		}
-		exit = func() { os.Remove(tempFile.Name()) }
+		exit = func() {
+			err := os.Remove(tempFile.Name())
+			if err != nil {
+				_, _ = fmt.Fprintf(os.Stderr, "\n")
+			}
+		}
 
 		if _, err := tempFile.ReadFrom(os.Stdin); err != nil {
 			_, _ = os.Stderr.WriteString("Error reading from stdin: " + err.Error() + "\n")
@@ -50,8 +56,14 @@ func inputFiles(args []string) ([]internal.NodeEntry, func(), error) {
 			_, _ = os.Stderr.WriteString("Error closing temporary file: " + err.Error() + "\n")
 			return nil, exit, err
 		}
+		absolutePath, err := filepath.Abs(tempFile.Name())
+		if err != nil {
+			_, _ = os.Stderr.WriteString("Error getting absolute path: " + err.Error() + "\n")
+			return nil, exit, err
+		}
+
 		in = []internal.NodeEntry{
-			internal.NewNodeEntry(filepath.Base(tempFile.Name()), filepath.Dir(tempFile.Name())),
+			internal.NewNodeEntry("", absolutePath),
 		}
 	} else {
 		in = internal.Map(args[1:], func(t string) internal.NodeEntry {
