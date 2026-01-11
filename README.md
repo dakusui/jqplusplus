@@ -1,5 +1,9 @@
-# jqplusplus
+# jq++
 
+A project that productizes the [jq-front](https://github.com/dakusui/jq-front).
+jq-front is a simple utility that extends JSON files with file- and node-level inheritance, templating, and reference evaluation, making it easier to create reusable and dynamic JSON-based configurations.
+
+Currently `jq++` supports only inheritance features.
 This project follows the standard Go project layout.
 
 ## Installation
