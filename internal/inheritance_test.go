@@ -1,7 +1,6 @@
-package filelevel
+package internal
 
 import (
-	"github.com/dakusui/jqplusplus/jqplusplus/internal/utils"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -341,7 +340,7 @@ func TestMergeObjects(t *testing.T) {
 		a := map[string]interface{}{"a": 1, "b": 2}
 		b := map[string]interface{}{"b": 3, "c": 4}
 		expected := map[string]interface{}{"a": 1, "b": 3, "c": 4}
-		result := utils.MergeObjects(a, b, utils.MergePolicyDefault)
+		result := MergeObjects(a, b, MergePolicyDefault)
 		if !reflect.DeepEqual(result, expected) {
 			t.Errorf("expected %v, got %v", expected, result)
 		}
@@ -361,7 +360,7 @@ func TestMergeObjects(t *testing.T) {
 			"b": map[string]interface{}{"x": 10, "y": 200, "z": 300},
 			"c": 3,
 		}
-		result := utils.MergeObjects(a, b, utils.MergePolicyDefault)
+		result := MergeObjects(a, b, MergePolicyDefault)
 		if !reflect.DeepEqual(result, expected) {
 			t.Errorf("expected %v, got %v", expected, result)
 		}
@@ -371,7 +370,7 @@ func TestMergeObjects(t *testing.T) {
 		a := map[string]interface{}{"a": 1, "b": 2}
 		b := map[string]interface{}{"b": 100}
 		expected := map[string]interface{}{"a": 1, "b": 100}
-		result := utils.MergeObjects(a, b, utils.MergePolicyDefault)
+		result := MergeObjects(a, b, MergePolicyDefault)
 		if !reflect.DeepEqual(result, expected) {
 			t.Errorf("expected %v, got %v", expected, result)
 		}
@@ -381,7 +380,7 @@ func TestMergeObjects(t *testing.T) {
 		a := map[string]interface{}{}
 		b := map[string]interface{}{"a": 1}
 		expected := map[string]interface{}{"a": 1}
-		result := utils.MergeObjects(a, b, utils.MergePolicyDefault)
+		result := MergeObjects(a, b, MergePolicyDefault)
 		if !reflect.DeepEqual(result, expected) {
 			t.Errorf("expected %v, got %v", expected, result)
 		}
@@ -389,7 +388,7 @@ func TestMergeObjects(t *testing.T) {
 		a2 := map[string]interface{}{"a": 1}
 		b2 := map[string]interface{}{}
 		expected2 := map[string]interface{}{"a": 1}
-		result2 := utils.MergeObjects(a2, b2, utils.MergePolicyDefault)
+		result2 := MergeObjects(a2, b2, MergePolicyDefault)
 		if !reflect.DeepEqual(result2, expected2) {
 			t.Errorf("expected %v, got %v", expected2, result2)
 		}

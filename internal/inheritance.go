@@ -1,11 +1,10 @@
-package filelevel
+package internal
 
 import (
 	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/BurntSushi/toml"
-	"github.com/dakusui/jqplusplus/jqplusplus/internal/utils"
 	"github.com/gurkankaymak/hocon"
 	"github.com/titanous/json5"
 	"gopkg.in/yaml.v3"
@@ -123,7 +122,7 @@ func parseInheritsField(val any, inherits InheritType) ([]string, error) {
 			if !ok {
 				return nil, fmt.Errorf("%s array must contain only strings: %v", inherits.String(), v)
 			}
-			result = utils.Insert(result, 0, str)
+			result = Insert(result, 0, str)
 		}
 		return result, nil
 	default:
@@ -349,7 +348,7 @@ func CreateSessionDirectory() string {
 	if !ok {
 		v = ""
 	}
-	ret, e := os.MkdirTemp(v, "jqplusplus-session-*")
+	ret, e := os.MkdirTemp(v, "cmd-session-*")
 	if e != nil {
 		panic(fmt.Sprintf("failed to create session directory: %v", e))
 	}

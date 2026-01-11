@@ -1,4 +1,4 @@
-package filelevel
+package internal
 
 import (
 	"fmt"
@@ -10,6 +10,14 @@ func Reverse[T any](s []T) {
 	for i, j := 0, len(s)-1; i < j; i, j = i+1, j-1 {
 		s[i], s[j] = s[j], s[i]
 	}
+}
+
+func Insert[T any](slice []T, index int, value T) []T {
+	if index < 0 || index > len(slice) {
+		panic("Index out of range")
+	}
+	result := append(slice[:index], append([]T{value}, slice[index:]...)...)
+	return result
 }
 
 func JSONPaths(obj map[string]any, pred func([]any) bool) [][]any {
@@ -290,3 +298,28 @@ func ToAnySlice[T any](xs []T) []any {
 	}
 	return out
 }
+
+func MergeObjects(a, b map[string]interface{}, policy MergePolicy) map[string]interface{} {
+	result := make(map[string]interface{})
+	for k, v := range a {
+		result[k] = v
+	}
+	for k, v := range b {
+		if av, ok := result[k].(map[string]interface{}); ok {
+			if bv, ok := v.(map[string]interface{}); ok {
+				result[k] = MergeObjects(av, bv, policy)
+				continue
+			}
+		}
+		result[k] = v
+	}
+	return result
+}
+
+// MergePolicy defines the policy for merging objects.
+type MergePolicy int
+
+const (
+	MergePolicyDefault MergePolicy = iota
+	// Add more policies as needed
+)

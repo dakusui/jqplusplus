@@ -1,4 +1,4 @@
-package filelevel
+package internal
 
 import (
 	"path/filepath"
