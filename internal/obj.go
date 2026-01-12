@@ -2,7 +2,7 @@ package internal
 
 import "fmt"
 
-func JSONPaths(obj map[string]any, pred func([]any) bool) [][]any {
+func Paths(obj map[string]any, pred func([]any) bool) [][]any {
 	var paths [][]any
 	walkAnyPath(nil, obj, &paths)
 	return Filter(paths, pred)
