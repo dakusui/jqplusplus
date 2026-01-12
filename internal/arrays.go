@@ -1,8 +1,7 @@
 package internal
 
 import (
-	"strconv"
-	"strings"
+	"sort"
 )
 
 func Reverse[T any](s []T) {
@@ -52,6 +51,20 @@ func DistinctBy[T any, K comparable](in []T, key func(T) K) []T {
 	return out
 }
 
+type Ordered interface {
+	int | int8 | int16 | int32 | int64 | uint | uint8 | uint16 | uint32 | uint64 | uintptr | float32 | float64 | string
+}
+
+func Sort[T any](in []T, comparator func(a, b T) bool) []T {
+
+	out := make([]T, len(in))
+	copy(out, in)
+	sort.Slice(out, func(i, j int) bool {
+		return comparator(in[i], in[j])
+	})
+	return out
+}
+
 func DropLast[T any](in []T) []T {
 	if len(in) == 0 {
 		return nil
@@ -59,42 +72,6 @@ func DropLast[T any](in []T) []T {
 	out := make([]T, len(in)-1)
 	copy(out, in[:len(in)-1])
 	return out
-}
-
-func lastElementIsOneOf(v ...string) func(p []any) bool {
-	return func(p []any) bool {
-		if len(p) == 0 {
-			return false
-		}
-		s, ok := p[len(p)-1].(string)
-		if !ok {
-			return false
-		}
-		for _, v := range v {
-			if s == v {
-				return true
-			}
-		}
-		return false
-	}
-}
-
-func pathKey(p []any) string {
-	var b strings.Builder
-	for _, v := range p {
-		switch x := v.(type) {
-		case string:
-			b.WriteString("s:")
-			b.WriteString(x)
-		case int:
-			b.WriteString("i:")
-			b.WriteString(strconv.Itoa(x))
-		default:
-			panic("unsupported type in path")
-		}
-		b.WriteByte('|')
-	}
-	return b.String()
 }
 
 // ToAnySlice converts a []T into a []any by copying elements.
