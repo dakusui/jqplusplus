@@ -5,17 +5,47 @@ import (
 	"github.com/itchyny/gojq"
 )
 
-// applyJQExpression applies a jq expression to the provided input object, validates the result type,
+type JSONType int
+
+const (
+	Null = iota
+	Boolean
+	String
+	Number
+	Array
+	Object
+)
+
+func (t JSONType) String() string {
+	switch t {
+	case Null:
+		return "null"
+	case Boolean:
+		return "bool"
+	case String:
+		return "string"
+	case Number:
+		return "number"
+	case Array:
+		return "array"
+	case Object:
+		return "object"
+	default:
+		return "unknown"
+	}
+}
+
+// ApplyJQExpression applies a jq expression to the provided input object, validates the result type,
 // and returns it in the specified type.
-// applyJQExpression applies a jq expression to the provided input object, validates the result type,
+// ApplyJQExpression applies a jq expression to the provided input object, validates the result type,
 // and returns it in the specified type.
 //
 // NOTE: Custom jq functions/modules are enabled by compiling the parsed query with compiler options
 // (e.g., gojq.WithFunction, gojq.WithModuleLoader, ...).
-func applyJQExpression(
+func ApplyJQExpression(
 	input any,
 	expression string,
-	expectedType string,
+	expectedType JSONType,
 	compilerOpts ...gojq.CompilerOption,
 ) (any, error) {
 	// Parse the jq expression
@@ -45,19 +75,19 @@ func applyJQExpression(
 
 	// Validate and return the result based on the expected type
 	switch expectedType {
-	case "string":
+	case String:
 		if val, ok := result.(string); ok {
 			return val, nil
 		}
-	case "array":
+	case Array:
 		if val, ok := result.([]any); ok {
 			return val, nil
 		}
-	case "object":
+	case Object:
 		if val, ok := result.(map[string]any); ok {
 			return val, nil
 		}
-	case "number":
+	case Number:
 		switch v := result.(type) {
 		case float64:
 			return v, nil
@@ -68,17 +98,17 @@ func applyJQExpression(
 		default:
 			return nil, fmt.Errorf("result type mismatch: expected %s but got %T", expectedType, result)
 		}
-	case "boolean":
+	case Boolean:
 		if val, ok := result.(bool); ok {
 			return val, nil
 		}
-	case "null":
+	case Null:
 		if result == nil {
 			return nil, nil
 		}
 	default:
-		return nil, fmt.Errorf("unsupported expected type: %s", expectedType)
+		return nil, fmt.Errorf("unsupported expected type: %v", expectedType)
 	}
 
-	return nil, fmt.Errorf("result type mismatch: expected %s but got %T", expectedType, result)
+	return nil, fmt.Errorf("result type mismatch: expected %v but got %T", expectedType.String(), result)
 }
