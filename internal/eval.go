@@ -1,34 +1,37 @@
-package main
+package internal
 
 import (
 	"fmt"
 	"github.com/itchyny/gojq"
 )
 
-func main() {
-	v, err := applyJQExpression(map[string]any{"a": "Hello", "b": "X"}, `.a|gsub("l"; "X")`, "string")
-	if err != nil {
-		panic(err)
-	}
-	fmt.Println(v)
-	w, err := applyJQExpression(map[string]any{"a": "Hello", "b": "X"}, `.a|gsub("l"; "X")`, "string")
-	if err != nil {
-		panic(err)
-	}
-	fmt.Println(w)
-}
-
 // applyJQExpression applies a jq expression to the provided input object, validates the result type,
 // and returns it in the specified type.
-func applyJQExpression(input any, expression string, expectedType string) (any, error) {
+// applyJQExpression applies a jq expression to the provided input object, validates the result type,
+// and returns it in the specified type.
+//
+// NOTE: Custom jq functions/modules are enabled by compiling the parsed query with compiler options
+// (e.g., gojq.WithFunction, gojq.WithModuleLoader, ...).
+func applyJQExpression(
+	input any,
+	expression string,
+	expectedType string,
+	compilerOpts ...gojq.CompilerOption,
+) (any, error) {
 	// Parse the jq expression
 	query, err := gojq.Parse(expression)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse jq expression: %w", err)
 	}
 
-	// Run the jq query
-	iter := query.Run(input)
+	// Compile the jq query (this is where custom functions/modules are wired in)
+	code, err := gojq.Compile(query, compilerOpts...)
+	if err != nil {
+		return nil, fmt.Errorf("failed to compile jq expression: %w", err)
+	}
+
+	// Run the compiled jq code
+	iter := code.Run(input)
 
 	result, ok := iter.Next()
 	if !ok {
@@ -55,8 +58,15 @@ func applyJQExpression(input any, expression string, expectedType string) (any, 
 			return val, nil
 		}
 	case "number":
-		if val, ok := result.(float64); ok {
-			return val, nil
+		switch v := result.(type) {
+		case float64:
+			return v, nil
+		case int:
+			return v, nil
+		case int64:
+			return v, nil // you may see this depending on platform / custom funcs
+		default:
+			return nil, fmt.Errorf("result type mismatch: expected %s but got %T", expectedType, result)
 		}
 	case "boolean":
 		if val, ok := result.(bool); ok {
