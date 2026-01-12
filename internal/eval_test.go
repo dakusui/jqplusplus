@@ -1,42 +1,55 @@
 package internal
 
 import (
-	"fmt"
 	"testing"
 )
 
 func TestEva_a(t *testing.T) {
 	input := map[string]any{"a": "Hello", "b": "X", "c": 1.0, "d": 234, "e": 12345678901234567}
-	w, err := applyJQExpression(input, `.a|gsub("l"; "X")`, "string")
+	expression := `.a|gsub("l"; "X")`
+	expected := "HeXXo"
+	v, err := applyJQExpression(input, expression, "string")
 	if err != nil {
-		panic(err)
+		t.Errorf("Failed to apply '%s' to '%s': %s", input, expression, err)
 	}
-	fmt.Println(w)
+	if v != "HeXXo" {
+		t.Errorf("Expected '%s' but got '%s'", expected, v)
+	}
 }
 
 func TestEval_c(t *testing.T) {
 	input := map[string]any{"a": "Hello", "b": "X", "c": 1.0, "d": 234, "e": 12345678901234567}
-	x, err := applyJQExpression(input, `.c`, "number")
+	expression := `.c`
+	expected := 1.0
+	v, err := applyJQExpression(input, expression, "number")
 	if err != nil {
-		panic(err)
+		t.Errorf("Failed to apply '%s' to '%s': %s", input, expression, err)
 	}
-	fmt.Println(x)
+	if v != expected {
+		t.Errorf("Expected '%f' but got '%s'", expected, v)
+	}
 }
 func TestEval_d(t *testing.T) {
 	input := map[string]any{"a": "Hello", "b": "X", "c": 1.0, "d": 234, "e": 12345678901234567}
-	y, err := applyJQExpression(input, `.d`, "number")
+	expression := `.d`
+	expected := 234
+	v, err := applyJQExpression(input, expression, "number")
 	if err != nil {
-		fmt.Printf("(%s)\n", y)
-		panic(err)
+		t.Errorf("Failed to apply '%s' to '%s': %s", input, expression, err)
 	}
-	fmt.Println(y)
+	if v != expected {
+		t.Errorf("Expected '%d' but got '%s'", expected, v)
+	}
 }
 func TestEval_e(t *testing.T) {
 	input := map[string]any{"a": "Hello", "b": "X", "c": 1.0, "d": 234, "e": 12345678901234567}
-	z, err := applyJQExpression(input, `.e`, "number")
+	expression := `.e`
+	expected := 12345678901234567
+	v, err := applyJQExpression(input, expression, "number")
 	if err != nil {
-		fmt.Printf("(%s)\n", z)
-		panic(err)
+		t.Errorf("Failed to apply '%s' to '%s': %s", input, expression, err)
 	}
-	fmt.Println(z)
+	if v != expected {
+		t.Errorf("Expected '%d' but got '%s'", expected, v)
+	}
 }
