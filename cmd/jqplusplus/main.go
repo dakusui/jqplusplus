@@ -27,7 +27,7 @@ If no files are provided, input is read from stdin.
 		_, _ = os.Stderr.WriteString("Error processing arguments: " + err.Error() + "\n")
 		os.Exit(1)
 	}
-	exitCode := process(in)
+	exitCode := processNodeEntries(in)
 	os.Exit(exitCode)
 }
 
@@ -73,24 +73,36 @@ func inputFiles(args []string) ([]internal.NodeEntry, func(), error) {
 	return in, exit, nil
 }
 
-func process(in []internal.NodeEntry) int {
+func processNodeEntries(in []internal.NodeEntry) int {
+	ret := 0
 	for _, nodeEntry := range in {
-		obj, err := internal.LoadAndResolveInheritances(nodeEntry.BaseDir(), nodeEntry.Filename(), internal.SearchPaths())
+		v, err := processNodeEntry(nodeEntry)
 		if err != nil {
 			_, _ = os.Stderr.WriteString("Error processing file " + nodeEntry.String() + ": " + err.Error() + "\n")
-			return 1
+			ret = 1
+			break
 		}
-
-		data, err := json.MarshalIndent(obj, "", "  ")
-		if err != nil {
-			_, _ = os.Stderr.WriteString("Error marshaling object to JSON: " + err.Error() + "\n")
-			return 1
-		}
-		_, err = os.Stdout.WriteString(string(data) + "\n")
-		if err != nil {
-			_, _ = os.Stderr.WriteString("Error writing to stdout: " + err.Error() + "\n")
-			return 1
-		}
+		os.Stdout.WriteString(v + "\n")
 	}
-	return 0
+	return ret
+}
+
+func processNodeEntry(nodeEntry internal.NodeEntry) (string, error) {
+	obj, err := internal.LoadAndResolveInheritances(nodeEntry.BaseDir(), nodeEntry.Filename(), internal.SearchPaths())
+	if err != nil {
+		return "", err
+	}
+	obj, err = internal.ProcessKeySide(obj, 7)
+	if err != nil {
+		return "", err
+	}
+	obj, err = internal.ProcessValueSide(obj, 7)
+	if err != nil {
+		return "", err
+	}
+	data, err := json.MarshalIndent(obj, "", "  ")
+	if err != nil {
+		return "", err
+	}
+	return string(data), nil
 }

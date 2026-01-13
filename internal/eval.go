@@ -47,7 +47,7 @@ func (t JSONType) String() string {
 func ApplyJQExpression(
 	input any,
 	expression string,
-	expectedType JSONType,
+	expectedTypes []JSONType,
 	compilerOpts ...gojq.CompilerOption,
 ) (any, error) {
 	// Parse the jq expression
@@ -76,52 +76,52 @@ func ApplyJQExpression(
 	}
 
 	// Validate and return the result based on the expected type
-	switch expectedType {
-	case String:
-		if val, ok := result.(string); ok {
-			return val, nil
-		}
-	case Array:
-		if val, ok := result.([]any); ok {
-			return val, nil
-		}
-	case Object:
-		if val, ok := result.(map[string]any); ok {
-			return val, nil
-		}
-	case Number:
-		switch v := result.(type) {
-		case float64:
-			return v, nil
-		case int:
-			return v, nil
-		case int64:
-			return v, nil // you may see this depending on platform / custom funcs
-		default:
-			return nil, fmt.Errorf("result type mismatch: expected %s but got %T", expectedType, result)
-		}
-	case Bool:
-		if val, ok := result.(bool); ok {
-			return val, nil
-		}
-	case Null:
-		if result == nil {
-			return nil, nil
-		}
-	default:
-		return nil, fmt.Errorf("unsupported expected type: %v", expectedType)
+	expected := isExpected(result, expectedTypes...)
+	if !expected {
+		return nil, fmt.Errorf("result type mismatch: expected one of %s but got %T", expectedTypes, result)
 	}
-
-	return nil, fmt.Errorf("result type mismatch: expected %v but got %T", expectedType.String(), result)
+	return result, nil
 }
 
-func testFunc(v string) bool {
+func isExpected(v any, expectedTypes ...JSONType) bool {
+	for _, each := range expectedTypes {
+		switch each {
+		case String:
+			if _, ok := v.(string); ok {
+				return true
+			}
+		case Array:
+			if _, ok := v.([]any); ok {
+				return true
+			}
+		case Object:
+			if _, ok := v.(map[string]any); ok {
+				return true
+			}
+		case Number:
+			switch v.(type) {
+			case float64:
+				return true
+			case int:
+				return true
+			case int64:
+				return true
+			default:
+				continue
+			}
+		case Bool:
+			if _, ok := v.(bool); ok {
+				return true
+			}
+		case Null:
+			if v == nil {
+				return true
+			}
+		default:
+			continue
+		}
+	}
 	return false
-}
-
-func applyExpression(expr string, obj any) (any, error) {
-	// TODO
-	return nil, nil
 }
 
 func toStringArray(v any) []string {
@@ -163,7 +163,7 @@ func ProcessKeySide(obj map[string]any, ttl int) (map[string]any, error) {
 	}
 	keyChanges := Map(pathsToBeProcessed, func(p []any) keyChange {
 		expr := p[len(p)-1].(string)
-		v, err := applyExpression(expr, obj)
+		v, err := ApplyJQExpression(obj, expr, []JSONType{String, Array})
 		if err != nil {
 			return keyChange{}
 		}
@@ -247,7 +247,7 @@ func ProcessValueSide(obj map[string]any, ttl int) (map[string]any, error) {
 			var expectedType JSONType
 			w := v[len(prefixEval):]
 			w, expectedType = extractExpressionAndExpectedType(w)
-			x, err := ApplyJQExpression(newObj, w, expectedType)
+			x, err := ApplyJQExpression(newObj, w, []JSONType{expectedType})
 			if err != nil {
 				return nil, err
 			}
