@@ -4,16 +4,26 @@ BINARY_NAME=jq++
 BINARY_PATH=bin/$(BINARY_NAME)
 CMD_PATH=cmd/jqplusplus
 
+# GOROOT can be set via environment variable or uncomment the line below
+# GOROOT ?= /usr/local/go
+
+# If GOROOT is set, use it for go commands
+ifdef GOROOT
+	GO := $(GOROOT)/bin/go
+else
+	GO := go
+endif
+
 .PHONY: all build run clean fmt
 
 all: build
 
 build:
 	@mkdir -p bin
-	go build -o $(BINARY_PATH) ./$(CMD_PATH)
+	$(GO) build -o $(BINARY_PATH) ./$(CMD_PATH)
 
 run:
-	go run ./$(CMD_PATH)
+	$(GO) run ./$(CMD_PATH)
 
 doc:
 	./tools/gendoc.sh
@@ -23,7 +33,7 @@ clean:
 	rm -rf docs/*.html
 
 fmt:
-	gofmt -w . 
+	$(GO) fmt ./...
 
 test:
-	go test ./... 
+	$(GO) test ./... 
