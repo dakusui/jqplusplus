@@ -2,6 +2,8 @@ package internal
 
 import (
 	"fmt"
+	"strings"
+
 	"github.com/itchyny/gojq"
 )
 
@@ -9,7 +11,7 @@ type JSONType int
 
 const (
 	Null = iota
-	Boolean
+	Bool
 	String
 	Number
 	Array
@@ -20,7 +22,7 @@ func (t JSONType) String() string {
 	switch t {
 	case Null:
 		return "null"
-	case Boolean:
+	case Bool:
 		return "bool"
 	case String:
 		return "string"
@@ -98,7 +100,7 @@ func ApplyJQExpression(
 		default:
 			return nil, fmt.Errorf("result type mismatch: expected %s but got %T", expectedType, result)
 		}
-	case Boolean:
+	case Bool:
 		if val, ok := result.(bool); ok {
 			return val, nil
 		}
@@ -111,4 +113,97 @@ func ApplyJQExpression(
 	}
 
 	return nil, fmt.Errorf("result type mismatch: expected %v but got %T", expectedType.String(), result)
+}
+
+func ProcessValueSide(obj map[string]any, ttl int) (map[string]any, error) {
+	const prefixRaw = "raw:"
+	const prefixEval = "eval:"
+	entries := StringEntries(obj, func(v string) bool {
+		if strings.HasPrefix(v, prefixEval) {
+			return true
+		}
+		if strings.HasPrefix(v, prefixRaw) {
+			return true
+		}
+		return false
+	})
+	if len(entries) == 0 {
+		return obj, nil
+	}
+	if ttl <= 0 {
+		panic(fmt.Sprintf("ttl is 0, %v entries left.(%v)", len(entries), entries))
+	}
+	newObj := DeepCopy(obj).(map[string]any)
+	newEntries := []Entry{}
+	for _, e := range entries {
+		v := e.Value.(string)
+		var n Entry
+		if strings.HasPrefix(v, prefixRaw) {
+			n = Entry{e.Path, v[len(prefixRaw):]}
+			continue
+		} else if strings.HasPrefix(v, prefixEval) {
+			var expectedType JSONType
+			w := v[len(prefixEval):]
+			w, expectedType = extractExpressionAndExpectedType(w)
+			x, err := ApplyJQExpression(newObj, w, expectedType)
+			if err != nil {
+				return nil, err
+			}
+			n = Entry{e.Path, x}
+		} else {
+			panic(fmt.Sprintf("Fishy value was found: %v (in %v)", v, e))
+		}
+		newEntries = append(newEntries, n)
+	}
+	for _, e := range newEntries {
+		p := e.Path
+		v := e.Value
+
+		if !SetAtPath(newObj, p, v) {
+			panic("")
+		}
+	}
+	return ProcessValueSide(newObj, ttl-1)
+}
+
+func extractExpressionAndExpectedType(expr string) (string, JSONType) {
+	i := strings.IndexRune(expr, ':')
+	if i < 0 {
+		return expr, String
+	}
+	typeToken := expr[0:i]
+	exprToken := expr[i+1 : 0]
+	switch typeToken {
+	case "string":
+		return exprToken, String
+	case "number":
+		return exprToken, Number
+	case "null":
+		return exprToken, Null
+	case "bool":
+		return exprToken, Bool
+	case "object":
+		return exprToken, Object
+	case "array":
+		return exprToken, Array
+	default:
+		return expr, String
+	}
+}
+
+func StringEntries(obj map[string]any, pred func(v string) bool) []Entry {
+	if pred == nil {
+		panic("pred is nil")
+	}
+	entries := Entries(obj, func(path []any) bool {
+		value, ok := GetAtPath(obj, path)
+		if !ok {
+			return false
+		}
+		if _, ok := value.(string); ok {
+			return pred(value.(string))
+		}
+		return false
+	})
+	return entries
 }
