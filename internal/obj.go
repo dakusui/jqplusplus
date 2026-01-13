@@ -2,6 +2,22 @@ package internal
 
 import "fmt"
 
+type Entry struct {
+	Path  []any
+	Value any
+}
+
+func Entries(obj map[string]any, pred func([]any) bool) []Entry {
+	paths := Paths(obj, pred)
+	return Map(paths, func(path []any) Entry {
+		if val, ok := GetAtPath(obj, path); ok {
+			return Entry{Path: path, Value: val}
+		}
+		return Entry{}
+	})
+}
+
+// Paths returns all JSON paths in `obj` that satisfy `pred`.
 func Paths(obj map[string]any, pred func([]any) bool) [][]any {
 	var paths [][]any
 	walkAnyPath(nil, obj, &paths)
@@ -191,5 +207,27 @@ func SetAtPath(root any, path []any, value any) (ok bool) {
 
 	default:
 		panic(fmt.Sprintf("unsupported path segment type: %T", last))
+	}
+}
+
+// DeepCopy creates a deep copy of the given value.
+// It recursively copies maps and slices, while preserving primitive values.
+func DeepCopy(v any) any {
+	switch x := v.(type) {
+	case map[string]any:
+		result := make(map[string]any, len(x))
+		for k, val := range x {
+			result[k] = DeepCopy(val)
+		}
+		return result
+	case []any:
+		result := make([]any, len(x))
+		for i, val := range x {
+			result[i] = DeepCopy(val)
+		}
+		return result
+	default:
+		// Primitive types (string, int, float64, bool, nil) are returned as-is
+		return v
 	}
 }
