@@ -336,3 +336,7 @@ func DeepCopy(v any) any {
 		return v
 	}
 }
+
+func DeepCopyAs[T any](v T) T {
+	return DeepCopy(any(v)).(T)
+}
