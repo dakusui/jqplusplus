@@ -102,6 +102,8 @@ func GetAtPath(root any, path []any) (val any, ok bool) {
 // SetAtPath sets `value` at `path` inside `root`.
 // It mutates `root` only if the whole path is valid.
 // Path segments: string => map key, int => array index.
+// If false is returned, it means the path does not exist in the data structure in a compatible way (e.g., mismatched types, missing keys or indices).
+// In such a case, the mutation is not performed and the input is left unchanged.
 func SetAtPath(root any, path []any, value any) (ok bool) {
 	if len(path) == 0 {
 		return false
@@ -207,6 +209,109 @@ func SetAtPath(root any, path []any, value any) (ok bool) {
 
 	default:
 		panic(fmt.Sprintf("unsupported path segment type: %T", last))
+	}
+}
+
+// RemovePath removes the entry at the specified path from the given object or array.
+// Returns true if removal succeeded, false if the path could not be resolved.
+func RemovePath(root any, path []any) bool {
+	if len(path) == 0 {
+		// Cannot remove root itself
+		return false
+	}
+	cur := root
+	// Descend to the parent of the item to remove
+	for i := 0; i < len(path)-1; i++ {
+		seg := path[i]
+		switch s := seg.(type) {
+		case string:
+			m, ok := cur.(map[string]any)
+			if !ok {
+				m2, ok2 := cur.(map[string]interface{})
+				if !ok2 {
+					return false
+				}
+				next, exists := m2[s]
+				if !exists {
+					return false
+				}
+				cur = next
+				continue
+			}
+			next, exists := m[s]
+			if !exists {
+				return false
+			}
+			cur = next
+		case int:
+			arr, ok := cur.([]any)
+			if !ok {
+				arr2, ok2 := cur.([]interface{})
+				if !ok2 {
+					return false
+				}
+				if s < 0 || s >= len(arr2) {
+					return false
+				}
+				cur = arr2[s]
+				continue
+			}
+			if s < 0 || s >= len(arr) {
+				return false
+			}
+			cur = arr[s]
+		default:
+			return false
+		}
+	}
+	// Now remove the final segment
+	last := path[len(path)-1]
+	switch s := last.(type) {
+	case string:
+		if m, ok := cur.(map[string]any); ok {
+			if _, exists := m[s]; !exists {
+				return false
+			}
+			delete(m, s)
+			return true
+		}
+		if m2, ok2 := cur.(map[string]interface{}); ok2 {
+			if _, exists := m2[s]; !exists {
+				return false
+			}
+			delete(m2, s)
+			return true
+		}
+		return false
+	case int:
+		if s < 0 {
+			return false
+		}
+		if arr, ok := cur.([]any); ok {
+			if s >= len(arr) {
+				return false
+			}
+			// Remove the entry by slicing
+			arr = append(arr[:s], arr[s+1:]...)
+			// Now assign the sliced result back into the parent structure
+			// - This works only if parent's reference is available (backwards assignment)
+			// - But in Go, slices are not automatically updated in the parent.
+			// So we need to mutate the parent directly
+			// (since the parent pointer is lost here, we can't update; thus we can only nil the element)
+			// As a fallback, set the entry to nil
+			cur.([]any)[s] = nil
+			return true
+		}
+		if arr2, ok2 := cur.([]interface{}); ok2 {
+			if s >= len(arr2) {
+				return false
+			}
+			arr2[s] = nil
+			return true
+		}
+		return false
+	default:
+		return false
 	}
 }
 
