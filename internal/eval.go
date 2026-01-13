@@ -115,6 +115,98 @@ func ApplyJQExpression(
 	return nil, fmt.Errorf("result type mismatch: expected %v but got %T", expectedType.String(), result)
 }
 
+func testFunc(v string) bool {
+	return false
+}
+
+func applyExpression(expr string, obj any) (any, error) {
+	// TODO
+	return nil, nil
+}
+
+func toStringArray(v any) []string {
+	switch x := v.(type) {
+	case string:
+		return []string{v.(string)}
+	case []string:
+		return v.([]string)
+	default:
+		panic(fmt.Sprintf("Unexpected type: %v (%v)", x, v))
+	}
+}
+
+func ProcessKeySide(obj map[string]any) (map[string]any, error) {
+	keyHavingPrefixForProcessing := func(path []any) bool {
+		last := path[len(path)-1]
+		switch last.(type) {
+		case string:
+			break
+		default:
+			return false
+		}
+		key := last.(string)
+		return strings.HasPrefix(key, "eval:") || strings.HasPrefix(key, "raw:")
+	}
+	type keyChange struct {
+		// The last element must be a string
+		Before []any
+		// An array each of which should replace the last element of Before.
+		After []string
+	}
+	// Process keys
+	pathsToBeProcessed := Paths(obj, keyHavingPrefixForProcessing)
+	keyChanges := Map(pathsToBeProcessed, func(p []any) keyChange {
+		expr := p[len(p)-1].(string)
+		v, err := applyExpression(expr, obj)
+		if err != nil {
+			return keyChange{}
+		}
+		w := toStringArray(v)
+		ret := keyChange{
+			Before: p,
+			After:  w,
+		}
+		return ret
+	})
+	ret := DeepCopy(obj).(map[string]any)
+	for _, c := range keyChanges {
+		v, _ := GetAtPath(ret, c.Before)
+		if !RemovePath(ret, c.Before) {
+			panic(fmt.Sprintf("Missing path: %v", c.Before))
+		}
+		for _, l := range c.After {
+			p := DeepCopy(c.Before).([]any)
+			p[len(p)-1] = l
+			SetAtPath(ret, p, v)
+		}
+	}
+	return ret, nil
+}
+
+// ProcessValueSide recursively processes and resolves special string values within a JSON-like object.
+//
+// It looks for string values in the input object that begin with special prefixes:
+//   - "eval:" indicates that the value should be interpreted as a jq expression and evaluated in the context of the object.
+//   - "raw:" indicates that the value should be replaced with the raw string following the prefix.
+//
+// For each such entry:
+//   - "raw:..." → just strips the prefix and uses the remaining string.
+//   - "eval:..." → evaluates the jq expression and replaces the value with the result.
+//
+// This function is recursive and will perform these replacements for all matching entries, repeatedly decreasing `ttl` (time-to-live)
+// to prevent infinite recursion (useful if some expressions resolve into further "eval:" entries).
+//
+// Arguments:
+//
+//	obj: A map[string]any representing a JSON object which may contain strings with "eval:" or "raw:" prefixes.
+//	ttl: A recursion depth limit to avoid infinite loops (panics if reaches zero with unresolved entries).
+//
+// Returns:
+//
+//	A new object map[string]any with all special entries resolved.
+//	An error if any "eval:" expression fails to evaluate.
+//
+// Panics if ttl reaches zero and some entries remain unresolved.
 func ProcessValueSide(obj map[string]any, ttl int) (map[string]any, error) {
 	const prefixRaw = "raw:"
 	const prefixEval = "eval:"
