@@ -135,7 +135,7 @@ func toStringArray(v any) []string {
 	}
 }
 
-func ProcessKeySide(obj map[string]any) (map[string]any, error) {
+func ProcessKeySide(obj map[string]any, ttl int) (map[string]any, error) {
 	keyHavingPrefixForProcessing := func(path []any) bool {
 		last := path[len(path)-1]
 		switch last.(type) {
@@ -155,6 +155,12 @@ func ProcessKeySide(obj map[string]any) (map[string]any, error) {
 	}
 	// Process keys
 	pathsToBeProcessed := Paths(obj, keyHavingPrefixForProcessing)
+	if len(pathsToBeProcessed) == 0 {
+		return obj, nil
+	}
+	if ttl <= 0 {
+		panic(fmt.Sprintf("ttl is 0, %v entries left.(%v)", len(pathsToBeProcessed), pathsToBeProcessed))
+	}
 	keyChanges := Map(pathsToBeProcessed, func(p []any) keyChange {
 		expr := p[len(p)-1].(string)
 		v, err := applyExpression(expr, obj)
@@ -168,19 +174,23 @@ func ProcessKeySide(obj map[string]any) (map[string]any, error) {
 		}
 		return ret
 	})
-	ret := DeepCopy(obj).(map[string]any)
+	ret := DeepCopyAs(obj)
 	for _, c := range keyChanges {
-		v, _ := GetAtPath(ret, c.Before)
+		var v any
+		v, ok := GetAtPath(ret, c.Before)
+		if !ok {
+			panic(fmt.Sprintf("failed to find key: %v", c.Before))
+		}
 		if !RemovePath(ret, c.Before) {
 			panic(fmt.Sprintf("Missing path: %v", c.Before))
 		}
 		for _, l := range c.After {
-			p := DeepCopy(c.Before).([]any)
+			p := DeepCopyAs(c.Before)
 			p[len(p)-1] = l
-			SetAtPath(ret, p, v)
+			SetAtPath(ret, p, DeepCopyAs(v))
 		}
 	}
-	return ret, nil
+	return ProcessKeySide(ret, ttl-1)
 }
 
 // ProcessValueSide recursively processes and resolves special string values within a JSON-like object.
@@ -225,8 +235,8 @@ func ProcessValueSide(obj map[string]any, ttl int) (map[string]any, error) {
 	if ttl <= 0 {
 		panic(fmt.Sprintf("ttl is 0, %v entries left.(%v)", len(entries), entries))
 	}
-	newObj := DeepCopy(obj).(map[string]any)
-	newEntries := []Entry{}
+	newObj := DeepCopyAs(obj)
+	var newEntries []Entry
 	for _, e := range entries {
 		v := e.Value.(string)
 		var n Entry
