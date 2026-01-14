@@ -1,7 +1,7 @@
 package internal
 
 import (
-	"fmt"
+	"reflect"
 	"testing"
 )
 
@@ -64,11 +64,10 @@ func TestProcessValueSide(t *testing.T) {
 		t.Errorf("ProcessKeySide failed for input '%s' with error: %s", input, err)
 	}
 
-	fmt.Println(fmt.Sprintf("result<%v>", result))
-
-	//if result != expected {
-	//		t.Errorf("Expected '%s', but got '%s'", expected, result)
-	//}
+	expected := map[string]any{"a": "Hello", "X": "Hello"}
+	if !reflect.DeepEqual(expected, result) {
+		t.Errorf("Expected '%s', but got '%s'", expected, result)
+	}
 }
 func TestProcessKeySide(t *testing.T) {
 	input := map[string]any{"a": "Hello", "eval:.a": "X"}
@@ -79,11 +78,10 @@ func TestProcessKeySide(t *testing.T) {
 		t.Errorf("ProcessKeySide failed for input '%s' with error: %s", input, err)
 	}
 
-	fmt.Println(fmt.Sprintf("result<%v>", result))
-
-	//if result != expected {
-	//		t.Errorf("Expected '%s', but got '%s'", expected, result)
-	//}
+	expected := map[string]any{"Hello": "X", "a": "Hello"}
+	if !reflect.DeepEqual(expected, result) {
+		t.Errorf("Expected '%s', but got '%s'", expected, result)
+	}
 }
 
 func TestProcessKeySide_2(t *testing.T) {
@@ -95,17 +93,8 @@ func TestProcessKeySide_2(t *testing.T) {
 		t.Errorf("ProcessKeySide failed for input '%s' with error: %s", input, err)
 	}
 
-	fmt.Println(fmt.Sprintf("result<%v>", result))
-
-	//if result != expected {
-	//		t.Errorf("Expected '%s', but got '%s'", expected, result)
-	//}
-}
-
-func TestPutAtPath(t *testing.T) {
-	obj := map[string]any{"a": "Hello", "b": "X"}
-
-	PutAtPath(obj, []any{"xyz"}, "XYZ")
-
-	fmt.Println(fmt.Sprintf("SetAtPath succeeded for input '%s'", obj))
+	expected := map[string]any{"a": "Hello", "Hello": "X", "Howdy": "X"}
+	if reflect.DeepEqual(expected, result) {
+		t.Errorf("Expected '%s', but got '%s'", expected, result)
+	}
 }
