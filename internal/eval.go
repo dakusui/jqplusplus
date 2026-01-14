@@ -276,7 +276,7 @@ func ProcessValueSide(obj map[string]any, ttl int) (map[string]any, error) {
 		v := e.Value
 
 		if !PutAtPath(newObj, p, v) {
-			panic("")
+			panic(fmt.Sprintf("failed to put value at path %v", p))
 		}
 	}
 	return ProcessValueSide(newObj, ttl-1)
