@@ -288,7 +288,7 @@ func extractExpressionAndExpectedType(expr string) (string, JSONType) {
 		return expr, String
 	}
 	typeToken := expr[0:i]
-	exprToken := expr[i+1 : 0]
+	exprToken := expr[i+1:]
 	switch typeToken {
 	case "string":
 		return exprToken, String
