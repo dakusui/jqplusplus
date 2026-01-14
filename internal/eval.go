@@ -256,7 +256,6 @@ func ProcessValueSide(obj map[string]any, ttl int) (map[string]any, error) {
 		var n Entry
 		if strings.HasPrefix(v, prefixRaw) {
 			n = Entry{e.Path, v[len(prefixRaw):]}
-			continue
 		} else if strings.HasPrefix(v, prefixEval) {
 			var expectedType JSONType
 			w := v[len(prefixEval):]

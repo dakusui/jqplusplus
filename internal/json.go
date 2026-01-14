@@ -199,7 +199,7 @@ const (
 func PathArrayToPathExpression(pathArray []any) (string, error) {
 	var result string
 
-	for i, elem := range pathArray {
+	for _, elem := range pathArray {
 		switch v := elem.(type) {
 		case string:
 			// Handle alphanumeric keys directly, quote and escape non-alphanumerical keys

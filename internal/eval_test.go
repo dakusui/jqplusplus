@@ -93,7 +93,7 @@ func TestProcessKeySide_2(t *testing.T) {
 		t.Errorf("ProcessKeySide failed for input '%s' with error: %s", input, err)
 	}
 
-	expected := map[string]any{"a": "Hello", "Hello": "X", "Howdy": "X"}
+	expected := map[string]any{"Hello": "X", "Howdy": "X", "a": []string{"Hello", "Howdy"}}
 	if !reflect.DeepEqual(expected, result) {
 		t.Errorf("Expected '%s', but got '%s'", expected, result)
 	}
