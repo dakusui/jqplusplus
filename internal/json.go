@@ -204,11 +204,7 @@ func PathArrayToPathExpression(pathArray []any) (string, error) {
 		case string:
 			// Handle alphanumeric keys directly, quote and escape non-alphanumerical keys
 			if isAlphanumeric(v) {
-				if i == 0 {
-					result += fmt.Sprintf(".%s", v)
-				} else {
-					result += fmt.Sprintf(".%s", v)
-				}
+				result += fmt.Sprintf(".%s", v)
 			} else {
 				// Quote keys if they contain special characters
 				escaped := escapeString(v)
