@@ -99,110 +99,123 @@ func GetAtPath(root any, path []any) (val any, ok bool) {
 	return cur, true
 }
 
-// SetAtPath sets `value` at `path` inside `root`.
-// It mutates `root` only if the whole path is valid.
+// PutAtPath sets `value` at `path` inside `root`, creating intermediate maps or arrays as necessary.
 // Path segments: string => map key, int => array index.
-// If false is returned, it means the path does not exist in the data structure in a compatible way (e.g., mismatched types, missing keys or indices).
-// In such a case, the mutation is not performed and the input is left unchanged.
-func SetAtPath(root any, path []any, value any) (ok bool) {
+// Returns true if the operation was successful or false if any intermediate types are incompatible.
+func PutAtPath(root any, path []any, value any) bool {
 	if len(path) == 0 {
 		return false
 	}
 
 	cur := root
 
-	// Walk to the parent of the target.
+	// Traverse the path.
 	for i := 0; i < len(path)-1; i++ {
 		seg := path[i]
 
 		switch s := seg.(type) {
 		case string:
+			// Handle map[string]any.
 			m, ok := cur.(map[string]any)
 			if !ok {
-				// also tolerate map[string]interface{} if you still have it
 				m2, ok2 := cur.(map[string]interface{})
-				if !ok2 {
+				if ok2 {
+					m = make(map[string]any, len(m2))
+					for k, v := range m2 {
+						m[k] = v
+					}
+					cur = m
+				} else {
 					return false
 				}
-				next, exists := m2[s]
-				if !exists {
-					return false
-				}
-				cur = next
-				continue
 			}
-			next, exists := m[s]
-			if !exists {
-				return false
+
+			// Create missing map if necessary.
+			if _, exists := m[s]; !exists {
+				m[s] = make(map[string]any)
 			}
-			cur = next
+			cur = m[s]
 
 		case int:
+			// Handle []any.
 			if s < 0 {
 				return false
 			}
 			arr, ok := cur.([]any)
 			if !ok {
 				arr2, ok2 := cur.([]interface{})
-				if !ok2 {
+				if ok2 {
+					arr = make([]any, len(arr2))
+					for i, v := range arr2 {
+						arr[i] = v
+					}
+					cur = arr
+				} else {
 					return false
 				}
-				if s >= len(arr2) {
-					return false
-				}
-				cur = arr2[s]
-				continue
 			}
+
+			// Expand the array if the index is out of bounds.
 			if s >= len(arr) {
-				return false
+				for j := len(arr); j <= s; j++ {
+					arr = append(arr, nil)
+				}
 			}
 			cur = arr[s]
+			if arr[s] == nil {
+				arr[s] = make(map[string]any)
+			}
 
 		default:
 			panic(fmt.Sprintf("unsupported path segment type: %T", seg))
 		}
 	}
 
-	// Set on the last segment.
+	// Set the value at the last segment.
 	last := path[len(path)-1]
 	switch s := last.(type) {
 	case string:
+		// Handle map[string]any.
 		m, ok := cur.(map[string]any)
 		if !ok {
 			m2, ok2 := cur.(map[string]interface{})
-			if !ok2 {
+			if ok2 {
+				m = make(map[string]any, len(m2))
+				for k, v := range m2 {
+					m[k] = v
+				}
+				cur = m
+			} else {
 				return false
 			}
-			if _, exists := m2[s]; !exists {
-				return false // strict: key must already exist
-			}
-			m2[s] = value
-			return true
-		}
-		if _, exists := m[s]; !exists {
-			return false // strict: key must already exist
 		}
 		m[s] = value
 		return true
 
 	case int:
+		// Handle []any.
 		if s < 0 {
 			return false
 		}
 		arr, ok := cur.([]any)
 		if !ok {
 			arr2, ok2 := cur.([]interface{})
-			if !ok2 {
+			if ok2 {
+				arr = make([]any, len(arr2))
+				for i, v := range arr2 {
+					arr[i] = v
+				}
+				cur = arr
+			} else {
 				return false
 			}
-			if s >= len(arr2) {
-				return false
-			}
-			arr2[s] = value
-			return true
 		}
+
+		// Expand the array if the index is out of bounds.
 		if s >= len(arr) {
-			return false
+			for j := len(arr); j <= s; j++ {
+				arr = append(arr, nil)
+			}
 		}
 		arr[s] = value
 		return true

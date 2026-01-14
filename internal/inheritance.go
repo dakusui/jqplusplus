@@ -54,7 +54,7 @@ func LoadAndResolveInheritancesRecursively(baseDir string, targetFile string, no
 		if err != nil {
 			return nil, err
 		}
-		SetAtPath(obj, ToAnySlice(p), internalObj)
+		PutAtPath(obj, ToAnySlice(p), internalObj)
 	}
 
 	nodepool.Leave(p)

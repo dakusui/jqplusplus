@@ -2,6 +2,7 @@ package internal
 
 import (
 	"fmt"
+	"reflect"
 	"strings"
 
 	"github.com/itchyny/gojq"
@@ -91,7 +92,8 @@ func isExpected(v any, expectedTypes ...JSONType) bool {
 				return true
 			}
 		case Array:
-			if _, ok := v.([]any); ok {
+			k := reflect.TypeOf(v).Kind()
+			if k == reflect.Slice || k == reflect.Array {
 				return true
 			}
 		case Object:
@@ -162,17 +164,29 @@ func ProcessKeySide(obj map[string]any, ttl int) (map[string]any, error) {
 		panic(fmt.Sprintf("ttl is 0, %v entries left.(%v)", len(pathsToBeProcessed), pathsToBeProcessed))
 	}
 	keyChanges := Map(pathsToBeProcessed, func(p []any) keyChange {
-		expr := p[len(p)-1].(string)
-		v, err := ApplyJQExpression(obj, expr, []JSONType{String, Array})
-		if err != nil {
-			return keyChange{}
+		str := p[len(p)-1]
+		if strings.HasPrefix(str.(string), "raw:") {
+			return keyChange{
+				Before: p,
+				After:  []string{str.(string)[len("raw:"):]},
+			}
+		} else if strings.HasPrefix(str.(string), "eval:") {
+			expr, t := extractExpressionAndExpectedType(str.(string)[len("eval:"):])
+			if t != String && t != Array {
+				panic(fmt.Sprintf("Last element of path must be a string or an array: %v", p))
+			}
+			v, err := ApplyJQExpression(obj, expr, []JSONType{String, Array})
+			if err != nil {
+				panic(fmt.Sprintf("Failed to evaluate jq expression: %v", err))
+			}
+			w := toStringArray(v)
+			ret := keyChange{
+				Before: p,
+				After:  w,
+			}
+			return ret
 		}
-		w := toStringArray(v)
-		ret := keyChange{
-			Before: p,
-			After:  w,
-		}
-		return ret
+		panic(fmt.Sprintf("Last element of path must start with eval: or raw: %v", p))
 	})
 	ret := DeepCopyAs(obj)
 	for _, c := range keyChanges {
@@ -187,7 +201,7 @@ func ProcessKeySide(obj map[string]any, ttl int) (map[string]any, error) {
 		for _, l := range c.After {
 			p := DeepCopyAs(c.Before)
 			p[len(p)-1] = l
-			SetAtPath(ret, p, DeepCopyAs(v))
+			PutAtPath(ret, p, DeepCopyAs(v))
 		}
 	}
 	return ProcessKeySide(ret, ttl-1)
@@ -261,7 +275,7 @@ func ProcessValueSide(obj map[string]any, ttl int) (map[string]any, error) {
 		p := e.Path
 		v := e.Value
 
-		if !SetAtPath(newObj, p, v) {
+		if !PutAtPath(newObj, p, v) {
 			panic("")
 		}
 	}
