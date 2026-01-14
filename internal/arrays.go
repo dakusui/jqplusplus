@@ -60,7 +60,7 @@ func Sort[T any](in []T, comparator func(a, b T) bool) []T {
 	out := make([]T, len(in))
 	copy(out, in)
 	sort.Slice(out, func(i, j int) bool {
-		return comparator(in[i], in[j])
+		return comparator(out[i], out[j])
 	})
 	return out
 }
