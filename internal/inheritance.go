@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strconv"
+	"strings"
 )
 
 // LoadAndResolveInheritances loads a JSON file, resolves filelevel, and returns the merged result as a map.
@@ -39,7 +41,7 @@ func LoadAndResolveInheritancesRecursively(baseDir string, targetFile string, no
 	delete(obj, "$local")
 	nodepool.Enter(p)
 
-	for _, p := range DistinctBy(Map(JSONPaths(obj, lastElementIsOneOf("$extends", "$includes")), DropLast[any]), pathKey) {
+	for _, p := range DistinctBy(Map(Sort(Paths(obj, lastElementIsOneOf("$extends", "$includes")), lessPathArrays), DropLast[any]), pathKey) {
 		internal, ok := GetAtPath(obj, ToAnySlice(p))
 		if !ok {
 			continue
@@ -52,7 +54,7 @@ func LoadAndResolveInheritancesRecursively(baseDir string, targetFile string, no
 		if err != nil {
 			return nil, err
 		}
-		SetAtPath(obj, ToAnySlice(p), internalObj)
+		PutAtPath(obj, ToAnySlice(p), internalObj)
 	}
 
 	nodepool.Leave(p)
@@ -175,4 +177,52 @@ func LoadFileAsRawJSON(path string) (map[string]any, error) {
 	default:
 		return nil, fmt.Errorf("unsupported file type: %q (%s)", ft, path)
 	}
+}
+
+func lastElementIsOneOf(v ...string) func(p []any) bool {
+	return func(p []any) bool {
+		if len(p) == 0 {
+			return false
+		}
+		s, ok := p[len(p)-1].(string)
+		if !ok {
+			return false
+		}
+		for _, v := range v {
+			if s == v {
+				return true
+			}
+		}
+		return false
+	}
+}
+
+func lessPathArrays(a []any, b []any) bool {
+	pea, e := PathArrayToPathExpression(a)
+	if e != nil {
+		panic(e)
+	}
+	peb, e := PathArrayToPathExpression(b)
+	if e != nil {
+		panic(e)
+	}
+	return pea < peb
+}
+
+func pathKey(p []any) string {
+	var b strings.Builder
+	for _, v := range p {
+		switch x := v.(type) {
+		case string:
+			b.WriteString("s:")
+			b.WriteString(x)
+		case int:
+			b.WriteString("i:")
+			b.WriteString(strconv.Itoa(x))
+		default:
+			panic("unsupported type in path")
+		}
+		b.WriteByte('|')
+	}
+	return b.String()
 }

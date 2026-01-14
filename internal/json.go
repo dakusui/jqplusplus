@@ -10,6 +10,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"unicode"
 )
 
 type FileType string
@@ -193,3 +194,55 @@ const (
 	MergePolicyDefault MergePolicy = iota
 	// Add more policies as needed
 )
+
+// PathArrayToPathExpression converts a "path array" to a "path expression" string.
+func PathArrayToPathExpression(pathArray []any) (string, error) {
+	var result string
+
+	for _, elem := range pathArray {
+		switch v := elem.(type) {
+		case string:
+			// Handle alphanumeric keys directly, quote and escape non-alphanumerical keys
+			if isAlphanumeric(v) {
+				result += fmt.Sprintf(".%s", v)
+			} else {
+				// Quote keys if they contain special characters
+				escaped := escapeString(v)
+				result += fmt.Sprintf("[\"%s\"]", escaped)
+			}
+		case int: // Array index
+			result += fmt.Sprintf("[%d]", v)
+		default:
+			return "", fmt.Errorf("unsupported path array element type: %T", v)
+		}
+	}
+
+	// Return the constructed path expression
+	return result, nil
+}
+
+// Helper to check if a string is alphanumeric
+func isAlphanumeric(s string) bool {
+	for _, r := range s {
+		if !(unicode.IsLetter(r) || unicode.IsDigit(r)) {
+			return false
+		}
+	}
+	return true
+}
+
+// Helper to escape a string for use in a path expression
+func escapeString(s string) string {
+	escaped := ""
+	for _, r := range s {
+		switch r {
+		case '\\':
+			escaped += `\\`
+		case '"':
+			escaped += `\"`
+		default:
+			escaped += string(r)
+		}
+	}
+	return escaped
+}

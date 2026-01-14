@@ -2,7 +2,23 @@ package internal
 
 import "fmt"
 
-func JSONPaths(obj map[string]any, pred func([]any) bool) [][]any {
+type Entry struct {
+	Path  []any
+	Value any
+}
+
+func Entries(obj map[string]any, pred func([]any) bool) []Entry {
+	paths := Paths(obj, pred)
+	return Map(paths, func(path []any) Entry {
+		if val, ok := GetAtPath(obj, path); ok {
+			return Entry{Path: path, Value: val}
+		}
+		return Entry{}
+	})
+}
+
+// Paths returns all JSON paths in `obj` that satisfy `pred`.
+func Paths(obj map[string]any, pred func([]any) bool) [][]any {
 	var paths [][]any
 	walkAnyPath(nil, obj, &paths)
 	return Filter(paths, pred)
@@ -83,25 +99,147 @@ func GetAtPath(root any, path []any) (val any, ok bool) {
 	return cur, true
 }
 
-// SetAtPath sets `value` at `path` inside `root`.
-// It mutates `root` only if the whole path is valid.
+// PutAtPath sets `value` at `path` inside `root`, creating intermediate maps or arrays as necessary.
 // Path segments: string => map key, int => array index.
-func SetAtPath(root any, path []any, value any) (ok bool) {
+// Returns true if the operation was successful or false if any intermediate types are incompatible.
+func PutAtPath(root any, path []any, value any) bool {
 	if len(path) == 0 {
 		return false
 	}
 
 	cur := root
 
-	// Walk to the parent of the target.
+	// Traverse the path.
 	for i := 0; i < len(path)-1; i++ {
 		seg := path[i]
 
 		switch s := seg.(type) {
 		case string:
+			// Handle map[string]any.
 			m, ok := cur.(map[string]any)
 			if !ok {
-				// also tolerate map[string]interface{} if you still have it
+				m2, ok2 := cur.(map[string]interface{})
+				if ok2 {
+					m = make(map[string]any, len(m2))
+					for k, v := range m2 {
+						m[k] = v
+					}
+					cur = m
+				} else {
+					return false
+				}
+			}
+
+			// Create missing map if necessary.
+			if _, exists := m[s]; !exists {
+				m[s] = make(map[string]any)
+			}
+			cur = m[s]
+
+		case int:
+			// Handle []any.
+			if s < 0 {
+				return false
+			}
+			arr, ok := cur.([]any)
+			if !ok {
+				arr2, ok2 := cur.([]interface{})
+				if ok2 {
+					arr = make([]any, len(arr2))
+					for i, v := range arr2 {
+						arr[i] = v
+					}
+					cur = arr
+				} else {
+					return false
+				}
+			}
+
+			// Expand the array if the index is out of bounds.
+			if s >= len(arr) {
+				for j := len(arr); j <= s; j++ {
+					arr = append(arr, nil)
+				}
+			}
+			cur = arr[s]
+			if arr[s] == nil {
+				arr[s] = make(map[string]any)
+			}
+
+		default:
+			panic(fmt.Sprintf("unsupported path segment type: %T", seg))
+		}
+	}
+
+	// Set the value at the last segment.
+	last := path[len(path)-1]
+	switch s := last.(type) {
+	case string:
+		// Handle map[string]any.
+		m, ok := cur.(map[string]any)
+		if !ok {
+			m2, ok2 := cur.(map[string]interface{})
+			if ok2 {
+				m = make(map[string]any, len(m2))
+				for k, v := range m2 {
+					m[k] = v
+				}
+				cur = m
+			} else {
+				return false
+			}
+		}
+		m[s] = value
+		return true
+
+	case int:
+		// Handle []any.
+		if s < 0 {
+			return false
+		}
+		arr, ok := cur.([]any)
+		if !ok {
+			arr2, ok2 := cur.([]interface{})
+			if ok2 {
+				arr = make([]any, len(arr2))
+				for i, v := range arr2 {
+					arr[i] = v
+				}
+				cur = arr
+			} else {
+				return false
+			}
+		}
+
+		// Expand the array if the index is out of bounds.
+		if s >= len(arr) {
+			for j := len(arr); j <= s; j++ {
+				arr = append(arr, nil)
+			}
+		}
+		arr[s] = value
+		return true
+
+	default:
+		panic(fmt.Sprintf("unsupported path segment type: %T", last))
+	}
+}
+
+// RemovePath removes the entry at the specified path from the given object or array.
+// Returns true if removal succeeded, false if the path could not be resolved.
+func RemovePath(root any, path []any) bool {
+	if len(path) == 0 {
+		// Cannot remove root itself
+		return false
+	}
+	cur := root
+	// Descend to the parent of the item to remove
+	for i := 0; i < len(path)-1; i++ {
+		seg := path[i]
+		switch s := seg.(type) {
+		case string:
+			m, ok := cur.(map[string]any)
+			if !ok {
 				m2, ok2 := cur.(map[string]interface{})
 				if !ok2 {
 					return false
@@ -118,78 +256,100 @@ func SetAtPath(root any, path []any, value any) (ok bool) {
 				return false
 			}
 			cur = next
-
 		case int:
-			if s < 0 {
-				return false
-			}
 			arr, ok := cur.([]any)
 			if !ok {
 				arr2, ok2 := cur.([]interface{})
 				if !ok2 {
 					return false
 				}
-				if s >= len(arr2) {
+				if s < 0 || s >= len(arr2) {
 					return false
 				}
 				cur = arr2[s]
 				continue
 			}
-			if s >= len(arr) {
+			if s < 0 || s >= len(arr) {
 				return false
 			}
 			cur = arr[s]
-
 		default:
-			panic(fmt.Sprintf("unsupported path segment type: %T", seg))
+			return false
 		}
 	}
-
-	// Set on the last segment.
+	// Now remove the final segment
 	last := path[len(path)-1]
 	switch s := last.(type) {
 	case string:
-		m, ok := cur.(map[string]any)
-		if !ok {
-			m2, ok2 := cur.(map[string]interface{})
-			if !ok2 {
+		if m, ok := cur.(map[string]any); ok {
+			if _, exists := m[s]; !exists {
 				return false
 			}
-			if _, exists := m2[s]; !exists {
-				return false // strict: key must already exist
-			}
-			m2[s] = value
+			delete(m, s)
 			return true
 		}
-		if _, exists := m[s]; !exists {
-			return false // strict: key must already exist
+		if m2, ok2 := cur.(map[string]interface{}); ok2 {
+			if _, exists := m2[s]; !exists {
+				return false
+			}
+			delete(m2, s)
+			return true
 		}
-		m[s] = value
-		return true
-
+		return false
 	case int:
 		if s < 0 {
 			return false
 		}
-		arr, ok := cur.([]any)
-		if !ok {
-			arr2, ok2 := cur.([]interface{})
-			if !ok2 {
+		if arr, ok := cur.([]any); ok {
+			if s >= len(arr) {
 				return false
 			}
+			// Remove the entry by slicing
+			arr = append(arr[:s], arr[s+1:]...)
+			// Now assign the sliced result back into the parent structure
+			// - This works only if parent's reference is available (backwards assignment)
+			// - But in Go, slices are not automatically updated in the parent.
+			// So we need to mutate the parent directly
+			// (since the parent pointer is lost here, we can't update; thus we can only nil the element)
+			// As a fallback, set the entry to nil
+			cur.([]any)[s] = nil
+			return true
+		}
+		if arr2, ok2 := cur.([]interface{}); ok2 {
 			if s >= len(arr2) {
 				return false
 			}
-			arr2[s] = value
+			arr2[s] = nil
 			return true
 		}
-		if s >= len(arr) {
-			return false
-		}
-		arr[s] = value
-		return true
-
+		return false
 	default:
-		panic(fmt.Sprintf("unsupported path segment type: %T", last))
+		return false
 	}
+}
+
+// DeepCopy creates a deep copy of the given value.
+// It recursively copies maps and slices, while preserving primitive values.
+func DeepCopy(v any) any {
+	switch x := v.(type) {
+	case map[string]any:
+		result := make(map[string]any, len(x))
+		for k, val := range x {
+			result[k] = DeepCopy(val)
+		}
+		return result
+	case []any:
+		result := make([]any, len(x))
+		for i, val := range x {
+			result[i] = DeepCopy(val)
+		}
+		return result
+	default:
+		// Primitive types (string, int, float64, bool, nil) are returned as-is
+		return v
+	}
+}
+
+func DeepCopyAs[T any](v T) T {
+	return DeepCopy(any(v)).(T)
 }
