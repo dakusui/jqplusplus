@@ -94,7 +94,7 @@ func TestProcessKeySide_2(t *testing.T) {
 	}
 
 	expected := map[string]any{"a": "Hello", "Hello": "X", "Howdy": "X"}
-	if reflect.DeepEqual(expected, result) {
+	if !reflect.DeepEqual(expected, result) {
 		t.Errorf("Expected '%s', but got '%s'", expected, result)
 	}
 }
