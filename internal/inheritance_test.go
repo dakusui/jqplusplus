@@ -1,6 +1,7 @@
 package internal
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -12,11 +13,13 @@ func TestLoadAndResolveInheritances_NoExtends(t *testing.T) {
 	dir := t.TempDir()
 	file := writeTempJSON(t, dir, "base.json", `{"a": 1, "b": 2}`)
 	result, err := LoadAndResolveInheritances(filepath.Dir(file), filepath.Base(file), []string{})
+	fmt.Println(result)
+	fmt.Println(result.Obj)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 	expected := map[string]interface{}{"a": float64(1), "b": float64(2)}
-	if !reflect.DeepEqual(result, expected) {
+	if !reflect.DeepEqual(result.Obj, expected) {
 		t.Errorf("expected %v, got %v", expected, result)
 	}
 }
@@ -30,7 +33,7 @@ func TestLoadAndResolveInheritances_SingleExtends(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 	expected := map[string]interface{}{"a": float64(1), "b": float64(3), "c": float64(4)}
-	if !reflect.DeepEqual(result, expected) {
+	if !reflect.DeepEqual(result.Obj, expected) {
 		t.Errorf("expected %v, got %v", expected, result)
 	}
 }
@@ -46,7 +49,7 @@ func TestLoadAndResolveInheritances_MultipleExtends(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 	expected := map[string]interface{}{"a": float64(1), "b": float64(2), "c": float64(300), "d": float64(400)}
-	if !reflect.DeepEqual(result, expected) {
+	if !reflect.DeepEqual(result.Obj, expected) {
 		t.Errorf("expected %v, got %v", expected, result)
 	}
 }
@@ -60,7 +63,7 @@ func TestLoadAndResolveInheritances_SingleInternalExtends(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 	expected := map[string]any{"x": map[string]any{"a": float64(1), "b": float64(3), "c": float64(4)}}
-	if !reflect.DeepEqual(result, expected) {
+	if !reflect.DeepEqual(result.Obj, expected) {
 		t.Errorf("expected %v, got %v", expected, result)
 	}
 }
@@ -73,7 +76,7 @@ func TestLoadAndResolveInheritances_SingleLocalExtends(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 	expected := map[string]any{"x": map[string]any{"a": float64(1), "b": float64(3), "c": float64(4)}}
-	if !reflect.DeepEqual(result, expected) {
+	if !reflect.DeepEqual(result.Obj, expected) {
 		t.Errorf("expected %v, got %v", expected, result)
 	}
 }
@@ -137,7 +140,7 @@ func TestLoadAndResolveInheritances_NestedExtends(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 	expected := map[string]interface{}{"a": float64(1), "b": float64(2), "c": float64(3)}
-	if !reflect.DeepEqual(result, expected) {
+	if !reflect.DeepEqual(result.Obj, expected) {
 		t.Errorf("expected %v, got %v", expected, result)
 	}
 }
@@ -161,7 +164,7 @@ func TestLoadAndResolveInheritances_SingleIncludes(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 	expected := map[string]interface{}{"a": float64(1), "b": float64(2), "c": float64(4)}
-	if !reflect.DeepEqual(result, expected) {
+	if !reflect.DeepEqual(result.Obj, expected) {
 		t.Errorf("expected %v, got %v", expected, result)
 	}
 }
@@ -176,7 +179,7 @@ func TestLoadAndResolveInheritances_MultipleIncludes(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 	expected := map[string]interface{}{"a": float64(1), "b": float64(21), "c": float64(30), "d": float64(400)}
-	if !reflect.DeepEqual(result, expected) {
+	if !reflect.DeepEqual(result.Obj, expected) {
 		t.Errorf("expected %v, got %v", expected, result)
 	}
 }
@@ -191,7 +194,7 @@ func TestLoadAndResolveInheritances_BothExtendsAndIncludes(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 	expected := map[string]interface{}{"a": float64(1), "b": float64(20), "c": float64(30), "d": float64(400)}
-	if !reflect.DeepEqual(result, expected) {
+	if !reflect.DeepEqual(result.Obj, expected) {
 		t.Errorf("expected %v, got %v", expected, result)
 	}
 }
@@ -205,7 +208,7 @@ func TestLoadAndResolveInheritances_BothExtendsAndIncludesTheSame(t *testing.T) 
 		t.Fatalf("unexpected error: %v", err)
 	}
 	expected := map[string]interface{}{"a": float64(1), "b": float64(2), "c": float64(300), "d": float64(400)}
-	if !reflect.DeepEqual(result, expected) {
+	if !reflect.DeepEqual(result.Obj, expected) {
 		t.Errorf("expected %v, got %v", expected, result)
 	}
 }
@@ -221,7 +224,7 @@ func TestLoadAndResolveInheritances_BothExtendsAndIncludesOneLevelNested(t *test
 		t.Fatalf("unexpected error: %v", err)
 	}
 	expected := map[string]interface{}{"a": float64(1), "b": float64(20), "c": float64(30), "d": float64(400)}
-	if !reflect.DeepEqual(result, expected) {
+	if !reflect.DeepEqual(result.Obj, expected) {
 		t.Errorf("expected %v, got %v", expected, result)
 	}
 }

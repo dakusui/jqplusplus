@@ -10,7 +10,7 @@ import (
 )
 
 // LoadAndResolveInheritances loads a JSON file, resolves filelevel, and returns the merged result as a map.
-func LoadAndResolveInheritances(baseDir string, filename string, searchPaths []string) (map[string]any, error) {
+func LoadAndResolveInheritances(baseDir string, filename string, searchPaths []string) (*NodeEntryValue, error) {
 	sessionDirectory := CreateSessionDirectory()
 	defer func() {
 		err := os.RemoveAll(CreateSessionDirectory())
@@ -19,11 +19,11 @@ func LoadAndResolveInheritances(baseDir string, filename string, searchPaths []s
 		}
 	}()
 
-	return NewNodePoolWithBaseSearchPaths(baseDir, sessionDirectory, searchPaths).ReadNodeEntry(baseDir, filename)
+	return NewNodePoolWithBaseSearchPaths(baseDir, sessionDirectory, searchPaths).ReadNodeEntryValue(baseDir, filename)
 }
 
 // LoadAndResolveInheritancesRecursively loads a JSON file, resolves $extends or $includes recursively, and merges parents.
-func LoadAndResolveInheritancesRecursively(baseDir string, targetFile string, nodepool NodePool) (map[string]any, error) {
+func LoadAndResolveInheritancesRecursively(baseDir string, targetFile string, nodepool NodePool) (*NodeEntryValue, error) {
 	absPath, bDir, err := ResolveFilePath(targetFile, baseDir, nodepool.SearchPaths())
 	if err != nil {
 		return nil, err
@@ -64,7 +64,7 @@ func LoadAndResolveInheritancesRecursively(baseDir string, targetFile string, no
 	}
 
 	nodepool.Leave(p)
-	return obj, nil
+	return &NodeEntryValue{obj}, nil
 }
 
 func resolveBothInheritances(baseDir string, obj map[string]any, nodepool NodePool) (map[string]any, error) {
@@ -92,14 +92,14 @@ func resolveInheritances(obj map[string]any, baseDir string, mergeType InheritTy
 		}
 		var mergedParents map[string]any
 		for i, parent := range parentFiles {
-			parentObj, err := nodepool.ReadNodeEntry(baseDir, parent)
+			parentObj, err := nodepool.ReadNodeEntryValue(baseDir, parent)
 			if err != nil {
 				return nil, err
 			}
 			if i == 0 {
-				mergedParents = parentObj
+				mergedParents = parentObj.Obj
 			} else {
-				mergedParents = mergeObjects(mergedParents, parentObj)
+				mergedParents = mergeObjects(mergedParents, parentObj.Obj)
 			}
 		}
 		if !mergeType.IsOrderReversed() {

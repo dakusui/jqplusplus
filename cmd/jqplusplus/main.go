@@ -31,8 +31,8 @@ If no files are provided, input is read from stdin.
 	os.Exit(exitCode)
 }
 
-func inputFiles(args []string) ([]internal.NodeEntry, func(), error) {
-	var in []internal.NodeEntry
+func inputFiles(args []string) ([]internal.NodeEntryKey, func(), error) {
+	var in []internal.NodeEntryKey
 	exit := func() {}
 	if len(args) == 1 {
 		tempFile, err := os.CreateTemp("", "input-*")
@@ -62,18 +62,18 @@ func inputFiles(args []string) ([]internal.NodeEntry, func(), error) {
 			return nil, exit, err
 		}
 
-		in = []internal.NodeEntry{
+		in = []internal.NodeEntryKey{
 			internal.NewNodeEntry("", absolutePath),
 		}
 	} else {
-		in = internal.Map(args[1:], func(t string) internal.NodeEntry {
+		in = internal.Map(args[1:], func(t string) internal.NodeEntryKey {
 			return internal.NewNodeEntry(filepath.Dir(t), filepath.Base(t))
 		})
 	}
 	return in, exit, nil
 }
 
-func processNodeEntries(in []internal.NodeEntry) int {
+func processNodeEntries(in []internal.NodeEntryKey) int {
 	ret := 0
 	for _, nodeEntry := range in {
 		v, err := processNodeEntry(nodeEntry)
@@ -91,8 +91,9 @@ func processNodeEntries(in []internal.NodeEntry) int {
 	return ret
 }
 
-func processNodeEntry(nodeEntry internal.NodeEntry) (string, error) {
-	obj, err := internal.LoadAndResolveInheritances(nodeEntry.BaseDir(), nodeEntry.Filename(), internal.SearchPaths())
+func processNodeEntry(nodeEntry internal.NodeEntryKey) (string, error) {
+	nodeEntryValue, err := internal.LoadAndResolveInheritances(nodeEntry.BaseDir(), nodeEntry.Filename(), internal.SearchPaths())
+	obj := nodeEntryValue.Obj
 	if err != nil {
 		return "", err
 	}

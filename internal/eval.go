@@ -227,7 +227,7 @@ func ProcessKeySide(obj map[string]any, ttl int, invocationSpec InvocationSpec) 
 //
 // Arguments:
 //
-//	obj: A map[string]any representing a JSON object which may contain strings with "eval:" or "raw:" prefixes.
+//	Obj: A map[string]any representing a JSON object which may contain strings with "eval:" or "raw:" prefixes.
 //	ttl: A recursion depth limit to avoid infinite loops (panics if reaches zero with unresolved entries).
 //
 // Returns:

@@ -1,7 +1,9 @@
 package internal
 
+import "path/filepath"
+
 type NodePool interface {
-	ReadNodeEntry(baseDir, filename string) (map[string]interface{}, error)
+	ReadNodeEntryValue(baseDir, filename string) (*NodeEntryValue, error)
 	IsVisited(absPath string) bool
 	MarkVisited(absPath string)
 	SearchPaths() []string
@@ -10,34 +12,39 @@ type NodePool interface {
 	Leave(localNodeDirectory string)
 }
 
-type NodeEntry struct {
+type NodeEntryKey struct {
 	filename string
 	baseDir  string
 }
 
-func (e NodeEntry) BaseDir() string {
+type NodeEntryValue struct {
+	Obj map[string]any
+}
+
+func (e NodeEntryKey) BaseDir() string {
 	return e.baseDir
 }
 
-func (e NodeEntry) Filename() string {
+func (e NodeEntryKey) Filename() string {
 	return e.filename
 }
 
-func (e NodeEntry) String() string {
-	return e.baseDir + "/" + e.filename
+func (e NodeEntryKey) String() string {
+	return filepath.Join(e.BaseDir(), e.Filename())
 }
 
-func NewNodeEntry(baseDir, filename string) NodeEntry {
-	return NodeEntry{filename: filename, baseDir: baseDir}
+func NewNodeEntry(baseDir, filename string) NodeEntryKey {
+	return NodeEntryKey{filename: filename, baseDir: baseDir}
 }
 
 type NodePoolImpl struct {
 	baseDir              string
 	sessionDirectory     string
 	localNodeSearchPaths []string
-	baseSearchPaths      []string
-	cache                map[NodeEntry]map[string]any
-	visited              map[string]bool
+	// Paths from which files to be inherited are searched for.
+	baseSearchPaths []string
+	cache           map[NodeEntryKey]NodeEntryValue
+	visited         map[string]bool
 }
 
 func NewNodePoolWithBaseSearchPaths(baseDir, sessionDirectory string, searchPaths []string) *NodePoolImpl {
@@ -46,22 +53,23 @@ func NewNodePoolWithBaseSearchPaths(baseDir, sessionDirectory string, searchPath
 		sessionDirectory:     sessionDirectory,
 		localNodeSearchPaths: []string{},
 		baseSearchPaths:      searchPaths,
-		cache:                map[NodeEntry]map[string]any{},
+		cache:                map[NodeEntryKey]NodeEntryValue{},
 		visited:              map[string]bool{},
 	}
 }
 
-func (p *NodePoolImpl) ReadNodeEntry(baseDir, filename string) (obj map[string]interface{}, err error) {
-	nodeEntry := NodeEntry{filename: filename, baseDir: baseDir}
-	ret, ok := p.cache[nodeEntry]
+func (p *NodePoolImpl) ReadNodeEntryValue(baseDir, filename string) (*NodeEntryValue, error) {
+	nodeEntryKey := NodeEntryKey{filename: filename, baseDir: baseDir}
+	ret, ok := p.cache[nodeEntryKey]
 	if !ok {
-		ret, err = LoadAndResolveInheritancesRecursively(baseDir, filename, p)
+		nodeEntryValue, err := LoadAndResolveInheritancesRecursively(baseDir, filename, p)
 		if err != nil {
 			return nil, err
 		}
-		p.cache[nodeEntry] = ret
+		p.cache[nodeEntryKey] = *nodeEntryValue
+		ret = *nodeEntryValue
 	}
-	return ret, nil
+	return &ret, nil
 }
 
 func (p *NodePoolImpl) IsVisited(absPath string) bool {
