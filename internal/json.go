@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/BurntSushi/toml"
 	"github.com/gurkankaymak/hocon"
+	"github.com/itchyny/gojq"
 	"github.com/titanous/json5"
 	"gopkg.in/yaml.v3"
 	"os"
@@ -17,6 +18,7 @@ type FileType string
 
 const (
 	JSON  FileType = "json"
+	JQ    FileType = "jq"
 	YAML  FileType = "yaml"
 	TOML  FileType = "toml"
 	JSON5 FileType = "json5"
@@ -28,84 +30,102 @@ func detectFileType(name string) (FileType, bool) {
 	ext := strings.ToLower(filepath.Ext(name))
 
 	switch ext {
-	case ".json", "":
+	case ".json", ".json++", "":
 		return JSON, true
-	case ".yaml", ".yml":
+	case ".jq":
+		return JQ, true
+	case ".yaml", ".yml", ".yaml++", ".yml++":
 		return YAML, true
-	case ".toml":
+	case ".toml", ".toml++":
 		return TOML, true
-	case ".json5":
+	case ".json5", ".json5++":
 		return JSON5, true
-	case ".hcl":
+	case ".hcl", ".hcl++":
 		return HCL, true
-	case ".conf", ".hocon":
+	case ".conf", ".hocon", ".conf++", ".hocon++":
 		return HOCON, true
 	default:
 		return "", false
 	}
 }
 
-func readJSON(targetFileAbsPath string) (map[string]any, error) {
+func readJSON(targetFileAbsPath string) (map[string]any, gojq.CompilerOption, error) {
 	data, err := os.ReadFile(targetFileAbsPath)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	var obj map[string]any
 	if err := json.Unmarshal(data, &obj); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
-	return obj, nil
+	return obj, nil, nil
 }
 
-func readYAML(path string) (map[string]any, error) {
+func readJQ(targetFileAbsPath string) (map[string]any, gojq.CompilerOption, error) {
+	data, err := os.ReadFile(targetFileAbsPath)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	query, err := gojq.Parse(string(data))
+	if err != nil {
+		return nil, nil, err
+	}
+
+	ret := gojq.WithModuleLoader(query)
+
+	return map[string]any{}, ret, nil
+}
+
+func readYAML(path string) (map[string]any, gojq.CompilerOption, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	var m map[string]any
 	if err := yaml.Unmarshal(data, &m); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
-	return m, nil
+	return m, nil, nil
 }
 
-func readTOML(path string) (map[string]any, error) {
+func readTOML(path string) (map[string]any, gojq.CompilerOption, error) {
 	var m map[string]any
 	if _, err := toml.DecodeFile(path, &m); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
-	return m, nil
+	return m, nil, nil
 }
 
-func readJSON5(path string) (map[string]any, error) {
+func readJSON5(path string) (map[string]any, gojq.CompilerOption, error) {
 	b, err := os.ReadFile(path)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	var m map[string]any
 	if err := json5.Unmarshal(b, &m); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
-	return m, nil
+	return m, nil, nil
 }
 
 // readHOCON reads a HOCON file and returns it as a JSON-compatible map.
 // Top-level must be an object.
-func readHOCON(path string) (map[string]any, error) {
+func readHOCON(path string) (map[string]any, gojq.CompilerOption, error) {
 	conf, err := hocon.ParseResource(path)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	root := conf.GetRoot() // Value
 	obj, ok := root.(hocon.Object)
 	if !ok {
-		return nil, fmt.Errorf("HOCON top-level must be an object")
+		return nil, nil, fmt.Errorf("HOCON top-level must be an object")
 	}
 
-	return objectToMap(obj), nil
+	return objectToMap(obj), nil, nil
 }
 
 func objectToMap(o hocon.Object) map[string]any {

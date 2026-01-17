@@ -69,6 +69,22 @@ func TestProcessValueSide(t *testing.T) {
 		t.Errorf("Expected '%s', but got '%s'", expected, result)
 	}
 }
+
+func TestProcessValueSide_2(t *testing.T) {
+	input := map[string]any{"a": "Hello", "X": "eval:$cur"}
+	//expected := "processedKey" // Replace this with the expected outcome of the input
+
+	result, err := ProcessValueSide(input, 7)
+	if err != nil {
+		t.Errorf("ProcessKeySide failed for input '%s' with error: %s", input, err)
+	}
+
+	expected := map[string]any{"a": "Hello", "X": "HELLO"}
+	if !reflect.DeepEqual(expected, result) {
+		t.Errorf("Expected '%s', but got '%s'", expected, result)
+	}
+}
+
 func TestProcessKeySide(t *testing.T) {
 	input := map[string]any{"a": "Hello", "eval:.a": "X"}
 	//expected := "processedKey" // Replace this with the expected outcome of the input

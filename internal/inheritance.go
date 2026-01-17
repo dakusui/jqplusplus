@@ -2,6 +2,7 @@ package internal
 
 import (
 	"fmt"
+	"github.com/itchyny/gojq"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -11,7 +12,12 @@ import (
 // LoadAndResolveInheritances loads a JSON file, resolves filelevel, and returns the merged result as a map.
 func LoadAndResolveInheritances(baseDir string, filename string, searchPaths []string) (map[string]any, error) {
 	sessionDirectory := CreateSessionDirectory()
-	defer os.RemoveAll(CreateSessionDirectory())
+	defer func() {
+		err := os.RemoveAll(CreateSessionDirectory())
+		if err != nil {
+			_, _ = fmt.Fprintln(os.Stderr, fmt.Errorf("failed to remove directory: %s", err))
+		}
+	}()
 
 	return NewNodePoolWithBaseSearchPaths(baseDir, sessionDirectory, searchPaths).ReadNodeEntry(baseDir, filename)
 }
@@ -23,11 +29,11 @@ func LoadAndResolveInheritancesRecursively(baseDir string, targetFile string, no
 		return nil, err
 	}
 	if nodepool.IsVisited(absPath) {
-		return nil, fmt.Errorf("circular filelevel detected: %s", absPath)
+		return nil, fmt.Errorf("circular filelevel inheritance detected: %s", absPath)
 	}
 	nodepool.MarkVisited(absPath)
 
-	obj, err := LoadFileAsRawJSON(absPath)
+	obj, _, err := LoadFileAsRawJSON(absPath)
 	if err != nil {
 		return nil, err
 	}
@@ -155,15 +161,17 @@ func (m InheritType) IsOrderReversed() bool {
 }
 
 // LoadFileAsRawJSON loads and parses a file (JSON, YAML, etc.) into a gojq-compatible object.
-func LoadFileAsRawJSON(path string) (map[string]any, error) {
+func LoadFileAsRawJSON(path string) (map[string]any, gojq.CompilerOption, error) {
 	ft, ok := detectFileType(path)
 	if !ok {
-		return nil, fmt.Errorf("unsupported file type: %q (%s)", filepath.Ext(path), path)
+		return nil, nil, fmt.Errorf("unsupported file type: %q (%s)", filepath.Ext(path), path)
 	}
 
 	switch ft {
 	case JSON:
 		return readJSON(path)
+	case JQ:
+		return readJQ(path)
 	case YAML:
 		return readYAML(path)
 	case TOML:
@@ -171,11 +179,11 @@ func LoadFileAsRawJSON(path string) (map[string]any, error) {
 	case JSON5:
 		return readJSON5(path)
 	case HCL:
-		return nil, fmt.Errorf("unsupported file type: %q (%s)", ft, path)
+		return nil, nil, fmt.Errorf("unsupported file type: %q (%s)", ft, path)
 	case HOCON:
 		return readHOCON(path)
 	default:
-		return nil, fmt.Errorf("unsupported file type: %q (%s)", ft, path)
+		return nil, nil, fmt.Errorf("unsupported file type: %q (%s)", ft, path)
 	}
 }
 

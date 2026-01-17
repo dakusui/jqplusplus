@@ -58,13 +58,13 @@ func ApplyJQExpression(
 	}
 
 	// Compile the jq query (this is where custom functions/modules are wired in)
-	code, err := gojq.Compile(query, compilerOpts...)
+	code, err := gojq.Compile(query, gojq.WithVariables([]string{"$cur", "$xyz"}))
 	if err != nil {
 		return nil, fmt.Errorf("failed to compile jq expression: %w", err)
 	}
 
 	// Run the compiled jq code
-	iter := code.Run(input)
+	iter := code.Run(input, "HELLO", map[string]any{})
 
 	result, ok := iter.Next()
 	if !ok {
