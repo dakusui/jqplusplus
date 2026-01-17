@@ -49,7 +49,7 @@ func ApplyJQExpression(
 	input any,
 	expression string,
 	expectedTypes []JSONType,
-	compilerOpts ...gojq.CompilerOption,
+	invocationSpec InvocationSpec,
 ) (any, error) {
 	// Parse the jq expression
 	query, err := gojq.Parse(expression)
@@ -58,13 +58,15 @@ func ApplyJQExpression(
 	}
 
 	// Compile the jq query (this is where custom functions/modules are wired in)
-	code, err := gojq.Compile(query, gojq.WithVariables([]string{"$cur", "$xyz"}))
+	code, err := gojq.Compile(query, gojq.WithVariables(invocationSpec.VariableNames()))
 	if err != nil {
 		return nil, fmt.Errorf("failed to compile jq expression: %w", err)
 	}
 
 	// Run the compiled jq code
-	iter := code.Run(input, "HELLO", map[string]any{})
+	var values []any
+	values = invocationSpec.VariableValues()
+	iter := code.Run(input, values...)
 
 	result, ok := iter.Next()
 	if !ok {
@@ -137,7 +139,7 @@ func toStringArray(v any) []string {
 	}
 }
 
-func ProcessKeySide(obj map[string]any, ttl int) (map[string]any, error) {
+func ProcessKeySide(obj map[string]any, ttl int, invocationSpec InvocationSpec) (map[string]any, error) {
 	keyHavingPrefixForProcessing := func(path []any) bool {
 		last := path[len(path)-1]
 		switch last.(type) {
@@ -175,7 +177,10 @@ func ProcessKeySide(obj map[string]any, ttl int) (map[string]any, error) {
 			if t != String && t != Array {
 				panic(fmt.Sprintf("Last element of path must be a string or an array: %v", p))
 			}
-			v, err := ApplyJQExpression(obj, expr, []JSONType{String, Array})
+			spec := FromSpec(&invocationSpec).
+				AddVariable("$cur", p[0:len(p)-1]).
+				Build()
+			v, err := ApplyJQExpression(obj, expr, []JSONType{String, Array}, *spec)
 			if err != nil {
 				panic(fmt.Sprintf("Failed to evaluate jq expression: %v", err))
 			}
@@ -204,7 +209,7 @@ func ProcessKeySide(obj map[string]any, ttl int) (map[string]any, error) {
 			PutAtPath(ret, p, DeepCopyAs(v))
 		}
 	}
-	return ProcessKeySide(ret, ttl-1)
+	return ProcessKeySide(ret, ttl-1, invocationSpec)
 }
 
 // ProcessValueSide recursively processes and resolves special string values within a JSON-like object.
@@ -231,7 +236,7 @@ func ProcessKeySide(obj map[string]any, ttl int) (map[string]any, error) {
 //	An error if any "eval:" expression fails to evaluate.
 //
 // Panics if ttl reaches zero and some entries remain unresolved.
-func ProcessValueSide(obj map[string]any, ttl int) (map[string]any, error) {
+func ProcessValueSide(obj map[string]any, ttl int, invocationSpec InvocationSpec) (map[string]any, error) {
 	const prefixRaw = "raw:"
 	const prefixEval = "eval:"
 	entries := StringEntries(obj, func(v string) bool {
@@ -260,7 +265,10 @@ func ProcessValueSide(obj map[string]any, ttl int) (map[string]any, error) {
 			var expectedType JSONType
 			w := v[len(prefixEval):]
 			w, expectedType = extractExpressionAndExpectedType(w)
-			x, err := ApplyJQExpression(newObj, w, []JSONType{expectedType})
+			spec := FromSpec(&invocationSpec).
+				AddVariable("$cur", e.Path).
+				Build()
+			x, err := ApplyJQExpression(newObj, w, []JSONType{expectedType}, *spec)
 			if err != nil {
 				return nil, err
 			}
@@ -278,7 +286,7 @@ func ProcessValueSide(obj map[string]any, ttl int) (map[string]any, error) {
 			panic(fmt.Sprintf("failed to put value at path %v", p))
 		}
 	}
-	return ProcessValueSide(newObj, ttl-1)
+	return ProcessValueSide(newObj, ttl-1, invocationSpec)
 }
 
 func extractExpressionAndExpectedType(expr string) (string, JSONType) {
@@ -321,4 +329,8 @@ func StringEntries(obj map[string]any, pred func(v string) bool) []Entry {
 		return false
 	})
 	return entries
+}
+
+func EmptyInvocationSpec() InvocationSpec {
+	return InvocationSpec{}
 }

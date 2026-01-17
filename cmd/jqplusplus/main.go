@@ -82,7 +82,11 @@ func processNodeEntries(in []internal.NodeEntry) int {
 			ret = 1
 			break
 		}
-		os.Stdout.WriteString(v + "\n")
+		_, err = os.Stdout.WriteString(v + "\n")
+		if err != nil {
+			ret = 1
+			break
+		}
 	}
 	return ret
 }
@@ -92,11 +96,11 @@ func processNodeEntry(nodeEntry internal.NodeEntry) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	obj, err = internal.ProcessKeySide(obj, 7)
+	obj, err = internal.ProcessKeySide(obj, 7, internal.EmptyInvocationSpec())
 	if err != nil {
 		return "", err
 	}
-	obj, err = internal.ProcessValueSide(obj, 7)
+	obj, err = internal.ProcessValueSide(obj, 7, internal.EmptyInvocationSpec())
 	if err != nil {
 		return "", err
 	}
