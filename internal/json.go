@@ -170,24 +170,7 @@ func valueToAny(v hocon.Value) any {
 
 // mergeObjects merges parent and child objects, with child values taking precedence.
 func mergeObjects(parent, child map[string]any) map[string]any {
-	result := make(map[string]any)
-	for k, v := range parent {
-		result[k] = v
-	}
-	for k, v := range child {
-		if k == "$extends" || k == "$excludes" || k == "$local" {
-			continue
-		}
-		// If both are maps, merge recursively
-		if pv, ok := result[k].(map[string]any); ok {
-			if cv, ok := v.(map[string]any); ok {
-				result[k] = mergeObjects(pv, cv)
-				continue
-			}
-		}
-		result[k] = v
-	}
-	return result
+	return MergeObjects(parent, child, MergePolicyDefault)
 }
 
 func MergeObjects(a, b map[string]interface{}, policy MergePolicy) map[string]interface{} {
