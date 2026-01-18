@@ -47,6 +47,7 @@ func LoadAndResolveInheritancesRecursively(baseDir string, targetFile string, no
 		return nil, err
 	}
 	obj = nodeEntryValue.Obj
+	compilerOptions = nodeEntryValue.CompilerOptions
 
 	p, err := MaterializeLocalNodes(obj, nodepool.SessionDirectory())
 	delete(obj, "$local")

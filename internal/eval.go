@@ -52,13 +52,13 @@ func ApplyJQExpression(
 	invocationSpec InvocationSpec,
 ) (any, error) {
 	// Parse the jq expression
-	query, err := gojq.Parse(expression)
+	query, err := gojq.Parse(fmt.Sprintf(`include "jqpp"; %s`, expression))
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse jq expression: %w", err)
 	}
 
 	// Compile the jq query (this is where custom functions/modules are wired in)
-	code, err := gojq.Compile(query, gojq.WithVariables(invocationSpec.VariableNames()))
+	code, err := gojq.Compile(query, append(invocationSpec.Modules(), gojq.WithVariables(invocationSpec.VariableNames()))...)
 	if err != nil {
 		return nil, fmt.Errorf("failed to compile jq expression: %w", err)
 	}

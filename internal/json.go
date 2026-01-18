@@ -61,6 +61,22 @@ func readJSON(targetFileAbsPath string) (map[string]any, gojq.CompilerOption, er
 	return obj, nil, nil
 }
 
+type moduleLoader struct {
+	moduleName string
+	query      *gojq.Query
+}
+
+func (l *moduleLoader) LoadModule(name string) (*gojq.Query, error) {
+	if l.moduleName == name {
+		return l.query, nil
+	}
+	return nil, fmt.Errorf("module not found: %s", name)
+}
+
+func newModuleLoader(moduleName string, moduleBody *gojq.Query) *moduleLoader {
+	return &moduleLoader{moduleName, moduleBody}
+}
+
 func readJQ(targetFileAbsPath string) (map[string]any, gojq.CompilerOption, error) {
 	data, err := os.ReadFile(targetFileAbsPath)
 	if err != nil {
@@ -70,13 +86,7 @@ func readJQ(targetFileAbsPath string) (map[string]any, gojq.CompilerOption, erro
 	if err != nil {
 		return nil, nil, err
 	}
-	fmt.Println(fmt.Sprintf("query: <%v>", string(data)))
-	ret := gojq.WithModuleLoader(func(name string) (*gojq.Query, error) {
-		if name == "jqpp" {
-			return query, nil
-		}
-		return nil, fmt.Errorf("module %q not found", name)
-	})
+	ret := gojq.WithModuleLoader(newModuleLoader("jqpp", query))
 
 	return map[string]any{}, ret, nil
 }
