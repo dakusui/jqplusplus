@@ -1,6 +1,9 @@
 package internal
 
-import "path/filepath"
+import (
+	"github.com/itchyny/gojq"
+	"path/filepath"
+)
 
 type NodePool interface {
 	ReadNodeEntryValue(baseDir, filename string) (*NodeEntryValue, error)
@@ -18,7 +21,8 @@ type NodeEntryKey struct {
 }
 
 type NodeEntryValue struct {
-	Obj map[string]any
+	Obj             map[string]any
+	CompilerOptions []gojq.CompilerOption
 }
 
 func (e NodeEntryKey) BaseDir() string {

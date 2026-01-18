@@ -33,15 +33,16 @@ func LoadAndResolveInheritancesRecursively(baseDir string, targetFile string, no
 	}
 	nodepool.MarkVisited(absPath)
 
-	obj, _, err := LoadFileAsRawJSON(absPath)
+	obj, compilerOption, err := LoadFileAsRawJSON(absPath)
 	if err != nil {
 		return nil, err
 	}
 
-	obj, err = resolveBothInheritances(bDir, obj, nodepool)
+	nodeEntryValue, err := resolveBothInheritances(bDir, obj, compilerOption, nodepool)
 	if err != nil {
 		return nil, err
 	}
+	obj = nodeEntryValue.Obj
 
 	p, err := MaterializeLocalNodes(obj, nodepool.SessionDirectory())
 	delete(obj, "$local")
@@ -56,27 +57,30 @@ func LoadAndResolveInheritancesRecursively(baseDir string, targetFile string, no
 		if !ok {
 			continue
 		}
-		internalObj, err := resolveBothInheritances(bDir, internalObj, nodepool)
+		nodeEntryValue, err := resolveBothInheritances(bDir, internalObj, compilerOption, nodepool)
 		if err != nil {
 			return nil, err
 		}
+		internalObj = nodeEntryValue.Obj
 		PutAtPath(obj, ToAnySlice(p), internalObj)
 	}
 
 	nodepool.Leave(p)
-	return &NodeEntryValue{obj}, nil
+	return &NodeEntryValue{obj, []gojq.CompilerOption{compilerOption}}, nil
 }
 
-func resolveBothInheritances(baseDir string, obj map[string]any, nodepool NodePool) (map[string]any, error) {
+func resolveBothInheritances(baseDir string, obj map[string]any, compilerOption gojq.CompilerOption, nodepool NodePool) (*NodeEntryValue, error) {
 	ret := obj
 	var err error
-	for t := range []InheritType{Extends, Includes} {
-		ret, err = resolveInheritances(ret, baseDir, InheritType(t), nodepool)
-		if err != nil {
-			return nil, err
-		}
+	ret, err = resolveInheritances(ret, baseDir, Extends, nodepool)
+	if err != nil {
+		return nil, err
 	}
-	return ret, nil
+	ret, err = resolveInheritances(ret, baseDir, Includes, nodepool)
+	if err != nil {
+		return nil, err
+	}
+	return &NodeEntryValue{Obj: ret}, nil
 }
 
 func resolveInheritances(obj map[string]any, baseDir string, mergeType InheritType, nodepool NodePool) (map[string]any, error) {
