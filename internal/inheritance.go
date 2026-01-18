@@ -70,20 +70,19 @@ func LoadAndResolveInheritancesRecursively(baseDir string, targetFile string, no
 }
 
 func resolveBothInheritances(baseDir string, obj map[string]any, compilerOption gojq.CompilerOption, nodepool NodePool) (*NodeEntryValue, error) {
-	ret := obj
-	var err error
-	ret, err = resolveInheritances(ret, baseDir, Extends, nodepool)
+	nodeEntryValue := &NodeEntryValue{Obj: obj, CompilerOptions: []gojq.CompilerOption{compilerOption}}
+	nodeEntryValue, err := resolveInheritances(nodeEntryValue.Obj, baseDir, Extends, nodepool)
 	if err != nil {
 		return nil, err
 	}
-	ret, err = resolveInheritances(ret, baseDir, Includes, nodepool)
+	nodeEntryValue, err = resolveInheritances(nodeEntryValue.Obj, baseDir, Includes, nodepool)
 	if err != nil {
 		return nil, err
 	}
-	return &NodeEntryValue{Obj: ret}, nil
+	return nodeEntryValue, nil
 }
 
-func resolveInheritances(obj map[string]any, baseDir string, mergeType InheritType, nodepool NodePool) (map[string]any, error) {
+func resolveInheritances(obj map[string]any, baseDir string, mergeType InheritType, nodepool NodePool) (*NodeEntryValue, error) {
 	// Check for $extends or $includes
 	inherits, ok := obj[mergeType.String()]
 	if ok {
@@ -114,7 +113,7 @@ func resolveInheritances(obj map[string]any, baseDir string, mergeType InheritTy
 		delete(obj, mergeType.String())
 	}
 
-	return obj, nil
+	return &NodeEntryValue{Obj: obj}, nil
 }
 
 // parseInheritsField parses the $extends field, which can be a string or array of strings.
