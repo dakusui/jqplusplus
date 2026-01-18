@@ -38,7 +38,11 @@ func loadAndResolveInheritancesRecursively(baseDir string, targetFile string, no
 		return nil, err
 	}
 
-	nodeEntryValue, err := resolveBothInheritances(bDir, obj, []gojq.CompilerOption{compilerOption}, nodepool)
+	var compilerOptions []gojq.CompilerOption
+	if compilerOption != nil {
+		compilerOptions = append(compilerOptions, compilerOption)
+	}
+	nodeEntryValue, err := resolveBothInheritances(bDir, obj, compilerOptions, nodepool)
 	if err != nil {
 		return nil, err
 	}
@@ -70,11 +74,11 @@ func loadAndResolveInheritancesRecursively(baseDir string, targetFile string, no
 
 func resolveBothInheritances(baseDir string, obj map[string]any, compilerOptions []gojq.CompilerOption, nodepool NodePool) (*NodeEntryValue, error) {
 	ret := &NodeEntryValue{Obj: obj, CompilerOptions: compilerOptions}
-	ret, err := resolveInheritances(ret.Obj, compilerOptions, baseDir, Extends, nodepool)
+	ret, err := resolveInheritances(ret.Obj, ret.CompilerOptions, baseDir, Extends, nodepool)
 	if err != nil {
 		return nil, err
 	}
-	ret, err = resolveInheritances(ret.Obj, compilerOptions, baseDir, Includes, nodepool)
+	ret, err = resolveInheritances(ret.Obj, ret.CompilerOptions, baseDir, Includes, nodepool)
 	if err != nil {
 		return nil, err
 	}
@@ -95,7 +99,7 @@ func resolveInheritances(obj map[string]any, compilerOptions []gojq.CompilerOpti
 		}
 		var mergedParents map[string]any
 		for i, parent := range parentFiles {
-			nodeEntryValue, err := nodepool.ReadNodeEntryValue(baseDir, parent, []gojq.CompilerOption{})
+			nodeEntryValue, err := nodepool.ReadNodeEntryValue(baseDir, parent, tmpCompilerOptions)
 			if err != nil {
 				return nil, err
 			}

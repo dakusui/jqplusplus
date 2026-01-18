@@ -1,7 +1,6 @@
 package internal
 
 import (
-	"fmt"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -13,8 +12,6 @@ func TestLoadAndResolveInheritances_NoExtends(t *testing.T) {
 	dir := t.TempDir()
 	file := writeTempJSON(t, dir, "base.json", `{"a": 1, "b": 2}`)
 	result, err := LoadAndResolveInheritances(filepath.Dir(file), filepath.Base(file), []string{})
-	fmt.Println(result)
-	fmt.Println(result.Obj)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}

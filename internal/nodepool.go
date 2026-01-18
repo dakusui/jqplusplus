@@ -20,6 +20,13 @@ type NodeEntryKey struct {
 	baseDir  string
 }
 
+// NodeEntryValue represents the value corresponding to a NodeEntryKey in the NodePool cache.
+// It encapsulates a map of objects and a list of gojq.CompilerOption used for processing
+// jq queries.
+//
+// Fields:
+// - Obj: A map containing arbitrary data associated with the NodeEntry.
+// - CompilerOptions: A list of options applied when compiling jq queries.
 type NodeEntryValue struct {
 	Obj             map[string]any
 	CompilerOptions []gojq.CompilerOption
@@ -47,8 +54,12 @@ type NodePoolImpl struct {
 	localNodeSearchPaths []string
 	// Paths from which files to be inherited are searched for.
 	baseSearchPaths []string
-	cache           map[NodeEntryKey]NodeEntryValue
-	visited         map[string]bool
+	// cache holds the mapping of NodeEntryKey to NodeEntryValue, providing
+	// a mechanism for caching node entries that have been processed. This
+	// ensures that previously resolved entries can be retrieved efficiently
+	// without redundant operations.
+	cache   map[NodeEntryKey]NodeEntryValue
+	visited map[string]bool
 }
 
 func NewNodePoolWithBaseSearchPaths(baseDir, sessionDirectory string, searchPaths []string) *NodePoolImpl {
@@ -73,6 +84,7 @@ func (p *NodePoolImpl) ReadNodeEntryValue(baseDir, filename string, compilerOpti
 		p.cache[nodeEntryKey] = *nodeEntryValue
 		ret = *nodeEntryValue
 	}
+	ret.CompilerOptions = append(compilerOptions, ret.CompilerOptions...)
 	return &ret, nil
 }
 

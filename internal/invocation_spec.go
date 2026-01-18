@@ -117,9 +117,8 @@ func FromSpec(spec *InvocationSpec) *InvocationSpecBuilder {
 	}
 }
 
-// AddModule adds a gojq.CompilerOption to the InvocationSpec's modules slice.
-func (b *InvocationSpecBuilder) AddModule(module gojq.CompilerOption) *InvocationSpecBuilder {
-	b.spec.modules = append(b.spec.modules, module)
+func (b *InvocationSpecBuilder) AddModules(modules ...gojq.CompilerOption) *InvocationSpecBuilder {
+	b.spec.modules = append(b.spec.modules, modules...)
 	return b
 }
 

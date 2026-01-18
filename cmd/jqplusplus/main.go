@@ -97,13 +97,19 @@ func processNodeEntry(nodeEntry internal.NodeEntryKey) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	obj, err = internal.ProcessKeySide(obj, 7, internal.EmptyInvocationSpec())
-	if err != nil {
-		return "", err
+	{
+		invocationSpec := internal.NewInvocationSpecBuilder().AddModules(nodeEntryValue.CompilerOptions...).Build()
+		obj, err = internal.ProcessKeySide(obj, 7, *invocationSpec)
+		if err != nil {
+			return "", err
+		}
 	}
-	obj, err = internal.ProcessValueSide(obj, 7, internal.EmptyInvocationSpec())
-	if err != nil {
-		return "", err
+	{
+		invocationSpec := internal.NewInvocationSpecBuilder().AddModules(nodeEntryValue.CompilerOptions...).Build()
+		obj, err = internal.ProcessValueSide(obj, 7, *invocationSpec)
+		if err != nil {
+			return "", err
+		}
 	}
 	data, err := json.MarshalIndent(obj, "", "  ")
 	if err != nil {
