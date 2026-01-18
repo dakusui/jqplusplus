@@ -20,6 +20,10 @@ type NodeEntryKey struct {
 	baseDir  string
 }
 
+func NewNodeEntryKey(baseDir, filename string) NodeEntryKey {
+	return NodeEntryKey{filename: filename, baseDir: baseDir}
+}
+
 // NodeEntryValue represents the value corresponding to a NodeEntryKey in the NodePool cache.
 // It encapsulates a map of objects and a list of gojq.CompilerOption used for processing
 // jq queries.
@@ -77,7 +81,7 @@ func (p *NodePoolImpl) ReadNodeEntryValue(baseDir, filename string, compilerOpti
 	nodeEntryKey := NodeEntryKey{filename: filename, baseDir: baseDir}
 	ret, ok := p.cache[nodeEntryKey]
 	if !ok {
-		nodeEntryValue, err := loadAndResolveInheritancesRecursively(baseDir, filename, p)
+		nodeEntryValue, err := LoadAndResolveInheritancesRecursively(baseDir, filename, p)
 		if err != nil {
 			return nil, err
 		}

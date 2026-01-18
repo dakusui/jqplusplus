@@ -66,13 +66,17 @@ func readJQ(targetFileAbsPath string) (map[string]any, gojq.CompilerOption, erro
 	if err != nil {
 		return nil, nil, err
 	}
-
 	query, err := gojq.Parse(string(data))
 	if err != nil {
 		return nil, nil, err
 	}
-
-	ret := gojq.WithModuleLoader(query)
+	fmt.Println(fmt.Sprintf("query: <%v>", string(data)))
+	ret := gojq.WithModuleLoader(func(name string) (*gojq.Query, error) {
+		if name == "jqpp" {
+			return query, nil
+		}
+		return nil, fmt.Errorf("module %q not found", name)
+	})
 
 	return map[string]any{}, ret, nil
 }

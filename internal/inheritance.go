@@ -22,8 +22,8 @@ func LoadAndResolveInheritances(baseDir string, filename string, searchPaths []s
 	return NewNodePoolWithBaseSearchPaths(baseDir, sessionDirectory, searchPaths).ReadNodeEntryValue(baseDir, filename, []gojq.CompilerOption{})
 }
 
-// loadAndResolveInheritancesRecursively loads a JSON file, resolves $extends or $includes recursively, and merges parents.
-func loadAndResolveInheritancesRecursively(baseDir string, targetFile string, nodepool NodePool) (*NodeEntryValue, error) {
+// LoadAndResolveInheritancesRecursively loads a JSON file, resolves $extends or $includes recursively, and merges parents.
+func LoadAndResolveInheritancesRecursively(baseDir string, targetFile string, nodepool NodePool) (*NodeEntryValue, error) {
 	absPath, bDir, err := ResolveFilePath(targetFile, baseDir, nodepool.SearchPaths())
 	if err != nil {
 		return nil, err
@@ -61,15 +61,16 @@ func loadAndResolveInheritancesRecursively(baseDir string, targetFile string, no
 		if !ok {
 			continue
 		}
-		nodeEntryValue, err := resolveBothInheritances(bDir, internalObj, []gojq.CompilerOption{compilerOption}, nodepool)
+		nodeEntryValue, err := resolveBothInheritances(bDir, internalObj, compilerOptions, nodepool)
 		if err != nil {
 			return nil, err
 		}
 		internalObj = nodeEntryValue.Obj
+		compilerOptions = nodeEntryValue.CompilerOptions
 		PutAtPath(obj, ToAnySlice(p), internalObj)
 	}
 	nodepool.Leave(p)
-	return &NodeEntryValue{obj, []gojq.CompilerOption{compilerOption}}, nil
+	return &NodeEntryValue{obj, compilerOptions}, nil
 }
 
 func resolveBothInheritances(baseDir string, obj map[string]any, compilerOptions []gojq.CompilerOption, nodepool NodePool) (*NodeEntryValue, error) {

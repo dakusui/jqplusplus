@@ -27,7 +27,7 @@ If no files are provided, input is read from stdin.
 		_, _ = os.Stderr.WriteString("Error processing arguments: " + err.Error() + "\n")
 		os.Exit(1)
 	}
-	exitCode := processNodeEntries(in)
+	exitCode := processNodeEntryKeys(in)
 	os.Exit(exitCode)
 }
 
@@ -73,12 +73,12 @@ func inputFiles(args []string) ([]internal.NodeEntryKey, func(), error) {
 	return in, exit, nil
 }
 
-func processNodeEntries(in []internal.NodeEntryKey) int {
+func processNodeEntryKeys(in []internal.NodeEntryKey) int {
 	ret := 0
-	for _, nodeEntry := range in {
-		v, err := processNodeEntry(nodeEntry)
+	for _, eachNodeEntryKey := range in {
+		v, err := processNodeEntryKey(eachNodeEntryKey)
 		if err != nil {
-			_, _ = os.Stderr.WriteString("Error processing file " + nodeEntry.String() + ": " + err.Error() + "\n")
+			_, _ = os.Stderr.WriteString("Error processing file " + eachNodeEntryKey.String() + ": " + err.Error() + "\n")
 			ret = 1
 			break
 		}
@@ -91,12 +91,13 @@ func processNodeEntries(in []internal.NodeEntryKey) int {
 	return ret
 }
 
-func processNodeEntry(nodeEntry internal.NodeEntryKey) (string, error) {
-	nodeEntryValue, err := internal.LoadAndResolveInheritances(nodeEntry.BaseDir(), nodeEntry.Filename(), internal.SearchPaths())
-	obj := nodeEntryValue.Obj
+func processNodeEntryKey(nodeEntryKey internal.NodeEntryKey) (string, error) {
+	nodeEntryValue, err := internal.LoadAndResolveInheritances(nodeEntryKey.BaseDir(), nodeEntryKey.Filename(), internal.SearchPaths())
+	fmt.Printf("%+v\n", nodeEntryValue)
 	if err != nil {
 		return "", err
 	}
+	obj := nodeEntryValue.Obj
 	{
 		invocationSpec := internal.NewInvocationSpecBuilder().AddModules(nodeEntryValue.CompilerOptions...).Build()
 		obj, err = internal.ProcessKeySide(obj, 7, *invocationSpec)

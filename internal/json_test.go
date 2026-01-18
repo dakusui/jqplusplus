@@ -1,6 +1,7 @@
 package internal
 
 import (
+	"github.com/dakusui/jqplusplus/internal/testutil"
 	"path/filepath"
 	"reflect"
 	"testing"
@@ -8,7 +9,7 @@ import (
 
 func TestLoadAndResolveInheritancesWithYaml_NoExtends(t *testing.T) {
 	dir := t.TempDir()
-	file := writeTempJSON(t, dir, "base.yaml", `
+	file := testutil.WriteTempJSON(t, dir, "base.yaml", `
 a: 1
 b: 2
 `)
@@ -24,7 +25,7 @@ b: 2
 
 func TestLoadAndResolveInheritancesWithToml_NoExtends(t *testing.T) {
 	dir := t.TempDir()
-	file := writeTempJSON(t, dir, "base.toml", `
+	file := testutil.WriteTempJSON(t, dir, "base.toml", `
 	a = 1
 	b = 2
 	`)
@@ -40,7 +41,7 @@ func TestLoadAndResolveInheritancesWithToml_NoExtends(t *testing.T) {
 
 func TestLoadAndResolveInheritancesWithJSON5_NoExtends(t *testing.T) {
 	dir := t.TempDir()
-	file := writeTempJSON(t, dir, "base.json5", `
+	file := testutil.WriteTempJSON(t, dir, "base.json5", `
 	{
 	  a: 1,
 	  b: 2,
@@ -57,7 +58,7 @@ func TestLoadAndResolveInheritancesWithJSON5_NoExtends(t *testing.T) {
 
 func TestLoadAndResolveInheritancesWithHOCON_NoExtends(t *testing.T) {
 	dir := t.TempDir()
-	file := writeTempJSON(t, dir, "base.hocon", `
+	file := testutil.WriteTempJSON(t, dir, "base.hocon", `
 a = 1
 b = 2
 `)
