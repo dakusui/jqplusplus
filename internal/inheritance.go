@@ -46,8 +46,8 @@ func LoadAndResolveInheritancesRecursively(baseDir string, targetFile string, no
 
 	p, err := MaterializeLocalNodes(obj, nodepool.SessionDirectory())
 	delete(obj, "$local")
-	nodepool.Enter(p)
 
+	nodepool.Enter(p)
 	for _, p := range DistinctBy(Map(Sort(Paths(obj, lastElementIsOneOf("$extends", "$includes")), lessPathArrays), DropLast[any]), pathKey) {
 		internal, ok := GetAtPath(obj, ToAnySlice(p))
 		if !ok {
@@ -64,7 +64,6 @@ func LoadAndResolveInheritancesRecursively(baseDir string, targetFile string, no
 		internalObj = nodeEntryValue.Obj
 		PutAtPath(obj, ToAnySlice(p), internalObj)
 	}
-
 	nodepool.Leave(p)
 	return &NodeEntryValue{obj, []gojq.CompilerOption{compilerOption}}, nil
 }
@@ -85,6 +84,7 @@ func resolveBothInheritances(baseDir string, obj map[string]any, compilerOption 
 func resolveInheritances(obj map[string]any, compilerOption gojq.CompilerOption, baseDir string, mergeType InheritType, nodepool NodePool) (*NodeEntryValue, error) {
 	// Check for $extends or $includes
 	inherits, ok := obj[mergeType.String()]
+	compilerOptions := []gojq.CompilerOption{compilerOption}
 	if ok {
 		parentFiles, err := parseInheritsField(inherits, mergeType)
 		if err != nil {
@@ -95,15 +95,16 @@ func resolveInheritances(obj map[string]any, compilerOption gojq.CompilerOption,
 		}
 		var mergedParents map[string]any
 		for i, parent := range parentFiles {
-			parentObj, err := nodepool.ReadNodeEntryValue(baseDir, parent)
+			nodeEntryValue, err := nodepool.ReadNodeEntryValue(baseDir, parent)
 			if err != nil {
 				return nil, err
 			}
 			if i == 0 {
-				mergedParents = parentObj.Obj
+				mergedParents = nodeEntryValue.Obj
 			} else {
-				mergedParents = mergeObjects(mergedParents, parentObj.Obj)
+				mergedParents = mergeObjects(mergedParents, nodeEntryValue.Obj)
 			}
+			compilerOptions = append(compilerOptions, nodeEntryValue.CompilerOptions...)
 		}
 		if !mergeType.IsOrderReversed() {
 			obj = mergeObjects(mergedParents, obj)
@@ -113,7 +114,7 @@ func resolveInheritances(obj map[string]any, compilerOption gojq.CompilerOption,
 		delete(obj, mergeType.String())
 	}
 
-	return &NodeEntryValue{Obj: obj, CompilerOptions: []gojq.CompilerOption{compilerOption}}, nil
+	return &NodeEntryValue{Obj: obj, CompilerOptions: compilerOptions}, nil
 }
 
 // parseInheritsField parses the $extends field, which can be a string or array of strings.
