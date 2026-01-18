@@ -135,7 +135,7 @@ func CreateSessionDirectory() string {
 	if !ok {
 		v = ""
 	}
-	ret, e := os.MkdirTemp(v, "cmd-session-*")
+	ret, e := os.MkdirTemp(v, "jq++-session-*")
 	if e != nil {
 		panic(fmt.Sprintf("failed to create session directory: %v", e))
 	}

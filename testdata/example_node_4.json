@@ -1,0 +1,16 @@
+{
+  "$extends": ["parent1.json"],
+  "$local": {
+    "A": {
+      "hello": "world"
+    }
+  },
+  "X": {
+    "$extends": ["A"]
+  },
+  "Y": {
+    "Z": {
+      "$extends": ["A"]
+    }
+  }
+}
