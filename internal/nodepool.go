@@ -66,7 +66,7 @@ func (p *NodePoolImpl) ReadNodeEntryValue(baseDir, filename string) (*NodeEntryV
 	nodeEntryKey := NodeEntryKey{filename: filename, baseDir: baseDir}
 	ret, ok := p.cache[nodeEntryKey]
 	if !ok {
-		nodeEntryValue, err := LoadAndResolveInheritancesRecursively(baseDir, filename, p)
+		nodeEntryValue, err := loadAndResolveInheritancesRecursively(baseDir, filename, p)
 		if err != nil {
 			return nil, err
 		}

@@ -22,8 +22,8 @@ func LoadAndResolveInheritances(baseDir string, filename string, searchPaths []s
 	return NewNodePoolWithBaseSearchPaths(baseDir, sessionDirectory, searchPaths).ReadNodeEntryValue(baseDir, filename)
 }
 
-// LoadAndResolveInheritancesRecursively loads a JSON file, resolves $extends or $includes recursively, and merges parents.
-func LoadAndResolveInheritancesRecursively(baseDir string, targetFile string, nodepool NodePool) (*NodeEntryValue, error) {
+// loadAndResolveInheritancesRecursively loads a JSON file, resolves $extends or $includes recursively, and merges parents.
+func loadAndResolveInheritancesRecursively(baseDir string, targetFile string, nodepool NodePool) (*NodeEntryValue, error) {
 	absPath, bDir, err := ResolveFilePath(targetFile, baseDir, nodepool.SearchPaths())
 	if err != nil {
 		return nil, err
@@ -38,7 +38,7 @@ func LoadAndResolveInheritancesRecursively(baseDir string, targetFile string, no
 		return nil, err
 	}
 
-	nodeEntryValue, err := resolveBothInheritances(bDir, obj, compilerOption, nodepool)
+	nodeEntryValue, err := resolveBothInheritances(bDir, obj, []gojq.CompilerOption{compilerOption}, nodepool)
 	if err != nil {
 		return nil, err
 	}
@@ -57,7 +57,7 @@ func LoadAndResolveInheritancesRecursively(baseDir string, targetFile string, no
 		if !ok {
 			continue
 		}
-		nodeEntryValue, err := resolveBothInheritances(bDir, internalObj, compilerOption, nodepool)
+		nodeEntryValue, err := resolveBothInheritances(bDir, internalObj, []gojq.CompilerOption{compilerOption}, nodepool)
 		if err != nil {
 			return nil, err
 		}
@@ -68,23 +68,23 @@ func LoadAndResolveInheritancesRecursively(baseDir string, targetFile string, no
 	return &NodeEntryValue{obj, []gojq.CompilerOption{compilerOption}}, nil
 }
 
-func resolveBothInheritances(baseDir string, obj map[string]any, compilerOption gojq.CompilerOption, nodepool NodePool) (*NodeEntryValue, error) {
-	ret := &NodeEntryValue{Obj: obj, CompilerOptions: []gojq.CompilerOption{compilerOption}}
-	ret, err := resolveInheritances(ret.Obj, compilerOption, baseDir, Extends, nodepool)
+func resolveBothInheritances(baseDir string, obj map[string]any, compilerOptions []gojq.CompilerOption, nodepool NodePool) (*NodeEntryValue, error) {
+	ret := &NodeEntryValue{Obj: obj, CompilerOptions: compilerOptions}
+	ret, err := resolveInheritances(ret.Obj, compilerOptions, baseDir, Extends, nodepool)
 	if err != nil {
 		return nil, err
 	}
-	ret, err = resolveInheritances(ret.Obj, compilerOption, baseDir, Includes, nodepool)
+	ret, err = resolveInheritances(ret.Obj, compilerOptions, baseDir, Includes, nodepool)
 	if err != nil {
 		return nil, err
 	}
 	return ret, nil
 }
 
-func resolveInheritances(obj map[string]any, compilerOption gojq.CompilerOption, baseDir string, mergeType InheritType, nodepool NodePool) (*NodeEntryValue, error) {
+func resolveInheritances(obj map[string]any, compilerOptions []gojq.CompilerOption, baseDir string, mergeType InheritType, nodepool NodePool) (*NodeEntryValue, error) {
+	tmpCompilerOptions := compilerOptions
 	// Check for $extends or $includes
 	inherits, ok := obj[mergeType.String()]
-	compilerOptions := []gojq.CompilerOption{compilerOption}
 	if ok {
 		parentFiles, err := parseInheritsField(inherits, mergeType)
 		if err != nil {
@@ -104,7 +104,7 @@ func resolveInheritances(obj map[string]any, compilerOption gojq.CompilerOption,
 			} else {
 				mergedParents = mergeObjects(mergedParents, nodeEntryValue.Obj)
 			}
-			compilerOptions = append(compilerOptions, nodeEntryValue.CompilerOptions...)
+			tmpCompilerOptions = append(tmpCompilerOptions, nodeEntryValue.CompilerOptions...)
 		}
 		if !mergeType.IsOrderReversed() {
 			obj = mergeObjects(mergedParents, obj)
@@ -114,7 +114,7 @@ func resolveInheritances(obj map[string]any, compilerOption gojq.CompilerOption,
 		delete(obj, mergeType.String())
 	}
 
-	return &NodeEntryValue{Obj: obj, CompilerOptions: compilerOptions}, nil
+	return &NodeEntryValue{Obj: obj, CompilerOptions: tmpCompilerOptions}, nil
 }
 
 // parseInheritsField parses the $extends field, which can be a string or array of strings.
