@@ -19,7 +19,7 @@ func LoadAndResolveInheritances(baseDir string, filename string, searchPaths []s
 		}
 	}()
 
-	return NewNodePoolWithBaseSearchPaths(baseDir, sessionDirectory, searchPaths).ReadNodeEntryValue(baseDir, filename)
+	return NewNodePoolWithBaseSearchPaths(baseDir, sessionDirectory, searchPaths).ReadNodeEntryValue(baseDir, filename, []gojq.CompilerOption{})
 }
 
 // loadAndResolveInheritancesRecursively loads a JSON file, resolves $extends or $includes recursively, and merges parents.
@@ -95,7 +95,7 @@ func resolveInheritances(obj map[string]any, compilerOptions []gojq.CompilerOpti
 		}
 		var mergedParents map[string]any
 		for i, parent := range parentFiles {
-			nodeEntryValue, err := nodepool.ReadNodeEntryValue(baseDir, parent)
+			nodeEntryValue, err := nodepool.ReadNodeEntryValue(baseDir, parent, []gojq.CompilerOption{})
 			if err != nil {
 				return nil, err
 			}

@@ -6,7 +6,7 @@ import (
 )
 
 type NodePool interface {
-	ReadNodeEntryValue(baseDir, filename string) (*NodeEntryValue, error)
+	ReadNodeEntryValue(baseDir, filename string, compilerOptions []gojq.CompilerOption) (*NodeEntryValue, error)
 	IsVisited(absPath string) bool
 	MarkVisited(absPath string)
 	SearchPaths() []string
@@ -62,7 +62,7 @@ func NewNodePoolWithBaseSearchPaths(baseDir, sessionDirectory string, searchPath
 	}
 }
 
-func (p *NodePoolImpl) ReadNodeEntryValue(baseDir, filename string) (*NodeEntryValue, error) {
+func (p *NodePoolImpl) ReadNodeEntryValue(baseDir, filename string, compilerOptions []gojq.CompilerOption) (*NodeEntryValue, error) {
 	nodeEntryKey := NodeEntryKey{filename: filename, baseDir: baseDir}
 	ret, ok := p.cache[nodeEntryKey]
 	if !ok {
