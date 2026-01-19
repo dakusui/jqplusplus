@@ -59,6 +59,42 @@ export PATH="$PATH:$(pwd)/bin"
 sudo cp bin/jq++ /usr/local/bin/
 ```
 
+## Usage Example
+
+
+Let's prepare files, `name.json` and `greeting.json`, from which you want to create a new JSON by extending them.
+
+```shell script
+$ echo '{"yourname":"Mark"}' > name.json
+$ cat name.json
+{"yourname":"Mark"}
+
+$ echo '{"greeting":"Hello"}' > greeting.json
+$ cat greeting.json
+{"greeting":"Hello"}
+```
+
+Then create a file that extends them.
+
+```shell script
+$ echo '{
+    "$extends": ["greeting.json", "name.json"],
+    "sayHello": "eval:$(ref .greeting), $(ref .yourname). Toady is $(date). How are you doing?"
+  }' > sayHello.json
+```
+
+Now, let's try jq++.
+```shell script
+$ jq++ sayHello.json
+{
+  "yourname": "Mark",
+  "greeting": "Hello",
+  "sayHello": "Hello, Mark. Toady is Fri Aug 30 22:04:40 UTC 2019. How are you doing?"
+}
+$
+```
+Doesn't it seem useful? Have fun!
+
 ## Project Structure
 
 - `cmd/jqplusplus/main.go`: Application entry point
