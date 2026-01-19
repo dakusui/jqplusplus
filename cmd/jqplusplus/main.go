@@ -27,12 +27,12 @@ If no files are provided, input is read from stdin.
 		_, _ = os.Stderr.WriteString("Error processing arguments: " + err.Error() + "\n")
 		os.Exit(1)
 	}
-	exitCode := processNodeEntries(in)
+	exitCode := processNodeEntryKeys(in)
 	os.Exit(exitCode)
 }
 
-func inputFiles(args []string) ([]internal.NodeEntry, func(), error) {
-	var in []internal.NodeEntry
+func inputFiles(args []string) ([]internal.NodeEntryKey, func(), error) {
+	var in []internal.NodeEntryKey
 	exit := func() {}
 	if len(args) == 1 {
 		tempFile, err := os.CreateTemp("", "input-*")
@@ -62,43 +62,54 @@ func inputFiles(args []string) ([]internal.NodeEntry, func(), error) {
 			return nil, exit, err
 		}
 
-		in = []internal.NodeEntry{
+		in = []internal.NodeEntryKey{
 			internal.NewNodeEntry("", absolutePath),
 		}
 	} else {
-		in = internal.Map(args[1:], func(t string) internal.NodeEntry {
+		in = internal.Map(args[1:], func(t string) internal.NodeEntryKey {
 			return internal.NewNodeEntry(filepath.Dir(t), filepath.Base(t))
 		})
 	}
 	return in, exit, nil
 }
 
-func processNodeEntries(in []internal.NodeEntry) int {
+func processNodeEntryKeys(in []internal.NodeEntryKey) int {
 	ret := 0
-	for _, nodeEntry := range in {
-		v, err := processNodeEntry(nodeEntry)
+	for _, eachNodeEntryKey := range in {
+		v, err := processNodeEntryKey(eachNodeEntryKey)
 		if err != nil {
-			_, _ = os.Stderr.WriteString("Error processing file " + nodeEntry.String() + ": " + err.Error() + "\n")
+			_, _ = os.Stderr.WriteString("Error processing file " + eachNodeEntryKey.String() + ": " + err.Error() + "\n")
 			ret = 1
 			break
 		}
-		os.Stdout.WriteString(v + "\n")
+		_, err = os.Stdout.WriteString(v + "\n")
+		if err != nil {
+			ret = 1
+			break
+		}
 	}
 	return ret
 }
 
-func processNodeEntry(nodeEntry internal.NodeEntry) (string, error) {
-	obj, err := internal.LoadAndResolveInheritances(nodeEntry.BaseDir(), nodeEntry.Filename(), internal.SearchPaths())
+func processNodeEntryKey(nodeEntryKey internal.NodeEntryKey) (string, error) {
+	nodeEntryValue, err := internal.LoadAndResolveInheritances(nodeEntryKey.BaseDir(), nodeEntryKey.Filename(), internal.SearchPaths())
 	if err != nil {
 		return "", err
 	}
-	obj, err = internal.ProcessKeySide(obj, 7)
-	if err != nil {
-		return "", err
+	obj := nodeEntryValue.Obj
+	{
+		invocationSpec := internal.NewInvocationSpecBuilder().AddModules(nodeEntryValue.CompilerOptions...).Build()
+		obj, err = internal.ProcessKeySide(obj, 7, *invocationSpec)
+		if err != nil {
+			return "", err
+		}
 	}
-	obj, err = internal.ProcessValueSide(obj, 7)
-	if err != nil {
-		return "", err
+	{
+		invocationSpec := internal.NewInvocationSpecBuilder().AddModules(nodeEntryValue.CompilerOptions...).Build()
+		obj, err = internal.ProcessValueSide(obj, 7, *invocationSpec)
+		if err != nil {
+			return "", err
+		}
 	}
 	data, err := json.MarshalIndent(obj, "", "  ")
 	if err != nil {

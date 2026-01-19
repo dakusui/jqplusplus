@@ -17,7 +17,7 @@ func Entries(obj map[string]any, pred func([]any) bool) []Entry {
 	})
 }
 
-// Paths returns all JSON paths in `obj` that satisfy `pred`.
+// Paths returns all JSON paths in `Obj` that satisfy `pred`.
 func Paths(obj map[string]any, pred func([]any) bool) [][]any {
 	var paths [][]any
 	walkAnyPath(nil, obj, &paths)

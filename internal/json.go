@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/BurntSushi/toml"
 	"github.com/gurkankaymak/hocon"
+	"github.com/itchyny/gojq"
 	"github.com/titanous/json5"
 	"gopkg.in/yaml.v3"
 	"os"
@@ -17,6 +18,7 @@ type FileType string
 
 const (
 	JSON  FileType = "json"
+	JQ    FileType = "jq"
 	YAML  FileType = "yaml"
 	TOML  FileType = "toml"
 	JSON5 FileType = "json5"
@@ -28,84 +30,117 @@ func detectFileType(name string) (FileType, bool) {
 	ext := strings.ToLower(filepath.Ext(name))
 
 	switch ext {
-	case ".json", "":
+	case ".json", ".json++", "":
 		return JSON, true
-	case ".yaml", ".yml":
+	case ".jq":
+		return JQ, true
+	case ".yaml", ".yml", ".yaml++", ".yml++":
 		return YAML, true
-	case ".toml":
+	case ".toml", ".toml++":
 		return TOML, true
-	case ".json5":
+	case ".json5", ".json5++":
 		return JSON5, true
-	case ".hcl":
+	case ".hcl", ".hcl++":
 		return HCL, true
-	case ".conf", ".hocon":
+	case ".conf", ".hocon", ".conf++", ".hocon++":
 		return HOCON, true
 	default:
 		return "", false
 	}
 }
 
-func readJSON(targetFileAbsPath string) (map[string]any, error) {
+func readJSON(targetFileAbsPath string) (map[string]any, *JqModule, error) {
 	data, err := os.ReadFile(targetFileAbsPath)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	var obj map[string]any
 	if err := json.Unmarshal(data, &obj); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
-	return obj, nil
+	return obj, nil, nil
 }
 
-func readYAML(path string) (map[string]any, error) {
+type moduleLoader struct {
+	moduleName string
+	query      *gojq.Query
+}
+
+func (l *moduleLoader) LoadModule(name string) (*gojq.Query, error) {
+	if l.moduleName == name {
+		return l.query, nil
+	}
+	return nil, fmt.Errorf("module not found: %s", name)
+}
+
+func newModuleLoader(moduleName string, moduleBody *gojq.Query) *moduleLoader {
+	return &moduleLoader{moduleName, moduleBody}
+}
+
+func readJQ(targetFileAbsPath string) (map[string]any, *JqModule, error) {
+	data, err := os.ReadFile(targetFileAbsPath)
+	if err != nil {
+		return nil, nil, err
+	}
+	query, err := gojq.Parse(string(data))
+	if err != nil {
+		return nil, nil, err
+	}
+	name := filepath.Base(targetFileAbsPath)
+	name = strings.SplitN(filepath.Base(targetFileAbsPath), ".", 2)[0]
+	ret := gojq.WithModuleLoader(newModuleLoader(name, query))
+	return map[string]any{}, &JqModule{Name: name, CompilerOption: ret}, nil
+}
+
+func readYAML(path string) (map[string]any, *JqModule, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	var m map[string]any
 	if err := yaml.Unmarshal(data, &m); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
-	return m, nil
+	return m, nil, nil
 }
 
-func readTOML(path string) (map[string]any, error) {
+func readTOML(path string) (map[string]any, *JqModule, error) {
 	var m map[string]any
 	if _, err := toml.DecodeFile(path, &m); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
-	return m, nil
+	return m, nil, nil
 }
 
-func readJSON5(path string) (map[string]any, error) {
+func readJSON5(path string) (map[string]any, *JqModule, error) {
 	b, err := os.ReadFile(path)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	var m map[string]any
 	if err := json5.Unmarshal(b, &m); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
-	return m, nil
+	return m, nil, nil
 }
 
 // readHOCON reads a HOCON file and returns it as a JSON-compatible map.
 // Top-level must be an object.
-func readHOCON(path string) (map[string]any, error) {
+func readHOCON(path string) (map[string]any, *JqModule, error) {
 	conf, err := hocon.ParseResource(path)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	root := conf.GetRoot() // Value
 	obj, ok := root.(hocon.Object)
 	if !ok {
-		return nil, fmt.Errorf("HOCON top-level must be an object")
+		return nil, nil, fmt.Errorf("HOCON top-level must be an object")
 	}
 
-	return objectToMap(obj), nil
+	return objectToMap(obj), nil, nil
 }
 
 func objectToMap(o hocon.Object) map[string]any {
@@ -150,24 +185,7 @@ func valueToAny(v hocon.Value) any {
 
 // mergeObjects merges parent and child objects, with child values taking precedence.
 func mergeObjects(parent, child map[string]any) map[string]any {
-	result := make(map[string]any)
-	for k, v := range parent {
-		result[k] = v
-	}
-	for k, v := range child {
-		if k == "$extends" || k == "$excludes" || k == "$local" {
-			continue
-		}
-		// If both are maps, merge recursively
-		if pv, ok := result[k].(map[string]any); ok {
-			if cv, ok := v.(map[string]any); ok {
-				result[k] = mergeObjects(pv, cv)
-				continue
-			}
-		}
-		result[k] = v
-	}
-	return result
+	return MergeObjects(parent, child, MergePolicyDefault)
 }
 
 func MergeObjects(a, b map[string]interface{}, policy MergePolicy) map[string]interface{} {

@@ -9,11 +9,11 @@ import (
 	"strings"
 )
 
-// MaterializeLocalNodes materializes obj["$local"] into files under dir.
+// MaterializeLocalNodes materializes Obj["$local"] into files under dir.
 // Returns dir (absolute) on success.
 func MaterializeLocalNodes(obj map[string]any, localNodeDirectoryBase string) (string, error) {
 	if obj == nil {
-		return "", errors.New("obj is nil")
+		return "", errors.New("Obj is nil")
 	}
 	if strings.TrimSpace(localNodeDirectoryBase) == "" {
 		return "", errors.New("dir is empty")
@@ -135,7 +135,7 @@ func CreateSessionDirectory() string {
 	if !ok {
 		v = ""
 	}
-	ret, e := os.MkdirTemp(v, "cmd-session-*")
+	ret, e := os.MkdirTemp(v, "jq++-session-*")
 	if e != nil {
 		panic(fmt.Sprintf("failed to create session directory: %v", e))
 	}

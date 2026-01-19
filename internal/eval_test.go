@@ -9,7 +9,7 @@ func TestEval_a(t *testing.T) {
 	input := map[string]any{"a": "Hello", "b": "X", "c": 1.0, "d": 234, "e": 12345678901234567}
 	expression := `.a|gsub("l"; "X")`
 	expected := "HeXXo"
-	v, err := ApplyJQExpression(input, expression, []JSONType{String})
+	v, err := ApplyJQExpression(input, expression, []JSONType{String}, EmptyInvocationSpec())
 	if err != nil {
 		t.Errorf("Failed to apply '%s' to '%s': %s", input, expression, err)
 	}
@@ -22,7 +22,7 @@ func TestEval_c(t *testing.T) {
 	input := map[string]any{"a": "Hello", "b": "X", "c": 1.0, "d": 234, "e": 12345678901234567}
 	expression := `.c`
 	expected := 1.0
-	v, err := ApplyJQExpression(input, expression, []JSONType{Number})
+	v, err := ApplyJQExpression(input, expression, []JSONType{Number}, EmptyInvocationSpec())
 	if err != nil {
 		t.Errorf("Failed to apply '%s' to '%s': %s", input, expression, err)
 	}
@@ -34,7 +34,7 @@ func TestEval_d(t *testing.T) {
 	input := map[string]any{"a": "Hello", "b": "X", "c": 1.0, "d": 234, "e": 12345678901234567}
 	expression := `.d`
 	expected := 234
-	v, err := ApplyJQExpression(input, expression, []JSONType{Number})
+	v, err := ApplyJQExpression(input, expression, []JSONType{Number}, EmptyInvocationSpec())
 	if err != nil {
 		t.Errorf("Failed to apply '%s' to '%s': %s", input, expression, err)
 	}
@@ -46,7 +46,7 @@ func TestEval_e(t *testing.T) {
 	input := map[string]any{"a": "Hello", "b": "X", "c": 1.0, "d": 234, "e": 12345678901234567}
 	expression := `.e`
 	expected := 12345678901234567
-	v, err := ApplyJQExpression(input, expression, []JSONType{Number})
+	v, err := ApplyJQExpression(input, expression, []JSONType{Number}, EmptyInvocationSpec())
 	if err != nil {
 		t.Errorf("Failed to apply '%s' to '%s': %s", input, expression, err)
 	}
@@ -59,7 +59,7 @@ func TestProcessValueSide(t *testing.T) {
 	input := map[string]any{"a": "Hello", "X": "eval:.a"}
 	//expected := "processedKey" // Replace this with the expected outcome of the input
 
-	result, err := ProcessValueSide(input, 7)
+	result, err := ProcessValueSide(input, 7, EmptyInvocationSpec())
 	if err != nil {
 		t.Errorf("ProcessKeySide failed for input '%s' with error: %s", input, err)
 	}
@@ -69,11 +69,27 @@ func TestProcessValueSide(t *testing.T) {
 		t.Errorf("Expected '%s', but got '%s'", expected, result)
 	}
 }
+
+func TestProcessValueSide_2(t *testing.T) {
+	input := map[string]any{"a": "Hello", "X": "eval:string:$cur|tostring"}
+	//expected := "processedKey" // Replace this with the expected outcome of the input
+
+	result, err := ProcessValueSide(input, 7, EmptyInvocationSpec())
+	if err != nil {
+		t.Errorf("ProcessKeySide failed for input '%s' with error: %s", input, err)
+	}
+
+	expected := map[string]any{"a": "Hello", "X": `["X"]`}
+	if !reflect.DeepEqual(expected, result) {
+		t.Errorf("Expected '%s', but got '%s'", expected, result)
+	}
+}
+
 func TestProcessKeySide(t *testing.T) {
 	input := map[string]any{"a": "Hello", "eval:.a": "X"}
 	//expected := "processedKey" // Replace this with the expected outcome of the input
 
-	result, err := ProcessKeySide(input, 7)
+	result, err := ProcessKeySide(input, 7, EmptyInvocationSpec())
 	if err != nil {
 		t.Errorf("ProcessKeySide failed for input '%s' with error: %s", input, err)
 	}
@@ -88,7 +104,7 @@ func TestProcessKeySide_2(t *testing.T) {
 	input := map[string]any{"a": []string{"Hello", "Howdy"}, "eval:.a": "X"}
 	//expected := "processedKey" // Replace this with the expected outcome of the input
 
-	result, err := ProcessKeySide(input, 7)
+	result, err := ProcessKeySide(input, 7, EmptyInvocationSpec())
 	if err != nil {
 		t.Errorf("ProcessKeySide failed for input '%s' with error: %s", input, err)
 	}

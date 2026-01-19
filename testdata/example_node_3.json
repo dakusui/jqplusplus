@@ -1,0 +1,4 @@
+{
+  "$extends": ["func.jq"],
+  "key": "eval:custom_func"
+}

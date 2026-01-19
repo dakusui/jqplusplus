@@ -1,6 +1,7 @@
 package internal
 
 import (
+	"github.com/dakusui/jqplusplus/internal/testutil"
 	"path/filepath"
 	"reflect"
 	"testing"
@@ -8,7 +9,7 @@ import (
 
 func TestLoadAndResolveInheritancesWithYaml_NoExtends(t *testing.T) {
 	dir := t.TempDir()
-	file := writeTempJSON(t, dir, "base.yaml", `
+	file := testutil.WriteTempJSON(t, dir, "base.yaml", `
 a: 1
 b: 2
 `)
@@ -17,14 +18,14 @@ b: 2
 		t.Fatalf("unexpected error: %v", err)
 	}
 	expected := map[string]interface{}{"a": int(1), "b": int(2)}
-	if !reflect.DeepEqual(result, expected) {
+	if !reflect.DeepEqual(result.Obj, expected) {
 		t.Errorf("expected %v, got %v", expected, result)
 	}
 }
 
 func TestLoadAndResolveInheritancesWithToml_NoExtends(t *testing.T) {
 	dir := t.TempDir()
-	file := writeTempJSON(t, dir, "base.toml", `
+	file := testutil.WriteTempJSON(t, dir, "base.toml", `
 	a = 1
 	b = 2
 	`)
@@ -33,14 +34,14 @@ func TestLoadAndResolveInheritancesWithToml_NoExtends(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 	expected := map[string]interface{}{"a": int64(1), "b": int64(2)}
-	if !reflect.DeepEqual(result, expected) {
+	if !reflect.DeepEqual(result.Obj, expected) {
 		t.Errorf("expected %v, got %v", expected, result)
 	}
 }
 
 func TestLoadAndResolveInheritancesWithJSON5_NoExtends(t *testing.T) {
 	dir := t.TempDir()
-	file := writeTempJSON(t, dir, "base.json5", `
+	file := testutil.WriteTempJSON(t, dir, "base.json5", `
 	{
 	  a: 1,
 	  b: 2,
@@ -50,14 +51,14 @@ func TestLoadAndResolveInheritancesWithJSON5_NoExtends(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 	expected := map[string]interface{}{"a": float64(1), "b": float64(2)}
-	if !reflect.DeepEqual(result, expected) {
+	if !reflect.DeepEqual(result.Obj, expected) {
 		t.Errorf("expected %v, got %v", expected, result)
 	}
 }
 
 func TestLoadAndResolveInheritancesWithHOCON_NoExtends(t *testing.T) {
 	dir := t.TempDir()
-	file := writeTempJSON(t, dir, "base.hocon", `
+	file := testutil.WriteTempJSON(t, dir, "base.hocon", `
 a = 1
 b = 2
 `)
@@ -66,7 +67,7 @@ b = 2
 		t.Fatalf("unexpected error: %v", err)
 	}
 	expected := map[string]interface{}{"a": int(1), "b": int(2)}
-	if !reflect.DeepEqual(result, expected) {
+	if !reflect.DeepEqual(result.Obj, expected) {
 		t.Errorf("expected %v, got %v", expected, result)
 	}
 }
