@@ -6,7 +6,7 @@ import (
 )
 
 type NodePool interface {
-	ReadNodeEntryValue(baseDir, filename string, compilerOptions []gojq.CompilerOption) (*NodeEntryValue, error)
+	ReadNodeEntryValue(baseDir, filename string, compilerOptions []*JqModule) (*NodeEntryValue, error)
 	IsVisited(absPath string) bool
 	MarkVisited(absPath string)
 	SearchPaths() []string
@@ -33,7 +33,12 @@ func NewNodeEntryKey(baseDir, filename string) NodeEntryKey {
 // - CompilerOptions: A list of options applied when compiling jq queries.
 type NodeEntryValue struct {
 	Obj             map[string]any
-	CompilerOptions []gojq.CompilerOption
+	CompilerOptions []*JqModule
+}
+
+type JqModule struct {
+	CompilerOption gojq.CompilerOption
+	Name           string
 }
 
 func (e NodeEntryKey) BaseDir() string {
@@ -77,7 +82,7 @@ func NewNodePoolWithBaseSearchPaths(baseDir, sessionDirectory string, searchPath
 	}
 }
 
-func (p *NodePoolImpl) ReadNodeEntryValue(baseDir, filename string, compilerOptions []gojq.CompilerOption) (*NodeEntryValue, error) {
+func (p *NodePoolImpl) ReadNodeEntryValue(baseDir, filename string, compilerOptions []*JqModule) (*NodeEntryValue, error) {
 	nodeEntryKey := NodeEntryKey{filename: filename, baseDir: baseDir}
 	ret, ok := p.cache[nodeEntryKey]
 	if !ok {

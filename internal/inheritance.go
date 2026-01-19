@@ -2,7 +2,6 @@ package internal
 
 import (
 	"fmt"
-	"github.com/itchyny/gojq"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -19,7 +18,7 @@ func LoadAndResolveInheritances(baseDir string, filename string, searchPaths []s
 		}
 	}()
 
-	return NewNodePoolWithBaseSearchPaths(baseDir, sessionDirectory, searchPaths).ReadNodeEntryValue(baseDir, filename, []gojq.CompilerOption{})
+	return NewNodePoolWithBaseSearchPaths(baseDir, sessionDirectory, searchPaths).ReadNodeEntryValue(baseDir, filename, []*JqModule{})
 }
 
 // LoadAndResolveInheritancesRecursively loads a JSON file, resolves $extends or $includes recursively, and merges parents.
@@ -38,7 +37,7 @@ func LoadAndResolveInheritancesRecursively(baseDir string, targetFile string, no
 		return nil, err
 	}
 
-	var compilerOptions []gojq.CompilerOption
+	var compilerOptions []*JqModule
 	if compilerOption != nil {
 		compilerOptions = append(compilerOptions, compilerOption)
 	}
@@ -74,7 +73,7 @@ func LoadAndResolveInheritancesRecursively(baseDir string, targetFile string, no
 	return &NodeEntryValue{obj, compilerOptions}, nil
 }
 
-func resolveBothInheritances(baseDir string, obj map[string]any, compilerOptions []gojq.CompilerOption, nodepool NodePool) (*NodeEntryValue, error) {
+func resolveBothInheritances(baseDir string, obj map[string]any, compilerOptions []*JqModule, nodepool NodePool) (*NodeEntryValue, error) {
 	ret := &NodeEntryValue{Obj: obj, CompilerOptions: compilerOptions}
 	ret, err := resolveInheritances(ret.Obj, ret.CompilerOptions, baseDir, Extends, nodepool)
 	if err != nil {
@@ -87,7 +86,7 @@ func resolveBothInheritances(baseDir string, obj map[string]any, compilerOptions
 	return ret, nil
 }
 
-func resolveInheritances(obj map[string]any, compilerOptions []gojq.CompilerOption, baseDir string, mergeType InheritType, nodepool NodePool) (*NodeEntryValue, error) {
+func resolveInheritances(obj map[string]any, compilerOptions []*JqModule, baseDir string, mergeType InheritType, nodepool NodePool) (*NodeEntryValue, error) {
 	tmpCompilerOptions := compilerOptions
 	// Check for $extends or $includes
 	inherits, ok := obj[mergeType.String()]
@@ -171,7 +170,7 @@ func (m InheritType) IsOrderReversed() bool {
 }
 
 // LoadFileAsRawJSON loads and parses a file (JSON, YAML, etc.) into a gojq-compatible object.
-func LoadFileAsRawJSON(path string) (map[string]any, gojq.CompilerOption, error) {
+func LoadFileAsRawJSON(path string) (map[string]any, *JqModule, error) {
 	ft, ok := detectFileType(path)
 	if !ok {
 		return nil, nil, fmt.Errorf("unsupported file type: %q (%s)", filepath.Ext(path), path)

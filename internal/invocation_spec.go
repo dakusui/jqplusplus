@@ -16,7 +16,7 @@ import (
 //   - variables: A map where the keys are variable names (strings) and
 //     values are of type any, representing the parameters for the invocation.
 type InvocationSpec struct {
-	modules   []gojq.CompilerOption
+	modules   []*JqModule
 	variables map[string]any
 }
 
@@ -77,11 +77,19 @@ func (spec *InvocationSpec) VariableValues() []any {
 	return ret
 }
 
-func (spec *InvocationSpec) Modules() []gojq.CompilerOption {
+func (spec *InvocationSpec) ModuleNames() []string {
+	return Map(spec.modules, func(in *JqModule) string {
+		return in.Name
+	})
+}
+
+func (spec *InvocationSpec) CompilerOptions() []gojq.CompilerOption {
 	if spec.modules == nil {
-		spec.modules = make([]gojq.CompilerOption, 0)
+		spec.modules = make([]*JqModule, 0)
 	}
-	return spec.modules
+	return Map(spec.modules, func(in *JqModule) gojq.CompilerOption {
+		return in.CompilerOption
+	})
 }
 
 type InvocationSpecBuilder struct {
@@ -105,7 +113,7 @@ func NewInvocationSpecBuilder() *InvocationSpecBuilder {
 func FromSpec(spec *InvocationSpec) *InvocationSpecBuilder {
 	return &InvocationSpecBuilder{
 		spec: &InvocationSpec{
-			modules: append([]gojq.CompilerOption{}, spec.modules...),
+			modules: append([]*JqModule{}, spec.modules...),
 			variables: func() map[string]any {
 				cloned := map[string]any{}
 				for k, v := range spec.variables {
@@ -117,7 +125,7 @@ func FromSpec(spec *InvocationSpec) *InvocationSpecBuilder {
 	}
 }
 
-func (b *InvocationSpecBuilder) AddModules(modules ...gojq.CompilerOption) *InvocationSpecBuilder {
+func (b *InvocationSpecBuilder) AddModules(modules ...*JqModule) *InvocationSpecBuilder {
 	b.spec.modules = append(b.spec.modules, modules...)
 	return b
 }

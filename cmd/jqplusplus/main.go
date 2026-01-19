@@ -93,7 +93,6 @@ func processNodeEntryKeys(in []internal.NodeEntryKey) int {
 
 func processNodeEntryKey(nodeEntryKey internal.NodeEntryKey) (string, error) {
 	nodeEntryValue, err := internal.LoadAndResolveInheritances(nodeEntryKey.BaseDir(), nodeEntryKey.Filename(), internal.SearchPaths())
-	fmt.Printf("%+v\n", nodeEntryValue)
 	if err != nil {
 		return "", err
 	}

@@ -24,7 +24,7 @@ func TestLoadAndResolveInheritances_SingleExtendsForJqFile(t *testing.T) {
 		`{
   "$extends": ["parent.jq"],
   "store": "Hello",
-  "key": "eval:object:custom_func"
+  "key": "eval:object:parent::custom_func"
 }`)
 	result, err := processNodeEntryKey((internal.NewNodeEntryKey(filepath.Dir(child), filepath.Base(child))))
 

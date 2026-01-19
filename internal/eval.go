@@ -52,13 +52,14 @@ func ApplyJQExpression(
 	invocationSpec InvocationSpec,
 ) (any, error) {
 	// Parse the jq expression
-	query, err := gojq.Parse(fmt.Sprintf(`include "jqpp"; %s`, expression))
+	expressionWithImportStatements := composeExpressionString(expression, invocationSpec.ModuleNames())
+	query, err := gojq.Parse(expressionWithImportStatements)
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse jq expression: %w", err)
+		return nil, fmt.Errorf("failed to parse jq expression: '%v' <%w>", expressionWithImportStatements, err)
 	}
 
 	// Compile the jq query (this is where custom functions/modules are wired in)
-	code, err := gojq.Compile(query, append(invocationSpec.Modules(), gojq.WithVariables(invocationSpec.VariableNames()))...)
+	code, err := gojq.Compile(query, append(invocationSpec.CompilerOptions(), gojq.WithVariables(invocationSpec.VariableNames()))...)
 	if err != nil {
 		return nil, fmt.Errorf("failed to compile jq expression: %w", err)
 	}
@@ -84,6 +85,14 @@ func ApplyJQExpression(
 		return nil, fmt.Errorf("result type mismatch: expected one of %s but got %T", expectedTypes, result)
 	}
 	return result, nil
+}
+
+func composeExpressionString(expression string, moduleNames []string) string {
+	joinedModuleNames := Map(moduleNames, func(each string) string {
+		return fmt.Sprintf(`import "%s" as %s`, each, each)
+	})
+	expressionString := strings.Join(append(joinedModuleNames, expression), "; ")
+	return expressionString
 }
 
 func isExpected(v any, expectedTypes ...JSONType) bool {

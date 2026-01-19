@@ -1,7 +1,6 @@
 package internal
 
 import (
-	"github.com/itchyny/gojq"
 	"testing"
 )
 
@@ -13,7 +12,10 @@ func TestInvocationSpecBuilder(t *testing.T) {
 	builder := NewInvocationSpecBuilder()
 
 	// Add test module
-	builder.AddModules(gojq.WithModuleLoader(gojq.NewModuleLoader(nil)))
+	builder.AddModules(&JqModule{
+		Name:           "",
+		CompilerOption: nil,
+	})
 
 	// Add test variable
 	builder.AddVariable("var1", "value1")
