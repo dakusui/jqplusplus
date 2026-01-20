@@ -1,0 +1,40 @@
+ERROR: jq-front: Failed to merge object nodes:
+    a=<{"key":"STRING"}>
+    b=<{"$extends":["I.json"],"key":["STRING_IN_ARRAY"]}>
+ERROR: jq: error (at <unknown>): Failed to process node at path:<."key"[0]>; the value:<STRING_IN_ARRAY>).)
+  at 43 abort /Users/hiroshi/Documents/github/jq-front/lib/core.sh 
+  at 233 merge_object_nodes /Users/hiroshi/Documents/github/jq-front/lib/json.sh 
+  at 64 expand_filelevel_inheritances /Users/hiroshi/Documents/github/jq-front/lib/inheritance.sh 
+  at 26 expand_inheritances /Users/hiroshi/Documents/github/jq-front/lib/inheritance.sh 
+  at 64 perform_jqfront /Users/hiroshi/Documents/github/jq-front/jq-front 
+  at 179 perform /Users/hiroshi/Documents/github/jq-front/jq-front 
+  at 195 main /Users/hiroshi/Documents/github/jq-front/jq-front 
+  at 205 main /Users/hiroshi/Documents/github/jq-front/jq-front 
+ERROR: Failed to merge file:'I.json' with content:'{
+  "$extends": [
+    "I.json"
+  ],
+  "key": [
+    "STRING_IN_ARRAY"
+  ]
+}'
+Inherited files:
+extends:<I.json>
+- </Users/hiroshi/Documents/github/jq-front/tests/negative/incompatible_nodes_on_inheritance/filelevel/I.json;;>
+  at 43 abort /Users/hiroshi/Documents/github/jq-front/lib/core.sh 
+  at 67 expand_filelevel_inheritances /Users/hiroshi/Documents/github/jq-front/lib/inheritance.sh 
+  at 26 expand_inheritances /Users/hiroshi/Documents/github/jq-front/lib/inheritance.sh 
+  at 64 perform_jqfront /Users/hiroshi/Documents/github/jq-front/jq-front 
+  at 179 perform /Users/hiroshi/Documents/github/jq-front/jq-front 
+  at 195 main /Users/hiroshi/Documents/github/jq-front/jq-front 
+  at 205 main /Users/hiroshi/Documents/github/jq-front/jq-front 
+ERROR: File-level expansion failed for '/Users/hiroshi/Documents/github/jq-front/tests/negative/incompatible_nodes_on_inheritance/filelevel/input.json'
+Inherited files:
+extends:<I.json>
+- </Users/hiroshi/Documents/github/jq-front/tests/negative/incompatible_nodes_on_inheritance/filelevel/I.json;;>
+  at 43 abort /Users/hiroshi/Documents/github/jq-front/lib/core.sh 
+  at 27 expand_inheritances /Users/hiroshi/Documents/github/jq-front/lib/inheritance.sh 
+  at 64 perform_jqfront /Users/hiroshi/Documents/github/jq-front/jq-front 
+  at 179 perform /Users/hiroshi/Documents/github/jq-front/jq-front 
+  at 195 main /Users/hiroshi/Documents/github/jq-front/jq-front 
+  at 205 main /Users/hiroshi/Documents/github/jq-front/jq-front 

@@ -1,0 +1,4 @@
+ERROR: .*\\.\\"key\\"\\[0\\]
+ERROR: .*STRING_IN_ARRAY
+ERROR: .*I.json
+ERROR: .*jq-front/tests/negative/incompatible_nodes_on_inheritance/filelevel/input.json

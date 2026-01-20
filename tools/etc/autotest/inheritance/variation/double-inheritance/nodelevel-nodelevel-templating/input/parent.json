@@ -1,0 +1,7 @@
+{
+  "a": {
+    "$extends": [
+      "input/A.json"
+    ]
+  }
+}

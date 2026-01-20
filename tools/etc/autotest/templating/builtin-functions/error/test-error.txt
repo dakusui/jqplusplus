@@ -1,0 +1,29 @@
+ERROR: Error was detected during templating:
+    nodepath: '."attr"'
+    nodevalue: 'template:An attribute $(error $(cur).attr needs to be defined by user)'
+    content: '{
+  "attr": "template:An attribute $(error $(cur).attr needs to be defined by user)"
+}'
+    inherited files:
+    
+    error: 'ERROR: .attr needs to be defined by user
+  at 43 abort /Users/hiroshi/Documents/github/jq-front/lib/core.sh 
+  at 372 error /Users/hiroshi/Documents/github/jq-front/lib/templating.sh 
+  at 182 _render_text_node /Users/hiroshi/Documents/github/jq-front/lib/templating.sh 
+  at 117 _perform_templating_value_side /Users/hiroshi/Documents/github/jq-front/lib/templating.sh 
+  at 19 _perform_templating /Users/hiroshi/Documents/github/jq-front/lib/templating.sh 
+  at 12 perform_templating /Users/hiroshi/Documents/github/jq-front/lib/templating.sh 
+  at 69 perform_jqfront /Users/hiroshi/Documents/github/jq-front/jq-front 
+  at 179 perform /Users/hiroshi/Documents/github/jq-front/jq-front 
+  at 195 main /Users/hiroshi/Documents/github/jq-front/jq-front 
+  at 205 main /Users/hiroshi/Documents/github/jq-front/jq-front '
+    
+  at 43 abort /Users/hiroshi/Documents/github/jq-front/lib/core.sh 
+  at 188 _render_text_node /Users/hiroshi/Documents/github/jq-front/lib/templating.sh 
+  at 117 _perform_templating_value_side /Users/hiroshi/Documents/github/jq-front/lib/templating.sh 
+  at 19 _perform_templating /Users/hiroshi/Documents/github/jq-front/lib/templating.sh 
+  at 12 perform_templating /Users/hiroshi/Documents/github/jq-front/lib/templating.sh 
+  at 69 perform_jqfront /Users/hiroshi/Documents/github/jq-front/jq-front 
+  at 179 perform /Users/hiroshi/Documents/github/jq-front/jq-front 
+  at 195 main /Users/hiroshi/Documents/github/jq-front/jq-front 
+  at 205 main /Users/hiroshi/Documents/github/jq-front/jq-front 

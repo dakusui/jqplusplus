@@ -1,0 +1,34 @@
+ERROR: Error was detected during templating:
+    nodepath: '."key"."hello world"'
+    nodevalue: 'eval:string:$(parent $(curn))'
+    content: '{
+  "key": {
+    "hello world": "eval:string:$(parent $(curn))"
+  }
+}'
+    inherited files:
+    
+    error: 'ERROR: Error was reported for node path:'."key"."hello' and level:'world"' by jq command. Forgot quoting?:
+jq: error: syntax error, unexpected INVALID_CHARACTER, expecting ';' or ')' (Unix shell quoting issues?) at <top-level>, line 2:
+      .|path(."key"."hello)|.[0:-world"]|shared::path2pexp(.)                                       
+jq: 1 compile error
+  at 43 abort /Users/hiroshi/Documents/github/jq-front/lib/core.sh 
+  at 345 parent /Users/hiroshi/Documents/github/jq-front/lib/templating.sh 
+  at 182 _render_text_node /Users/hiroshi/Documents/github/jq-front/lib/templating.sh 
+  at 117 _perform_templating_value_side /Users/hiroshi/Documents/github/jq-front/lib/templating.sh 
+  at 19 _perform_templating /Users/hiroshi/Documents/github/jq-front/lib/templating.sh 
+  at 12 perform_templating /Users/hiroshi/Documents/github/jq-front/lib/templating.sh 
+  at 69 perform_jqfront /Users/hiroshi/Documents/github/jq-front/jq-front 
+  at 179 perform /Users/hiroshi/Documents/github/jq-front/jq-front 
+  at 195 main /Users/hiroshi/Documents/github/jq-front/jq-front 
+  at 205 main /Users/hiroshi/Documents/github/jq-front/jq-front '
+    
+  at 43 abort /Users/hiroshi/Documents/github/jq-front/lib/core.sh 
+  at 188 _render_text_node /Users/hiroshi/Documents/github/jq-front/lib/templating.sh 
+  at 117 _perform_templating_value_side /Users/hiroshi/Documents/github/jq-front/lib/templating.sh 
+  at 19 _perform_templating /Users/hiroshi/Documents/github/jq-front/lib/templating.sh 
+  at 12 perform_templating /Users/hiroshi/Documents/github/jq-front/lib/templating.sh 
+  at 69 perform_jqfront /Users/hiroshi/Documents/github/jq-front/jq-front 
+  at 179 perform /Users/hiroshi/Documents/github/jq-front/jq-front 
+  at 195 main /Users/hiroshi/Documents/github/jq-front/jq-front 
+  at 205 main /Users/hiroshi/Documents/github/jq-front/jq-front 

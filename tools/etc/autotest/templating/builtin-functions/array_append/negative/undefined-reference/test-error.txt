@@ -1,0 +1,71 @@
+ERROR: Error was detected during templating:
+    nodepath: '."arr"'
+    nodevalue: 'eval:array:$(array_append $(ref .A) $(ref .B))'
+    content: '{
+  "a": [
+    "Hello"
+  ],
+  "b": [
+    "World"
+  ],
+  "arr": "eval:array:$(array_append $(ref .A) $(ref .B))"
+}'
+    inherited files:
+    
+    error: 'ERROR: Failed to access '."A"' and default value for it was not given.
+  at 43 abort /Users/hiroshi/Documents/github/jq-front/lib/core.sh 
+  at 167 value_at_strict /Users/hiroshi/Documents/github/jq-front/lib/json.sh 
+  at 159 value_at /Users/hiroshi/Documents/github/jq-front/lib/json.sh 
+  at 253 ref /Users/hiroshi/Documents/github/jq-front/lib/templating.sh 
+  at 182 _render_text_node /Users/hiroshi/Documents/github/jq-front/lib/templating.sh 
+  at 117 _perform_templating_value_side /Users/hiroshi/Documents/github/jq-front/lib/templating.sh 
+  at 19 _perform_templating /Users/hiroshi/Documents/github/jq-front/lib/templating.sh 
+  at 12 perform_templating /Users/hiroshi/Documents/github/jq-front/lib/templating.sh 
+  at 69 perform_jqfront /Users/hiroshi/Documents/github/jq-front/jq-front 
+  at 179 perform /Users/hiroshi/Documents/github/jq-front/jq-front 
+  at 195 main /Users/hiroshi/Documents/github/jq-front/jq-front 
+  at 205 main /Users/hiroshi/Documents/github/jq-front/jq-front 
+ERROR: Failed on eval: 'echo "$(array_append $(ref .A) $(ref .B))"'
+  at 43 abort /Users/hiroshi/Documents/github/jq-front/lib/core.sh 
+  at 165 _err_handler /Users/hiroshi/Documents/github/jq-front/lib/templating.sh 
+  at 253 ref /Users/hiroshi/Documents/github/jq-front/lib/templating.sh 
+  at 182 _render_text_node /Users/hiroshi/Documents/github/jq-front/lib/templating.sh 
+  at 117 _perform_templating_value_side /Users/hiroshi/Documents/github/jq-front/lib/templating.sh 
+  at 19 _perform_templating /Users/hiroshi/Documents/github/jq-front/lib/templating.sh 
+  at 12 perform_templating /Users/hiroshi/Documents/github/jq-front/lib/templating.sh 
+  at 69 perform_jqfront /Users/hiroshi/Documents/github/jq-front/jq-front 
+  at 179 perform /Users/hiroshi/Documents/github/jq-front/jq-front 
+  at 195 main /Users/hiroshi/Documents/github/jq-front/jq-front 
+  at 205 main /Users/hiroshi/Documents/github/jq-front/jq-front 
+ERROR: Preceding failure was detected by 'ref'.
+  at 43 abort /Users/hiroshi/Documents/github/jq-front/lib/core.sh 
+  at 249 ref /Users/hiroshi/Documents/github/jq-front/lib/templating.sh 
+  at 182 _render_text_node /Users/hiroshi/Documents/github/jq-front/lib/templating.sh 
+  at 117 _perform_templating_value_side /Users/hiroshi/Documents/github/jq-front/lib/templating.sh 
+  at 19 _perform_templating /Users/hiroshi/Documents/github/jq-front/lib/templating.sh 
+  at 12 perform_templating /Users/hiroshi/Documents/github/jq-front/lib/templating.sh 
+  at 69 perform_jqfront /Users/hiroshi/Documents/github/jq-front/jq-front 
+  at 179 perform /Users/hiroshi/Documents/github/jq-front/jq-front 
+  at 195 main /Users/hiroshi/Documents/github/jq-front/jq-front 
+  at 205 main /Users/hiroshi/Documents/github/jq-front/jq-front 
+ERROR: Preceding failure was detected by 'array_append'.
+  at 43 abort /Users/hiroshi/Documents/github/jq-front/lib/core.sh 
+  at 350 array_append /Users/hiroshi/Documents/github/jq-front/lib/templating.sh 
+  at 182 _render_text_node /Users/hiroshi/Documents/github/jq-front/lib/templating.sh 
+  at 117 _perform_templating_value_side /Users/hiroshi/Documents/github/jq-front/lib/templating.sh 
+  at 19 _perform_templating /Users/hiroshi/Documents/github/jq-front/lib/templating.sh 
+  at 12 perform_templating /Users/hiroshi/Documents/github/jq-front/lib/templating.sh 
+  at 69 perform_jqfront /Users/hiroshi/Documents/github/jq-front/jq-front 
+  at 179 perform /Users/hiroshi/Documents/github/jq-front/jq-front 
+  at 195 main /Users/hiroshi/Documents/github/jq-front/jq-front 
+  at 205 main /Users/hiroshi/Documents/github/jq-front/jq-front '
+    
+  at 43 abort /Users/hiroshi/Documents/github/jq-front/lib/core.sh 
+  at 188 _render_text_node /Users/hiroshi/Documents/github/jq-front/lib/templating.sh 
+  at 117 _perform_templating_value_side /Users/hiroshi/Documents/github/jq-front/lib/templating.sh 
+  at 19 _perform_templating /Users/hiroshi/Documents/github/jq-front/lib/templating.sh 
+  at 12 perform_templating /Users/hiroshi/Documents/github/jq-front/lib/templating.sh 
+  at 69 perform_jqfront /Users/hiroshi/Documents/github/jq-front/jq-front 
+  at 179 perform /Users/hiroshi/Documents/github/jq-front/jq-front 
+  at 195 main /Users/hiroshi/Documents/github/jq-front/jq-front 
+  at 205 main /Users/hiroshi/Documents/github/jq-front/jq-front 

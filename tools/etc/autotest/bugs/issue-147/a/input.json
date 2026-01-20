@@ -1,0 +1,4 @@
+{
+  "key": "eval:string:$(ref .key-2)",
+  "key-2": "Hello, world!"
+}

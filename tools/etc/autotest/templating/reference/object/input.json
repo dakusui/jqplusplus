@@ -1,0 +1,4 @@
+{
+  "objectNode": {"hello": "world"},
+  "snapshotVersion": "template:object:$(ref .objectNode)"
+}

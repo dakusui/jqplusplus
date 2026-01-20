@@ -1,0 +1,120 @@
+ERROR: Cyclic inheritance was detected in:'/Users/hiroshi/Documents/github/jq-front/tests/negative/cyclic_inheritance/nodelevel/I.json;;'
+  at 43 abort /Users/hiroshi/Documents/github/jq-front/lib/core.sh 
+  at 45 _check_cyclic_dependency /Users/hiroshi/Documents/github/jq-front/lib/dependency.sh 
+  at 35 nodepool_read_nodeentry /Users/hiroshi/Documents/github/jq-front/lib/nodepool.sh 
+  at 165 _expand_nodelevel_inheritances /Users/hiroshi/Documents/github/jq-front/lib/inheritance.sh 
+  at 117 expand_nodelevel_inheritances /Users/hiroshi/Documents/github/jq-front/lib/inheritance.sh 
+  at 33 expand_inheritances /Users/hiroshi/Documents/github/jq-front/lib/inheritance.sh 
+  at 19 read_nodeentry /Users/hiroshi/Documents/github/jq-front/lib/nodepool.sh 
+  at 41 nodepool_read_nodeentry /Users/hiroshi/Documents/github/jq-front/lib/nodepool.sh 
+  at 165 _expand_nodelevel_inheritances /Users/hiroshi/Documents/github/jq-front/lib/inheritance.sh 
+  at 117 expand_nodelevel_inheritances /Users/hiroshi/Documents/github/jq-front/lib/inheritance.sh 
+  at 33 expand_inheritances /Users/hiroshi/Documents/github/jq-front/lib/inheritance.sh 
+  at 19 read_nodeentry /Users/hiroshi/Documents/github/jq-front/lib/nodepool.sh 
+  at 41 nodepool_read_nodeentry /Users/hiroshi/Documents/github/jq-front/lib/nodepool.sh 
+  at 165 _expand_nodelevel_inheritances /Users/hiroshi/Documents/github/jq-front/lib/inheritance.sh 
+  at 117 expand_nodelevel_inheritances /Users/hiroshi/Documents/github/jq-front/lib/inheritance.sh 
+  at 33 expand_inheritances /Users/hiroshi/Documents/github/jq-front/lib/inheritance.sh 
+  at 64 perform_jqfront /Users/hiroshi/Documents/github/jq-front/jq-front 
+  at 179 perform /Users/hiroshi/Documents/github/jq-front/jq-front 
+  at 195 main /Users/hiroshi/Documents/github/jq-front/jq-front 
+  at 205 main /Users/hiroshi/Documents/github/jq-front/jq-front 
+ERROR: Failed to expand inheritances for 'I.json'
+Inherited files:
+ local:<."i"."$extends">:<I.json>
+- </Users/hiroshi/Documents/github/jq-front/tests/negative/cyclic_inheritance/nodelevel/I.json;;>
+local:<."j"."$extends">:<input.json>
+- </Users/hiroshi/Documents/github/jq-front/tests/negative/cyclic_inheritance/nodelevel/input.json;;>
+local:<."i"."$extends">:<I.json>
+ERROR: Failed to expand node level inheritance for node:'{"i":{"$extends":["I.json"]}}...'(1)
+Inherited files:
+local:<."i"."$extends">:<I.json>
+- </Users/hiroshi/Documents/github/jq-front/tests/negative/cyclic_inheritance/nodelevel/I.json;;>
+local:<."j"."$extends">:<input.json>
+- </Users/hiroshi/Documents/github/jq-front/tests/negative/cyclic_inheritance/nodelevel/input.json;;>
+local:<."i"."$extends">:<I.json>
+  at 43 abort /Users/hiroshi/Documents/github/jq-front/lib/core.sh 
+  at 118 expand_nodelevel_inheritances /Users/hiroshi/Documents/github/jq-front/lib/inheritance.sh 
+  at 33 expand_inheritances /Users/hiroshi/Documents/github/jq-front/lib/inheritance.sh 
+  at 19 read_nodeentry /Users/hiroshi/Documents/github/jq-front/lib/nodepool.sh 
+  at 41 nodepool_read_nodeentry /Users/hiroshi/Documents/github/jq-front/lib/nodepool.sh 
+  at 165 _expand_nodelevel_inheritances /Users/hiroshi/Documents/github/jq-front/lib/inheritance.sh 
+  at 117 expand_nodelevel_inheritances /Users/hiroshi/Documents/github/jq-front/lib/inheritance.sh 
+  at 33 expand_inheritances /Users/hiroshi/Documents/github/jq-front/lib/inheritance.sh 
+  at 19 read_nodeentry /Users/hiroshi/Documents/github/jq-front/lib/nodepool.sh 
+  at 41 nodepool_read_nodeentry /Users/hiroshi/Documents/github/jq-front/lib/nodepool.sh 
+  at 165 _expand_nodelevel_inheritances /Users/hiroshi/Documents/github/jq-front/lib/inheritance.sh 
+  at 117 expand_nodelevel_inheritances /Users/hiroshi/Documents/github/jq-front/lib/inheritance.sh 
+  at 33 expand_inheritances /Users/hiroshi/Documents/github/jq-front/lib/inheritance.sh 
+  at 64 perform_jqfront /Users/hiroshi/Documents/github/jq-front/jq-front 
+  at 179 perform /Users/hiroshi/Documents/github/jq-front/jq-front 
+  at 195 main /Users/hiroshi/Documents/github/jq-front/jq-front 
+  at 205 main /Users/hiroshi/Documents/github/jq-front/jq-front 
+ERROR: Failed to expand node level inheritance for '/Users/hiroshi/Documents/github/jq-front/tests/negative/cyclic_inheritance/nodelevel/input.json;;'(3)
+Inherited files:
+local:<."i"."$extends">:<I.json>
+- </Users/hiroshi/Documents/github/jq-front/tests/negative/cyclic_inheritance/nodelevel/I.json;;>
+local:<."j"."$extends">:<input.json>
+- </Users/hiroshi/Documents/github/jq-front/tests/negative/cyclic_inheritance/nodelevel/input.json;;>
+local:<."i"."$extends">:<I.json>
+ERROR: Failed to expand inheritances for 'input.json'
+Inherited files:
+ local:<."i"."$extends">:<I.json>
+- </Users/hiroshi/Documents/github/jq-front/tests/negative/cyclic_inheritance/nodelevel/I.json;;>
+local:<."j"."$extends">:<input.json>
+- </Users/hiroshi/Documents/github/jq-front/tests/negative/cyclic_inheritance/nodelevel/input.json;;>
+local:<."i"."$extends">:<I.json>
+ERROR: Failed to expand node level inheritance for node:'{"j":{"$extends":["input.json"]}}...'(1)
+Inherited files:
+local:<."i"."$extends">:<I.json>
+- </Users/hiroshi/Documents/github/jq-front/tests/negative/cyclic_inheritance/nodelevel/I.json;;>
+local:<."j"."$extends">:<input.json>
+- </Users/hiroshi/Documents/github/jq-front/tests/negative/cyclic_inheritance/nodelevel/input.json;;>
+local:<."i"."$extends">:<I.json>
+  at 43 abort /Users/hiroshi/Documents/github/jq-front/lib/core.sh 
+  at 118 expand_nodelevel_inheritances /Users/hiroshi/Documents/github/jq-front/lib/inheritance.sh 
+  at 33 expand_inheritances /Users/hiroshi/Documents/github/jq-front/lib/inheritance.sh 
+  at 19 read_nodeentry /Users/hiroshi/Documents/github/jq-front/lib/nodepool.sh 
+  at 41 nodepool_read_nodeentry /Users/hiroshi/Documents/github/jq-front/lib/nodepool.sh 
+  at 165 _expand_nodelevel_inheritances /Users/hiroshi/Documents/github/jq-front/lib/inheritance.sh 
+  at 117 expand_nodelevel_inheritances /Users/hiroshi/Documents/github/jq-front/lib/inheritance.sh 
+  at 33 expand_inheritances /Users/hiroshi/Documents/github/jq-front/lib/inheritance.sh 
+  at 64 perform_jqfront /Users/hiroshi/Documents/github/jq-front/jq-front 
+  at 179 perform /Users/hiroshi/Documents/github/jq-front/jq-front 
+  at 195 main /Users/hiroshi/Documents/github/jq-front/jq-front 
+  at 205 main /Users/hiroshi/Documents/github/jq-front/jq-front 
+ERROR: Failed to expand node level inheritance for '/Users/hiroshi/Documents/github/jq-front/tests/negative/cyclic_inheritance/nodelevel/I.json;;'(3)
+Inherited files:
+local:<."i"."$extends">:<I.json>
+- </Users/hiroshi/Documents/github/jq-front/tests/negative/cyclic_inheritance/nodelevel/I.json;;>
+local:<."j"."$extends">:<input.json>
+- </Users/hiroshi/Documents/github/jq-front/tests/negative/cyclic_inheritance/nodelevel/input.json;;>
+local:<."i"."$extends">:<I.json>
+ERROR: Failed to expand inheritances for 'I.json'
+Inherited files:
+ local:<."i"."$extends">:<I.json>
+- </Users/hiroshi/Documents/github/jq-front/tests/negative/cyclic_inheritance/nodelevel/I.json;;>
+local:<."j"."$extends">:<input.json>
+- </Users/hiroshi/Documents/github/jq-front/tests/negative/cyclic_inheritance/nodelevel/input.json;;>
+local:<."i"."$extends">:<I.json>
+ERROR: Failed to expand node level inheritance for node:'{"i":{"$extends":["I.json"]}}...'(1)
+Inherited files:
+local:<."i"."$extends">:<I.json>
+- </Users/hiroshi/Documents/github/jq-front/tests/negative/cyclic_inheritance/nodelevel/I.json;;>
+local:<."j"."$extends">:<input.json>
+- </Users/hiroshi/Documents/github/jq-front/tests/negative/cyclic_inheritance/nodelevel/input.json;;>
+local:<."i"."$extends">:<I.json>
+  at 43 abort /Users/hiroshi/Documents/github/jq-front/lib/core.sh 
+  at 118 expand_nodelevel_inheritances /Users/hiroshi/Documents/github/jq-front/lib/inheritance.sh 
+  at 33 expand_inheritances /Users/hiroshi/Documents/github/jq-front/lib/inheritance.sh 
+  at 64 perform_jqfront /Users/hiroshi/Documents/github/jq-front/jq-front 
+  at 179 perform /Users/hiroshi/Documents/github/jq-front/jq-front 
+  at 195 main /Users/hiroshi/Documents/github/jq-front/jq-front 
+  at 205 main /Users/hiroshi/Documents/github/jq-front/jq-front 
+ERROR: Failed to expand node level inheritance for '/Users/hiroshi/Documents/github/jq-front/tests/negative/cyclic_inheritance/nodelevel/input.json'(3)
+Inherited files:
+local:<."i"."$extends">:<I.json>
+- </Users/hiroshi/Documents/github/jq-front/tests/negative/cyclic_inheritance/nodelevel/I.json;;>
+local:<."j"."$extends">:<input.json>
+- </Users/hiroshi/Documents/github/jq-front/tests/negative/cyclic_inheritance/nodelevel/input.json;;>
+local:<."i"."$extends">:<I.json>

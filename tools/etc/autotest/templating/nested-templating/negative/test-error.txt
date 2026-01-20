@@ -1,0 +1,10 @@
+ERROR: Templating has been repeated 5 time(s) but it did not finish.: Entries left untemplated are: [."a"."key"."key"."key"."key"."key"."key"."key"."key"."key"."key"."key"."key"."key"."key"."key"."key"."key"."key"."key"."key"."key"."key"."key"."key"."key"."key"."key"."key"."key"."key"."key"."key"	eval:object:$(ref .a)]
+  at 43 abort /Users/hiroshi/Documents/github/jq-front/lib/core.sh 
+  at 372 error /Users/hiroshi/Documents/github/jq-front/lib/templating.sh 
+  at 107 _perform_templating_value_side /Users/hiroshi/Documents/github/jq-front/lib/templating.sh 
+  at 19 _perform_templating /Users/hiroshi/Documents/github/jq-front/lib/templating.sh 
+  at 12 perform_templating /Users/hiroshi/Documents/github/jq-front/lib/templating.sh 
+  at 69 perform_jqfront /Users/hiroshi/Documents/github/jq-front/jq-front 
+  at 179 perform /Users/hiroshi/Documents/github/jq-front/jq-front 
+  at 195 main /Users/hiroshi/Documents/github/jq-front/jq-front 
+  at 205 main /Users/hiroshi/Documents/github/jq-front/jq-front 

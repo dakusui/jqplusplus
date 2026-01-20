@@ -1,0 +1,9 @@
+{
+  "key": "eval:array:$(array_append \"$(ref .key-2)\" \"$(ref .key-3)\")",
+  "key-2": [
+    "Hello"
+  ],
+  "key-3": [
+    "world!"
+  ]
+}

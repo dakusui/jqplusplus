@@ -1,0 +1,11 @@
+{
+  "a0": [
+    "hello",
+    "world"
+  ],
+  "a1": [
+    "HELLO",
+    "WORLD"
+  ],
+  "arr": "eval:array:$(array_append $(ref .a0) $(ref .a1))"
+}

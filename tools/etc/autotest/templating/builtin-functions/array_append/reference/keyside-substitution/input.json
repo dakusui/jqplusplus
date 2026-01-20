@@ -1,0 +1,11 @@
+{
+  "eval:$(echo helloBase)": {
+    "a": [
+      "Hello"
+    ],
+    "b": [
+      "World"
+    ],
+    "arr": "eval:array:$(array_append \"$(ref $(cur).a)\" \"$(ref $(cur).b)\")"
+  }
+}

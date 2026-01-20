@@ -1,0 +1,5 @@
+{
+  "a": ["Hello"],
+  "b": ["World"],
+  "arr": "eval:array:$(array_append $(ref .a) $(ref .b))"
+}

@@ -1,0 +1,26 @@
+{
+  "$extends": [
+    "P1.json",
+    "Q1.json"
+  ],
+  "k0": "value0",
+  "k1": "value1",
+  "k2": "value2",
+  "k3": "value3",
+  "k4": "value4",
+  "k5": "value5",
+  "k6": "value6",
+  "k7": "value7",
+  "k8": "value8",
+  "k9": "value9",
+  "r0": "eval:string:$(ref .k0)",
+  "r1": "eval:string:$(ref .r0)",
+  "r2": "eval:string:$(ref .k1)",
+  "r3": "eval:string:$(ref .r1)",
+  "r4": "eval:string:$(ref .k0)",
+  "r5": "eval:string:$(ref .r4)",
+  "r6": "eval:string:$(ref .r5)",
+  "r7": "eval:string:$(ref .r4)",
+  "r8": "eval:string:$(ref .r7)",
+  "r9": "eval:string:$(ref .r8)"
+}

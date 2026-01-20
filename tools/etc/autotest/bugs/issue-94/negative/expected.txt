@@ -1,0 +1,2 @@
+ERROR: Error was detected during templating:
+ERROR: Error was reported for node path:

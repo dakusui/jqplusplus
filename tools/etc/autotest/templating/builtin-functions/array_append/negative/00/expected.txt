@@ -1,0 +1,2 @@
+ERROR: Error was detected during templating:
+ERROR: No argument was given

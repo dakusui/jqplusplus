@@ -1,0 +1,3 @@
+{
+  "a": "template:string:$(ref .ABSENT)"
+}

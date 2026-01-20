@@ -1,0 +1,15 @@
+{
+  "$local": {
+    "nodeA": {
+      "aa": "aa"
+    },
+    "nodeB": {
+    }
+  },
+  "a": [
+    {
+      "$extends": ["nodeA"],
+      "a": "a"
+    }
+  ]
+}

@@ -1,0 +1,7 @@
+{
+  "version": "2.12.0",
+  "releaseVersion": "eval:string:$(ref .version)",
+  "l1": {
+    "snapshotVersion": "eval:string:$(ref $(parent $(cur)).releaseVersion)-SNAPSHOT"
+  }
+}

@@ -1,0 +1,7 @@
+{
+  "value": "$(echo hello) --content '{\"hello\":\"$(echo hello)\"}'",
+  "object": {
+    "hello": "$(echo hello)"
+  },
+  "q": "'"
+}

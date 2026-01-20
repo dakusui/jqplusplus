@@ -1,0 +1,43 @@
+ERROR: Error was detected during templating:
+    nodepath: '."a"'
+    nodevalue: 'template:string:$(echo $(ref .ABSENT))'
+    content: '{
+  "a": "template:string:$(echo $(ref .ABSENT))"
+}'
+    inherited files:
+    
+    error: 'ERROR: Failed to access '."ABSENT"' and default value for it was not given.
+  at 43 abort /Users/hiroshi/Documents/github/jq-front/lib/core.sh 
+  at 167 value_at_strict /Users/hiroshi/Documents/github/jq-front/lib/json.sh 
+  at 159 value_at /Users/hiroshi/Documents/github/jq-front/lib/json.sh 
+  at 253 ref /Users/hiroshi/Documents/github/jq-front/lib/templating.sh 
+  at 182 _render_text_node /Users/hiroshi/Documents/github/jq-front/lib/templating.sh 
+  at 117 _perform_templating_value_side /Users/hiroshi/Documents/github/jq-front/lib/templating.sh 
+  at 19 _perform_templating /Users/hiroshi/Documents/github/jq-front/lib/templating.sh 
+  at 12 perform_templating /Users/hiroshi/Documents/github/jq-front/lib/templating.sh 
+  at 69 perform_jqfront /Users/hiroshi/Documents/github/jq-front/jq-front 
+  at 179 perform /Users/hiroshi/Documents/github/jq-front/jq-front 
+  at 195 main /Users/hiroshi/Documents/github/jq-front/jq-front 
+  at 205 main /Users/hiroshi/Documents/github/jq-front/jq-front 
+ERROR: Failed on eval: 'echo "$(echo $(ref .ABSENT))"'
+  at 43 abort /Users/hiroshi/Documents/github/jq-front/lib/core.sh 
+  at 165 _err_handler /Users/hiroshi/Documents/github/jq-front/lib/templating.sh 
+  at 253 ref /Users/hiroshi/Documents/github/jq-front/lib/templating.sh 
+  at 182 _render_text_node /Users/hiroshi/Documents/github/jq-front/lib/templating.sh 
+  at 117 _perform_templating_value_side /Users/hiroshi/Documents/github/jq-front/lib/templating.sh 
+  at 19 _perform_templating /Users/hiroshi/Documents/github/jq-front/lib/templating.sh 
+  at 12 perform_templating /Users/hiroshi/Documents/github/jq-front/lib/templating.sh 
+  at 69 perform_jqfront /Users/hiroshi/Documents/github/jq-front/jq-front 
+  at 179 perform /Users/hiroshi/Documents/github/jq-front/jq-front 
+  at 195 main /Users/hiroshi/Documents/github/jq-front/jq-front 
+  at 205 main /Users/hiroshi/Documents/github/jq-front/jq-front '
+    
+  at 43 abort /Users/hiroshi/Documents/github/jq-front/lib/core.sh 
+  at 188 _render_text_node /Users/hiroshi/Documents/github/jq-front/lib/templating.sh 
+  at 117 _perform_templating_value_side /Users/hiroshi/Documents/github/jq-front/lib/templating.sh 
+  at 19 _perform_templating /Users/hiroshi/Documents/github/jq-front/lib/templating.sh 
+  at 12 perform_templating /Users/hiroshi/Documents/github/jq-front/lib/templating.sh 
+  at 69 perform_jqfront /Users/hiroshi/Documents/github/jq-front/jq-front 
+  at 179 perform /Users/hiroshi/Documents/github/jq-front/jq-front 
+  at 195 main /Users/hiroshi/Documents/github/jq-front/jq-front 
+  at 205 main /Users/hiroshi/Documents/github/jq-front/jq-front 

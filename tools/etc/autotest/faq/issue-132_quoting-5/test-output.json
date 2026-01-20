@@ -1,0 +1,1 @@
+{"r":"$(echo HELLO)","s":"$(echo hello) world $(echo HELLO)","value":"$(echo hello) world $(echo HELLO)"}

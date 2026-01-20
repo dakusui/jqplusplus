@@ -1,0 +1,5 @@
+{
+  "$extends": [
+    "SS.sh;bash -eu;dir1/J.json"
+  ]
+}

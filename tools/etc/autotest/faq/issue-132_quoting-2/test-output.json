@@ -1,0 +1,1 @@
+{"hello":"HELLO","world":"WORLD","value":"HELLO $(echo WORLD)"}

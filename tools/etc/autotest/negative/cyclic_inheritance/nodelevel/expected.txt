@@ -1,0 +1,2 @@
+ERROR: Cyclic inheritance was detected in
+I.json

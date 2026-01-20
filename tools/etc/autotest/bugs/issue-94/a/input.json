@@ -1,0 +1,5 @@
+{
+  "key":{
+    "hello world": "eval:string:$(parent \"$(curn)\")"
+  }
+}

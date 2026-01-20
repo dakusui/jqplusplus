@@ -1,0 +1,13 @@
+{
+  "$local": {
+    "A": {
+      "key": "eval:$(ref .test.k)"
+    }
+  },
+  "test": {
+    "$extends": [
+      "A"
+    ],
+    "k": "hello"
+  }
+}

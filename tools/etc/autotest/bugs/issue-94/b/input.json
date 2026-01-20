@@ -1,0 +1,6 @@
+{
+  "key":{
+    "hello world": "eval:string:$(ref $(parent \"$(curn)\").greeting)",
+    "greeting": "salute"
+  }
+}
