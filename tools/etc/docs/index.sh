@@ -3,12 +3,12 @@ set -E -eu -o pipefail
 # shopt -s inherit_errexit
 
 function extract_style() {
-  cat "_style.html" | xmllint --nocdata --html --xpath '//style' - | sed -E 's/^(\]\]>)?<\/?style>(<\!\[CDATA\[)?$//g'
+  cat "../../../docs/_style.html" | xmllint --nocdata --html --xpath '//style' - | sed -E 's/^(\]\]>)?<\/?style>(<\!\[CDATA\[)?$//g'
 }
 
 function extract_content() {
   local _filestem="${1}"
-  cat "${_filestem}.html" | xmllint --nocdata --html --xpath '//div[@id="content"]' - | sed -E 's/<div id="content">/<div id="'"${_filestem}"'_content">/g'
+  cat "../../../docs/${_filestem}.html" | xmllint --nocdata --html --xpath '//div[@id="content"]' - | sed -E 's/<div id="content">/<div id="'"${_filestem}"'_content">/g'
 }
 
 function render_style() {

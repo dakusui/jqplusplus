@@ -16,11 +16,11 @@ function main() {
       --user "$(id -u):$(id -g)" \
       -v "$(pwd)":/documents/ \
       asciidoctor/docker-asciidoctor \
-      asciidoctor -r asciidoctor-diagram -a toc=left "${i}" -o "${i%.adoc}.html"
+      asciidoctor -r asciidoctor-diagram -a toc=left "${i}" -o "docs/$(basename "${i%.adoc}.html")"
     message "...done"
-  done < <(find "docs" -type f -name '*.adoc' -print0)
+  done < <(find "tools/etc/docs" -type f -name '*.adoc' -print0)
   message -n "Generating 'docs/index.html'"
-  docs/index.sh >docs/index.html
+  tools/etc/docs/index.sh >docs/index.html
   message "...done"
 }
 

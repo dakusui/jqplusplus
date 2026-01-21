@@ -123,3 +123,6 @@ Or run directly without building:
 ```sh
 make run
 ``` 
+## Project Dependencies
+
+* `xmllint`: On Ubuntu, do `sudo apt install libxml2-utils`
