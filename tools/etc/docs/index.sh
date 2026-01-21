@@ -11,6 +11,10 @@ function extract_content() {
   cat "../../../docs/${_filestem}.html" | xmllint --nocdata --html --xpath '//div[@id="content"]' - | sed -E 's/<div id="content">/<div id="'"${_filestem}"'_content">/g'
 }
 
+function copy_images() {
+  cp ./images/* ../../../docs/images/
+}
+
 function render_style() {
   extract_style
   cat <<STYLE
@@ -173,6 +177,7 @@ function render() {
   render_all_contents ${_targets[@]}
   end_body
   render_footer
+  copy_images
 }
 
 function main() {

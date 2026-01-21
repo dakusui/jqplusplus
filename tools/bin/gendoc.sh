@@ -9,6 +9,7 @@ function message() {
 }
 
 function main() {
+  mkdir -p "$(pwd)/docs"
   while IFS= read -r -d '' i; do
     local _src_file="${i}"
     message -n "Processing '${_src_file}'"
@@ -24,4 +25,4 @@ function main() {
   message "...done"
 }
 
-main "$@"
+(cd "$(dirname "$(dirname "$(dirname "${0}")")")" && main "${@}")
