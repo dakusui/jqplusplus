@@ -1,7 +1,9 @@
 package internal
 
 import (
+	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -23,7 +25,16 @@ func LoadAndResolveInheritances(baseDir string, filename string, searchPaths []s
 
 // LoadAndResolveInheritancesRecursively loads a JSON file, resolves $extends or $includes recursively, and merges parents.
 func LoadAndResolveInheritancesRecursively(baseDir string, targetFile string, nodepool NodePool) (*NodeEntryValue, error) {
-	absPath, bDir, err := ResolveFilePath(targetFile, baseDir, nodepool.SearchPaths())
+
+	var optional bool
+	if strings.HasSuffix(targetFile, "?") {
+		optional = true
+		targetFile = targetFile[:len(targetFile)-1]
+	}
+	absPath, err := ResolveFilePath(targetFile, baseDir, nodepool.SearchPaths())
+	if optional && errors.Is(err, fs.ErrNotExist) {
+		return &NodeEntryValue{Obj: map[string]any{}, CompilerOptions: make([]*JqModule, 0)}, nil
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -41,7 +52,7 @@ func LoadAndResolveInheritancesRecursively(baseDir string, targetFile string, no
 	if compilerOption != nil {
 		compilerOptions = append(compilerOptions, compilerOption)
 	}
-	nodeEntryValue, err := resolveBothInheritances(bDir, obj, compilerOptions, nodepool)
+	nodeEntryValue, err := resolveBothInheritances(filepath.Dir(absPath), obj, compilerOptions, nodepool)
 	if err != nil {
 		return nil, err
 	}
@@ -61,7 +72,7 @@ func LoadAndResolveInheritancesRecursively(baseDir string, targetFile string, no
 		if !ok {
 			continue
 		}
-		nodeEntryValue, err := resolveBothInheritances(bDir, internalObj, compilerOptions, nodepool)
+		nodeEntryValue, err := resolveBothInheritances(filepath.Dir(absPath), internalObj, compilerOptions, nodepool)
 		if err != nil {
 			return nil, err
 		}
