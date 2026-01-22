@@ -181,5 +181,5 @@ func ResolveFilePath(filename string, baseDir string, searchPaths []string) (str
 			return "", fmt.Errorf("file is a directory: %s", fullPath)
 		}
 	}
-	return "", fmt.Errorf("search %q in %v: %w", filename, append(searchPaths, baseDir), fs.ErrNotExist)
+	return "", fmt.Errorf("file not found: '%q' in %v: %w", filename, append(searchPaths, baseDir), fs.ErrNotExist)
 }
