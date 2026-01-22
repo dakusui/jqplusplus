@@ -1,3 +1,3 @@
 {
-  "arr": "eval:array:$(array_append '[\"hello\"]' '[\"world\"]' '[\"!\"]')"
+  "arr": "eval:array:[\"hello\"] + [\"world\"] + [\"!\"]"
 }

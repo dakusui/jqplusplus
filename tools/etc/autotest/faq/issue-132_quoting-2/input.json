@@ -1,5 +1,5 @@
 {
   "hello": "HELLO",
   "world": "WORLD",
-  "value": "eval: $(ref .hello) '$(echo '$(ref .world)')'"
+  "value": "eval:.hello  + \".\" + .world"
 }

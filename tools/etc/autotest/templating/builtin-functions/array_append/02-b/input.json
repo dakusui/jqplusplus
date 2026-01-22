@@ -7,5 +7,5 @@
     "HELLO",
     "WORLD"
   ],
-  "arr": "eval:array:$(array_append $(ref .a0) $(ref .a1))"
+  "arr": "eval:array:.a0 + .a1"
 }

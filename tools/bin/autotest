@@ -5,7 +5,7 @@ function main() {
   _project_root="$(dirname "$(dirname "$(dirname "${0}")")")"
 
   (cd "${_project_root}" && \
-   bash -eu "${_project_root}/tools/bin/_autotest.sh" "${_project_root}/bin/jq++" "${_project_root}/tools/etc/autotest")
+   bash -eu "${_project_root}/tools/bin/_autotest.sh" "${_project_root}/bin/jq++" "${_project_root}/tools/etc/autotest" "$@")
 }
 
 main "$@"

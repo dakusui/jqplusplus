@@ -1,5 +1,5 @@
 {
   "hello": "HELLO",
   "world": "WORLD",
-  "value": "HELLO $(echo WORLD)"
+  "value": "HELLO.WORLD"
 }

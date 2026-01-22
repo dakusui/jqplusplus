@@ -1,5 +1,5 @@
 {
-  "eval:$(echo helloBase)": {
+  "eval:.|\"helloBase\"": {
     "a": [
       "Hello"
     ],
