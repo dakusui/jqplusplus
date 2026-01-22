@@ -1,0 +1,7 @@
+#!/bin/bash -eu
+
+function main() {
+  for i in 'test-output.*' 'test-error.txt'; do   find tools/etc/autotest -name "$i" -exec rm -f {} \;; done
+ }
+
+(cd "$(dirname "$(dirname "$(dirname "${0}")")")" && main "$@")

@@ -1,4 +1,0 @@
-{
-  "releaseVersion": "2.12.0",
-  "snapshotVersion": "$(ref .releaseVersion)-SNAPSHOT"
-}

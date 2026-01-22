@@ -1,9 +1,0 @@
-{
-  "nodeLevelInheritance": {
-    "attrA": "valueFromA",
-    "attrB": "valueFromB",
-    "attrC": "valueFromNode",
-    "attrD": "valueFromD",
-    "attrE": "valueFromE"
-  }
-}

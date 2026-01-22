@@ -1,3 +1,0 @@
-{
-  "command": "sed -r '/lasttime_order_ranking/,/\\}\\,/s/(\"$sort\"):.false/\\1:true/p'"
-}
