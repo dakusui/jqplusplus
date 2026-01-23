@@ -1,7 +1,6 @@
 package internal
 
 import (
-	"github.com/itchyny/gojq"
 	"path/filepath"
 )
 
@@ -34,11 +33,6 @@ func NewNodeEntryKey(baseDir, filename string) NodeEntryKey {
 type NodeEntryValue struct {
 	Obj             map[string]any
 	CompilerOptions []*JqModule
-}
-
-type JqModule struct {
-	CompilerOption gojq.CompilerOption
-	Name           string
 }
 
 func (e NodeEntryKey) BaseDir() string {
