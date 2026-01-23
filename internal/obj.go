@@ -46,7 +46,7 @@ func walkAnyPath(prefix []any, v any, out *[][]any) {
 // GetAtPath returns the value at `path` inside `root`.
 // Path segments: string => map key, int => array index.
 // ok=false if the path can't be followed.
-func GetAtPath(root any, path []any) (val any, ok bool) {
+func GetAtPath(root any, path []any) (any, bool) {
 	cur := root
 
 	for _, seg := range path {

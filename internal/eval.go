@@ -38,14 +38,14 @@ func (t JSONType) String() string {
 	}
 }
 
-// ApplyJQExpression applies a jq expression to the provided input object, validates the result type,
+// EvalueateExpression applies a jq expression to the provided input object, validates the result type,
 // and returns it in the specified type.
-// ApplyJQExpression applies a jq expression to the provided input object, validates the result type,
+// EvalueateExpression applies a jq expression to the provided input object, validates the result type,
 // and returns it in the specified type.
 //
 // NOTE: Custom jq functions/modules are enabled by compiling the parsed query with compiler options
 // (e.g., gojq.WithFunction, gojq.WithModuleLoader, ...).
-func ApplyJQExpression(
+func EvalueateExpression(
 	input any,
 	expression string,
 	expectedTypes []JSONType,
@@ -189,7 +189,7 @@ func ProcessKeySide(obj map[string]any, ttl int, invocationSpec InvocationSpec) 
 			spec := FromSpec(&invocationSpec).
 				AddVariable("$cur", p[0:len(p)-1]).
 				Build()
-			v, err := ApplyJQExpression(obj, expr, []JSONType{String, Array}, *spec)
+			v, err := EvalueateExpression(obj, expr, []JSONType{String, Array}, *spec)
 			if err != nil {
 				panic(fmt.Sprintf("Failed to evaluate jq expression: %v", err))
 			}
@@ -221,6 +221,9 @@ func ProcessKeySide(obj map[string]any, ttl int, invocationSpec InvocationSpec) 
 	return ProcessKeySide(ret, ttl-1, invocationSpec)
 }
 
+const prefixRaw = "raw:"
+const prefixEval = "eval:"
+
 // ProcessValueSide recursively processes and resolves special string values within a JSON-like object.
 //
 // It looks for string values in the input object that begin with special prefixes:
@@ -246,8 +249,6 @@ func ProcessKeySide(obj map[string]any, ttl int, invocationSpec InvocationSpec) 
 //
 // Panics if ttl reaches zero and some entries remain unresolved.
 func ProcessValueSide(obj map[string]any, ttl int, invocationSpec InvocationSpec) (map[string]any, error) {
-	const prefixRaw = "raw:"
-	const prefixEval = "eval:"
 	entries := StringEntries(obj, func(v string) bool {
 		if strings.HasPrefix(v, prefixEval) {
 			return true
@@ -267,25 +268,11 @@ func ProcessValueSide(obj map[string]any, ttl int, invocationSpec InvocationSpec
 	var newEntries []Entry
 	for _, e := range entries {
 		v := e.Value.(string)
-		var n Entry
-		if strings.HasPrefix(v, prefixRaw) {
-			n = Entry{e.Path, v[len(prefixRaw):]}
-		} else if strings.HasPrefix(v, prefixEval) {
-			var expectedType JSONType
-			w := v[len(prefixEval):]
-			w, expectedType = extractExpressionAndExpectedType(w)
-			spec := FromSpec(&invocationSpec).
-				AddVariable("$cur", e.Path).
-				Build()
-			x, err := ApplyJQExpression(newObj, w, []JSONType{expectedType}, *spec)
-			if err != nil {
-				return nil, err
-			}
-			n = Entry{e.Path, x}
-		} else {
-			panic(fmt.Sprintf("Fishy value was found: %v (in %v)", v, e))
+		n, err := evaluateString(v, e.Path, newObj, invocationSpec)
+		if err != nil {
+			return nil, err
 		}
-		newEntries = append(newEntries, n)
+		newEntries = append(newEntries, Entry{Path: e.Path, Value: n})
 	}
 	for _, e := range newEntries {
 		p := e.Path
@@ -296,6 +283,28 @@ func ProcessValueSide(obj map[string]any, ttl int, invocationSpec InvocationSpec
 		}
 	}
 	return ProcessValueSide(newObj, ttl-1, invocationSpec)
+}
+
+func evaluateString(str string, path []any, obj map[string]any, invocationSpec InvocationSpec) (any, error) {
+	var ret any
+	if strings.HasPrefix(str, prefixRaw) {
+		ret = str[len(prefixRaw):]
+	} else if strings.HasPrefix(str, prefixEval) {
+		var expectedType JSONType
+		w := str[len(prefixEval):]
+		w, expectedType = extractExpressionAndExpectedType(w)
+		spec := FromSpec(&invocationSpec).
+			AddVariable("$cur", path).
+			Build()
+		x, err := EvalueateExpression(obj, w, []JSONType{expectedType}, *spec)
+		if err != nil {
+			return nil, err
+		}
+		ret = x
+	} else {
+		panic(fmt.Sprintf("Fishy value was found: %str (in %str)", path, str))
+	}
+	return ret, nil
 }
 
 func extractExpressionAndExpectedType(expr string) (string, JSONType) {
