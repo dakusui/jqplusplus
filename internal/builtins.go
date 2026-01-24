@@ -2,42 +2,33 @@ package internal
 
 import "fmt"
 
-func createParentOfFunc(currentPath []any, expression string) (string, int, int, func(any, []any) any) {
+func CreateToPathArrayFunc() (string, int, int, func(any, []any) any) {
+	return "topatharray", 1, 1, func(input any, args []any) any {
+		ret, err := PathExpressionToPathArray(args[0].(string))
+		if err != nil {
+			return err
+		}
+		return ret
+	}
+}
+func CreateToPathExprFunc() (string, int, int, func(any, []any) any) {
+	return "topathexpr", 1, 1, func(input any, args []any) any {
+		ret, err := PathArrayToPathExpression(args[0].([]any))
+		if err != nil {
+			return err
+		}
+		return ret
+	}
+}
+
+func CreateParentOfFunc(currentPath []any, expression string) (string, int, int, func(any, []any) any) {
 	return "parentof", 1, 2, func(input any, args []any) any {
 		return resolveParent(args, expression, currentPath)
 	}
 }
-func createParentFunc(currentPath []any, expression string) (string, int, int, func(any, []any) any) {
+func CreateParentFunc(currentPath []any, expression string) (string, int, int, func(any, []any) any) {
 	return "parent", 0, 1, func(input any, args []any) any {
 		return resolveParent(append([]any{currentPath}, args...), expression, currentPath)
-	}
-}
-
-func createParentOfExprFunc(currentPath []any, expression string) (string, int, int, func(any, []any) any) {
-	return "parentofexpr", 1, 2, func(input any, args []any) any {
-		ret := resolveParent(args, expression, currentPath)
-		if err, ok := ret.(error); ok {
-			return err
-		}
-		ret, err := PathArrayToPathExpression(ret.([]any))
-		if err != nil {
-			return err
-		}
-		return ret
-	}
-}
-func createParentExprFunc(currentPath []any, expression string) (string, int, int, func(any, []any) any) {
-	return "parentexpr", 0, 1, func(input any, args []any) any {
-		ret := resolveParent(append([]any{currentPath}, args...), expression, currentPath)
-
-		if err, ok := ret.(error); ok {
-			return err
-		}
-		ret, err := PathArrayToPathExpression(ret.([]any))
-		if err != nil {
-			return err
-		}
-		return ret
 	}
 }
 
@@ -65,7 +56,7 @@ func resolveParent(args []any, expression string, currentPath []any) any {
 	return path[0 : len(path)-levels]
 }
 
-func createRefFunc(self any, currentPath []any, expression string, invocationSpec InvocationSpec) (string, int, int, func(any, []any) any) {
+func CreateRefFunc(self any, currentPath []any, expression string, invocationSpec InvocationSpec) (string, int, int, func(any, []any) any) {
 	return "ref", 1, 1, func(input any, args []any) any {
 		pathArg := args[0]
 		path, ok := pathArg.([]any)
@@ -77,7 +68,7 @@ func createRefFunc(self any, currentPath []any, expression string, invocationSpe
 	}
 }
 
-func createRefExprFunc(self any, currentPath []any, expression string, invocationSpec InvocationSpec) (string, int, int, func(any, []any) any) {
+func CreateRefExprFunc(self any, currentPath []any, expression string, invocationSpec InvocationSpec) (string, int, int, func(any, []any) any) {
 	return "refexpr", 1, 1, func(input any, args []any) any {
 		pathArg := args[0]
 		pathexp, ok := pathArg.(string)

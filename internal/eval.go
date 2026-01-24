@@ -306,12 +306,12 @@ func evaluateString(str string, path []any, self any, invocationSpec InvocationS
 		spec := FromSpec(&invocationSpec).
 			AddVariable("$cur", path).
 			AddVariable("$curexpr", pathexpr).
-			AddFunction(createParentOfFunc(path, str)).
-			AddFunction(createParentFunc(path, str)).
-			AddFunction(createParentOfExprFunc(path, str)).
-			AddFunction(createParentExprFunc(path, str)).
-			AddFunction(createRefFunc(self, path, str, invocationSpec)).
-			AddFunction(createRefExprFunc(self, path, str, invocationSpec)).
+			AddFunction(CreateToPathArrayFunc()).
+			AddFunction(CreateToPathExprFunc()).
+			AddFunction(CreateParentOfFunc(path, str)).
+			AddFunction(CreateParentFunc(path, str)).
+			AddFunction(CreateRefFunc(self, path, str, invocationSpec)).
+			AddFunction(CreateRefExprFunc(self, path, str, invocationSpec)).
 			Build()
 		x, err := EvaluateExpression(self, w, []JSONType{expectedType}, *spec)
 		if err != nil {

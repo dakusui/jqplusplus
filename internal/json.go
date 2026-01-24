@@ -322,7 +322,7 @@ func PathExpressionToPathArray(pathExpr string) ([]any, error) {
 // Helper to check if a string is alphanumeric
 func isAlphanumeric(s string) bool {
 	for _, r := range s {
-		if !(unicode.IsLetter(r) || unicode.IsDigit(r)) {
+		if !(unicode.IsLetter(r) || unicode.IsDigit(r) || r == '_') {
 			return false
 		}
 	}
