@@ -38,14 +38,14 @@ func (t JSONType) String() string {
 	}
 }
 
-// EvalueateExpression applies a jq expression to the provided input object, validates the result type,
+// EvaluateExpression applies a jq expression to the provided input object, validates the result type,
 // and returns it in the specified type.
-// EvalueateExpression applies a jq expression to the provided input object, validates the result type,
+// EvaluateExpression applies a jq expression to the provided input object, validates the result type,
 // and returns it in the specified type.
 //
 // NOTE: Custom jq functions/modules are enabled by compiling the parsed query with compiler options
 // (e.g., gojq.WithFunction, gojq.WithModuleLoader, ...).
-func EvalueateExpression(
+func EvaluateExpression(
 	input any,
 	expression string,
 	expectedTypes []JSONType,
@@ -189,7 +189,7 @@ func ProcessKeySide(obj map[string]any, ttl int, invocationSpec InvocationSpec) 
 			spec := FromSpec(&invocationSpec).
 				AddVariable("$cur", p[0:len(p)-1]).
 				Build()
-			v, err := EvalueateExpression(obj, expr, []JSONType{String, Array}, *spec)
+			v, err := EvaluateExpression(obj, expr, []JSONType{String, Array}, *spec)
 			if err != nil {
 				panic(fmt.Sprintf("Failed to evaluate jq expression: %v", err))
 			}
@@ -285,7 +285,7 @@ func ProcessValueSide(obj map[string]any, ttl int, invocationSpec InvocationSpec
 	return ProcessValueSide(newObj, ttl-1, invocationSpec)
 }
 
-func evaluateString(str string, path []any, obj map[string]any, invocationSpec InvocationSpec) (any, error) {
+func evaluateString(str string, path []any, self any, invocationSpec InvocationSpec) (any, error) {
 	var ret any
 	if strings.HasPrefix(str, prefixRaw) {
 		ret = str[len(prefixRaw):]
@@ -295,8 +295,10 @@ func evaluateString(str string, path []any, obj map[string]any, invocationSpec I
 		w, expectedType = extractExpressionAndExpectedType(w)
 		spec := FromSpec(&invocationSpec).
 			AddVariable("$cur", path).
+			AddFunction(createParentFunc(path, str)).
+			AddFunction(createRefFunc(self, path, str, invocationSpec)).
 			Build()
-		x, err := EvalueateExpression(obj, w, []JSONType{expectedType}, *spec)
+		x, err := EvaluateExpression(self, w, []JSONType{expectedType}, *spec)
 		if err != nil {
 			return nil, err
 		}
