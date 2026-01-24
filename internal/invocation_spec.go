@@ -77,6 +77,16 @@ func (spec *InvocationSpec) VariableValues() []any {
 	return ret
 }
 
+func (spec *InvocationSpec) Functions() []*JqFunction {
+	ret := make([]*JqFunction, len(spec.functions))
+	i := 0
+	for _, v := range spec.functions {
+		ret[i] = v
+		i++
+	}
+	return ret
+}
+
 func (spec *InvocationSpec) ModuleNames() []string {
 	return Map(spec.modules, func(in *JqModule) string {
 		return in.Name
@@ -141,10 +151,10 @@ func (b *InvocationSpecBuilder) AddVariable(name string, value any) *InvocationS
 
 func (b *InvocationSpecBuilder) AddFunction(name string, minArity, maxArity int, f func(any, []any) any) *InvocationSpecBuilder {
 	jqFunction := &JqFunction{
-		Name:           name,
-		MinArity:       minArity,
-		MaxArity:       maxArity,
-		CompilerOption: f,
+		Name:     name,
+		MinArity: minArity,
+		MaxArity: maxArity,
+		Func:     f,
 	}
 	b.spec.functions = append(b.spec.functions, jqFunction)
 	return b
@@ -161,8 +171,8 @@ type JqModule struct {
 }
 
 type JqFunction struct {
-	CompilerOption func(any, []any) any
-	Name           string
-	MinArity       int
-	MaxArity       int
+	Func     func(any, []any) any
+	Name     string
+	MinArity int
+	MaxArity int
 }

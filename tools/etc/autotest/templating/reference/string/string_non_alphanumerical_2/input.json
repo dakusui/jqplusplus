@@ -1,4 +1,4 @@
 {
   "$releaseVersion": "2.12.0",
-  "snapshotVersion": "template:string:$(ref '.$releaseVersion')-SNAPSHOT"
+  "snapshotVersion": "eval:string:ref([\"$releaseVersion\"]) + \"-SNAPSHOT\""
 }

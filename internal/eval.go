@@ -58,8 +58,14 @@ func EvaluateExpression(
 		return nil, fmt.Errorf("failed to parse jq expression: '%v' <%w>", expressionWithImportStatements, err)
 	}
 
+	var options []gojq.CompilerOption
+	options = append(options, invocationSpec.CompilerOptions()...)
+	for _, f := range invocationSpec.Functions() {
+		options = append(options, gojq.WithFunction(f.Name, f.MinArity, f.MaxArity, f.Func))
+	}
+
 	// Compile the jq query (this is where custom functions/modules are wired in)
-	code, err := gojq.Compile(query, append(invocationSpec.CompilerOptions(), gojq.WithVariables(invocationSpec.VariableNames()))...)
+	code, err := gojq.Compile(query, append(options, gojq.WithVariables(invocationSpec.VariableNames()))...)
 	if err != nil {
 		return nil, fmt.Errorf("failed to compile jq expression: %w", err)
 	}
@@ -67,8 +73,8 @@ func EvaluateExpression(
 	// Run the compiled jq code
 	var values []any
 	values = invocationSpec.VariableValues()
-	iter := code.Run(input, values...)
 
+	iter := code.Run(input, values...)
 	result, ok := iter.Next()
 	if !ok {
 		return nil, fmt.Errorf("no result produced by jq expression")
@@ -304,7 +310,8 @@ func evaluateString(str string, path []any, self any, invocationSpec InvocationS
 		}
 		ret = x
 	} else {
-		panic(fmt.Sprintf("Fishy value was found: %str (in %str)", path, str))
+		//panic(fmt.Sprintf("Fishy value was found: <%s> at %v", str, path))
+		ret = str
 	}
 	return ret, nil
 }

@@ -1,6 +1,6 @@
 {
   "l1": {
     "releaseVersion": "2.12.0",
-    "snapshotVersion": "template:string:$(ref $(cur).releaseVersion)-SNAPSHOT"
+    "snapshotVersion": "eval:string:ref(parent($cur) + [\"releaseVersion\"]) + \"-SNAPSHOT\""
   }
 }
