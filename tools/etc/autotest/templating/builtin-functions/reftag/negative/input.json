@@ -1,6 +1,6 @@
 {
   "thetag": "Hello, mytag",
   "k0": {
-    "k1": "eval:string:$(reftag missingTag)"
+    "k1": "eval:string:reftag(\"missingTag\")"
   }
 }

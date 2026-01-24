@@ -1,6 +1,8 @@
 package internal
 
-import "fmt"
+import (
+	"fmt"
+)
 
 func CreateToPathArrayFunc() (string, int, int, func(any, []any) any) {
 	return "topatharray", 1, 1, func(input any, args []any) any {
@@ -26,6 +28,7 @@ func CreateParentOfFunc(currentPath []any, expression string) (string, int, int,
 		return resolveParent(args, expression, currentPath)
 	}
 }
+
 func CreateParentFunc(currentPath []any, expression string) (string, int, int, func(any, []any) any) {
 	return "parent", 0, 1, func(input any, args []any) any {
 		return resolveParent(append([]any{currentPath}, args...), expression, currentPath)
@@ -81,6 +84,27 @@ func CreateRefExprFunc(self any, currentPath []any, expression string, invocatio
 		}
 
 		return resolveRef(self, path, currentPath, invocationSpec, expression, args)
+	}
+}
+
+func CreateRefTagFunc(self any, currentPath []any, expression string, invocationSpec InvocationSpec) (string, int, int, func(any, []any) any) {
+	return "reftag", 1, 1, func(input any, args []any) any {
+		tagArg := args[0]
+		tag, ok := tagArg.(string)
+		if !ok {
+			return fmt.Errorf("expression: %s at %v; ret(%v); %v must be an array", expression, currentPath, args, tagArg)
+		}
+		pathLength := len(currentPath) - 1
+		for i := pathLength; i >= 0; i-- {
+			p := append(DeepCopy(currentPath[0:i]).([]any), tag)
+
+			ret := resolveRef(self, p, currentPath, invocationSpec, expression, args)
+			if _, ok := ret.(error); !ok {
+				return ret
+			}
+		}
+
+		return fmt.Errorf("tag: '%v' cannot be found from path: %v in obect: %v", tag, currentPath, self)
 	}
 }
 

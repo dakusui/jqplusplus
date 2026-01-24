@@ -268,7 +268,7 @@ func ProcessValueSide(obj map[string]any, ttl int, invocationSpec InvocationSpec
 		return obj, nil
 	}
 	if ttl <= 0 {
-		panic(fmt.Sprintf("ttl is 0, %v entries left.(%v)", len(entries), entries))
+		return nil, fmt.Errorf("ttl is 0, %v entries left.(%v)", len(entries), entries)
 	}
 	newObj := DeepCopyAs(obj)
 	var newEntries []Entry
@@ -285,7 +285,7 @@ func ProcessValueSide(obj map[string]any, ttl int, invocationSpec InvocationSpec
 		v := e.Value
 
 		if !PutAtPath(newObj, p, v) {
-			panic(fmt.Sprintf("failed to put value at path %v", p))
+			return nil, fmt.Errorf("failed to put value at path %v", p)
 		}
 	}
 	return ProcessValueSide(newObj, ttl-1, invocationSpec)
@@ -312,6 +312,7 @@ func evaluateString(str string, path []any, self any, invocationSpec InvocationS
 			AddFunction(CreateParentFunc(path, str)).
 			AddFunction(CreateRefFunc(self, path, str, invocationSpec)).
 			AddFunction(CreateRefExprFunc(self, path, str, invocationSpec)).
+			AddFunction(CreateRefTagFunc(self, path, str, invocationSpec)).
 			Build()
 		x, err := EvaluateExpression(self, w, []JSONType{expectedType}, *spec)
 		if err != nil {
