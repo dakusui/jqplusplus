@@ -1,6 +1,6 @@
 {
-  "eval:$(echo helloBase)": {
+  "eval:\"helloBase\"": {
     "a": "Hello",
-    "arr": "eval:string:\"$(ref $(cur).a)\""
+    "arr": "eval:string:ref(parent + [\"a\"])"
   }
 }

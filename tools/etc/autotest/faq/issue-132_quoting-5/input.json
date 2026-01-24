@@ -1,5 +1,5 @@
 {
-  "r": "eval:string:\"HELLO\"",
-  "s": "eval:string:\"hello\" + \" \" + \"world\" + \" \" + .r",
-  "value":"eval:string:.s"
+  "r": "eval:string:\"$(echo HELLO)\"",
+  "s": "eval:string:\"$(echo hello)\" + \" world \" +  refexpr(\".r\")",
+  "value":"eval:string:refexpr(\".s\")"
 }

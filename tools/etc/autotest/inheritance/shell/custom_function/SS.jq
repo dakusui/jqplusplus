@@ -1,3 +1,2 @@
-function hello_world() {
-  echo "Hello, world. My Function!"
-}
+def hello_world:
+  "Hello, world. My Function!";

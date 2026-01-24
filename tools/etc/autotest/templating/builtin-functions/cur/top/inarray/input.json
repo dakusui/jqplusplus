@@ -1,5 +1,5 @@
 {
   "cur_result": [
-    "eval:string:cur=$(cur)"
+    "eval:string:\"cur=\" + topathexpr(parent)"
   ]
 }

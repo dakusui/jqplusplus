@@ -1,7 +1,7 @@
 {
-  "value": "eval:string:'$(echo hello)' --content $(ref .q)$(ref $(cur).object)$(ref .q)",
+  "value": "eval:string:\"$(echo hello) --content \" + refexpr(\".q\") + (ref(parent  + [\"object\"]) | tostring) + ref([\"q\"])",
   "object": {
-    "hello": "$(echo hello)"
+    "hello": "\"hello\""
   },
   "q": "'"
 }

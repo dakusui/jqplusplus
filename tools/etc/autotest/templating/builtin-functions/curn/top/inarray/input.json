@@ -1,5 +1,5 @@
 {
   "cur_result": [
-    "eval:string:cur=$(curn)"
+    "eval:string:\"cur=\" + $curexpr"
   ]
 }

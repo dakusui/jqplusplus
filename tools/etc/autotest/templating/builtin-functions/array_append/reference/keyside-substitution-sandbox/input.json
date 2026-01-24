@@ -1,6 +1,6 @@
 {
-  "eval:$(echo a)": ["Hello"],
-  "eval:$(echo b)": ["World"],
+  "eval:\"a\"": ["Hello"],
+  "eval:\"b\"": ["World"],
   "arr": [
   ]
 }

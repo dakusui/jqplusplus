@@ -1,5 +1,5 @@
 {
   "key":{
-    "hello world": "eval:string:parentexpr"
+    "hello world": "eval:string:topathexpr(parent)"
   }
 }

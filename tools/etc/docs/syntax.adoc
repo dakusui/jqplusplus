@@ -85,7 +85,7 @@ You can specify a program which generates a JSON object with a following syntax.
 ----
 {
   "$extends": [
-    "SS.sh;bash -eu;dir1/J.json"
+    "SS.jq;bash -eu;dir1/J.json"
   ]
 }
 ----
@@ -550,7 +550,7 @@ Next you reference the file inside the `$extends` syntax.
 ----
 {
   "$extends": [
-    "SS.sh;SOURCE"
+    "SS.jq;SOURCE"
   ],
   "key": "eval:string:hello_world=$(hello_world),$(echo HELLO)"
 }

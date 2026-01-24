@@ -1,3 +1,3 @@
 {
-  "attr": "template:An attribute $(error $(cur).attr needs to be defined by user)"
+  "attr": "eval:An attribute $(error $(cur).attr needs to be defined by user)"
 }
