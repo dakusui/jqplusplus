@@ -1,6 +1,6 @@
 {
   "key":{
-    "hello world": "eval:string:$(ref $(parent \"$(curn)\").greeting)",
+    "hello world": "eval:string:refexpr(parentexpr + \".greeting\")",
     "greeting": "salute"
   }
 }

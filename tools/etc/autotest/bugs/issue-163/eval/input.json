@@ -1,7 +1,7 @@
 {
   "$local": {
     "A": {
-      "key": "eval:$(ref .test.k)"
+      "key": "eval:refexpr(\".test.k\")"
     }
   },
   "test": {
