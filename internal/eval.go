@@ -296,13 +296,22 @@ func evaluateString(str string, path []any, self any, invocationSpec InvocationS
 	if strings.HasPrefix(str, prefixRaw) {
 		ret = str[len(prefixRaw):]
 	} else if strings.HasPrefix(str, prefixEval) {
+		pathexpr, err := PathArrayToPathExpression(path)
+		if err != nil {
+			return nil, err
+		}
 		var expectedType JSONType
 		w := str[len(prefixEval):]
 		w, expectedType = extractExpressionAndExpectedType(w)
 		spec := FromSpec(&invocationSpec).
 			AddVariable("$cur", path).
+			AddVariable("$curexpr", pathexpr).
+			AddFunction(createParentOfFunc(path, str)).
 			AddFunction(createParentFunc(path, str)).
+			AddFunction(createParentOfExprFunc(path, str)).
+			AddFunction(createParentExprFunc(path, str)).
 			AddFunction(createRefFunc(self, path, str, invocationSpec)).
+			AddFunction(createRefExprFunc(self, path, str, invocationSpec)).
 			Build()
 		x, err := EvaluateExpression(self, w, []JSONType{expectedType}, *spec)
 		if err != nil {

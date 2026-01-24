@@ -10,6 +10,7 @@ import (
 	"gopkg.in/yaml.v3"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"unicode"
 )
@@ -236,6 +237,85 @@ func PathArrayToPathExpression(pathArray []any) (string, error) {
 	}
 
 	// Return the constructed path expression
+	return result, nil
+}
+
+// PathExpressionToPathArray converts a "path expression" string to a "path array".
+func PathExpressionToPathArray(pathExpr string) ([]any, error) {
+	var result []any
+	var buffer string
+	inBracket := false
+	inQuotes := false
+	escaped := false
+
+	for i, r := range pathExpr {
+		switch {
+		case escaped:
+			// Handle escaped characters
+			buffer += string(r)
+			escaped = false
+
+		case r == '\\':
+			// Mark next character as escaped
+			escaped = true
+
+		case inQuotes:
+			// Inside quoted strings
+			if r == '"' {
+				// End quote
+				inQuotes = false
+				result = append(result, buffer)
+				buffer = ""
+			} else {
+				buffer += string(r)
+			}
+
+		case inBracket:
+			// Inside brackets
+			if r == ']' {
+				// End of bracket. Convert buffer contents.
+				inBracket = false
+				if num, err := strconv.Atoi(buffer); err == nil {
+					result = append(result, num)
+				} else {
+					return nil, fmt.Errorf("invalid array index at position %d: %s", i, buffer)
+				}
+				buffer = ""
+			} else {
+				buffer += string(r)
+			}
+
+		default:
+			// Outside quotes/brackets
+			switch r {
+			case '.':
+				// Period starts a new segment if buffer has content
+				if buffer != "" {
+					result = append(result, buffer)
+					buffer = ""
+				}
+			case '[':
+				// Start of bracket
+				if buffer != "" {
+					result = append(result, buffer)
+					buffer = ""
+				}
+				inBracket = true
+			case '"':
+				// Start of quoted string
+				inQuotes = true
+			default:
+				buffer += string(r)
+			}
+		}
+	}
+
+	// Add remaining buffer content to result
+	if buffer != "" {
+		result = append(result, buffer)
+	}
+
+	// Return the constructed path array
 	return result, nil
 }
 
