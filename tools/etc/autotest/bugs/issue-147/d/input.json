@@ -1,6 +1,6 @@
 {
   "child": {
-    "key": "eval:array:$(array_append $(ref $(cur).key-2) $(ref $(cur).key-3))",
+    "key": "eval:array:ref(parent + [\"key-2\"]) + ref(parent + [\"key-3\"])",
     "key-2": [
       "Hello"
     ],

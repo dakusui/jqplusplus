@@ -1,5 +1,5 @@
 {
-  "key": "eval:array:$(array_append $(ref .key-1) $(ref .key-2) $(ref .key-3))",
+  "key": "eval:array:ref([\"key-1\"]) + ref([\"key-2\"]) + ref([\"key-3\"])",
   "key-1": [
     "Hello"
   ],

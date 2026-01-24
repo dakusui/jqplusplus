@@ -2,7 +2,7 @@
   "arr": [
     {
       "k": {
-        "v": "eval:string:$(ref $(cur).content)",
+        "v": "eval:string:ref(parentof($cur) + [\"content\"])",
         "content": {
           "k1": "v1",
           "k2": "v2"

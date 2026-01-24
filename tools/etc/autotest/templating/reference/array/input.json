@@ -1,4 +1,4 @@
 {
   "arr": ["hello", 1,2,3],
-  "a": "eval:array:$(ref .arr)"
+  "a": "eval:array:ref([\"arr\"])"
 }

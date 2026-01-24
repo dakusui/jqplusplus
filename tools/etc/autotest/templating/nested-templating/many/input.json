@@ -1,81 +1,81 @@
 {
   "a": {
-    "key": "eval:object:$(ref .b)"
+    "key": "eval:object:ref([\"b\"])"
   },
   "b": {
-    "key": "eval:object:$(ref .c)"
+    "key": "eval:object:ref([\"c\"])"
   },
   "c": {
-    "key": "eval:object:$(ref .d)"
+    "key": "eval:object:ref([\"d\"])"
   },
   "d": {
-    "key": "eval:object:$(ref .e)"
+    "key": "eval:object:ref([\"e\"])"
   },
   "e": {
-    "key": "eval:object:$(ref .f)"
+    "key": "eval:object:ref([\"f\"])"
   },
   "f": {
-    "key": "eval:object:$(ref .g)"
+    "key": "eval:object:ref([\"g\"])"
   },
   "g": {
-    "key": "eval:object:$(ref .h)"
+    "key": "eval:object:ref([\"h\"])"
   },
   "h": {
-    "key": "eval:object:$(ref .i)"
+    "key": "eval:object:ref([\"i\"])"
   },
   "i": {
-    "key": "eval:object:$(ref .j)"
+    "key": "eval:object:ref([\"j\"])"
   },
   "j": {
-    "key": "eval:object:$(ref .k)"
+    "key": "eval:object:ref([\"k\"])"
   },
   "k": {
-    "key": "eval:object:$(ref .l)"
+    "key": "eval:object:ref([\"l\"])"
   },
   "l": {
-    "key": "eval:object:$(ref .m)"
+    "key": "eval:object:ref([\"m\"])"
   },
   "m": {
-    "key": "eval:object:$(ref .n)"
+    "key": "eval:object:ref([\"n\"])"
   },
   "n": {
-    "key": "eval:object:$(ref .o)"
+    "key": "eval:object:ref([\"o\"])"
   },
   "o": {
-    "key": "eval:object:$(ref .p)"
+    "key": "eval:object:ref([\"p\"])"
   },
   "p": {
-    "key": "eval:object:$(ref .q)"
+    "key": "eval:object:ref([\"q\"])"
   },
   "q": {
-    "key": "eval:object:$(ref .r)"
+    "key": "eval:object:ref([\"r\"])"
   },
   "r": {
-    "key": "eval:object:$(ref .s)"
+    "key": "eval:object:ref([\"s\"])"
   },
   "s": {
-    "key": "eval:object:$(ref .t)"
+    "key": "eval:object:ref([\"t\"])"
   },
   "t": {
-    "key": "eval:object:$(ref .u)"
+    "key": "eval:object:ref([\"u\"])"
   },
   "u": {
-    "key": "eval:object:$(ref .v)"
+    "key": "eval:object:ref([\"v\"])"
   },
   "v": {
-    "key": "eval:object:$(ref .w)"
+    "key": "eval:object:ref([\"w\"])"
   },
   "w": {
-    "key": "eval:object:$(ref .x)"
+    "key": "eval:object:ref([\"x\"])"
   },
   "x": {
-    "key": "eval:object:$(ref .y)"
+    "key": "eval:object:ref([\"y\"])"
   },
   "y": {
-    "key": "eval:object:$(ref .z)"
+    "key": "eval:object:ref([\"z\"])"
   },
   "z": {
-    "key": "eval:object:$(ref .A)"
+    "key": "eval:object:ref([\"A\"])"
   },
   "A": {
     "hello": "world"

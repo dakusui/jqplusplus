@@ -1,4 +1,4 @@
 {
   "objectNode": {"hello": "world"},
-  "snapshotVersion": "template:object:$(ref .objectNode)"
+  "snapshotVersion": "eval:object:ref([\"objectNode\"])"
 }

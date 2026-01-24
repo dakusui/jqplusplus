@@ -1,7 +1,7 @@
 {
   "objectNode": {
-    "hello": "eval:string:$(ref .stringNode)"
+    "hello": "eval:string:ref([\"stringNode\"])"
   },
-  "refObjectNode": "eval:object:$(ref .objectNode)",
+  "refObjectNode": "eval:object:ref([\"objectNode\"])",
   "stringNode": "world"
 }

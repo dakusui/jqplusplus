@@ -1,5 +1,5 @@
 {
   "a": "A",
-  "b": "eval:$(ref .c)",
-  "c": "eval:$(ref .a)"
+  "b": "eval:ref([\"c\"])",
+  "c": "eval:ref([\"a\"])"
 }

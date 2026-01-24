@@ -2,7 +2,7 @@
   "releaseVersion": "2.12.0",
   "l1": {
     "l2": {
-      "snapshotVersion": "eval:string:$(ref $(parent $(cur)  2).releaseVersion)-SNAPSHOT"
+      "snapshotVersion": "eval:string:ref(parentof($cur;3) + [\"releaseVersion\"]) + \"-SNAPSHOT\""
     }
   }
 }
