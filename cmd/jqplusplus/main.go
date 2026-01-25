@@ -14,10 +14,17 @@ func main() {
 
 Options:
   -h, --help   Show this help message
+  -v, --version Show version info
 
 If no files are provided, input is read from stdin.
 `
 		_, _ = os.Stdout.WriteString(help)
+		os.Exit(0)
+	}
+
+	if len(os.Args) > 1 && (os.Args[1] == "-v" || os.Args[1] == "--version") {
+		version := "GoLand 2023.3.8"
+		_, _ = os.Stdout.WriteString(version)
 		os.Exit(0)
 	}
 
