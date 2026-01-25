@@ -8,6 +8,8 @@ import (
 	"path/filepath"
 )
 
+var version = "dev" // overridden via -ldflags
+
 func main() {
 	if len(os.Args) > 1 && (os.Args[1] == "-h" || os.Args[1] == "--help") {
 		help := `Usage: <program> [options] [files...]
@@ -23,8 +25,7 @@ If no files are provided, input is read from stdin.
 	}
 
 	if len(os.Args) > 1 && (os.Args[1] == "-v" || os.Args[1] == "--version") {
-		version := "GoLand 2023.3.8"
-		_, _ = os.Stdout.WriteString(version)
+		_, _ = os.Stdout.WriteString(version + "\n")
 		os.Exit(0)
 	}
 

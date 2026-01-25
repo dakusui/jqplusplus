@@ -20,13 +20,13 @@ all: build
 
 build:
 	@mkdir -p bin
-	$(GO) build -o $(BINARY_PATH) ./$(CMD_PATH)
+	$(GO) build -ldflags "-X main.version=$(shell tools/bin/version)" -o $(BINARY_PATH) ./$(CMD_PATH)
 
 run:
 	$(GO) run ./$(CMD_PATH)
 
 doc:
-	./tools/gendoc.sh
+	gendoc
 
 clean:
 	rm -rf bin/*
