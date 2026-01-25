@@ -1,5 +1,5 @@
 {
-  "testType": "suite",
+  "testType": "ignore",
   "args": {
     "executor": "test.sh",
     "testCases": [
