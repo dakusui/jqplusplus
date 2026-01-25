@@ -12,7 +12,6 @@ type Entry struct {
 
 func Entries(obj map[string]any, pred func([]any) bool) []Entry {
 	paths := Paths(obj, pred)
-	fmt.Printf("%v: paths is empty!!!!!!!!!!!!!!!!!!!!!!!!!!!\n", len(paths))
 	return Map(paths, func(path []any) Entry {
 		if val, ok := GetAtPath(obj, path); ok {
 			return Entry{Path: path, Value: val}
@@ -24,11 +23,6 @@ func Entries(obj map[string]any, pred func([]any) bool) []Entry {
 // Paths returns all JSON paths in `Obj` that satisfy `pred`.
 func Paths(obj map[string]any, pred func([]any) bool) [][]any {
 	paths := walkAnyPath(nil, obj)
-	if len(paths) == 0 {
-		fmt.Printf("Paths: paths is empty\n")
-	} else {
-		fmt.Printf("Paths: paths is NOT empty\n")
-	}
 	savedPaths := DeepCopyAs(paths)
 	// Sort paths in dictionary order
 	sort.SliceStable(savedPaths, func(i, j int) bool {
@@ -36,11 +30,6 @@ func Paths(obj map[string]any, pred func([]any) bool) [][]any {
 		y, _ := PathArrayToPathExpression(savedPaths[j])
 		return x < y
 	})
-	if len(savedPaths) == 0 {
-		fmt.Printf("Paths: savedPaths is empty\n")
-	} else {
-		fmt.Printf("Paths: savedPaths is NOT empty\n")
-	}
 	return Filter(savedPaths, pred)
 }
 

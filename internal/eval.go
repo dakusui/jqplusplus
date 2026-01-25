@@ -257,16 +257,12 @@ const prefixEval = "eval:"
 func ProcessValueSide(obj map[string]any, ttl int, invocationSpec InvocationSpec) (map[string]any, error) {
 	newObj := DeepCopyAs(obj)
 	entries := StringEntries(newObj, func(v string) bool {
-		fmt.Printf("#%s", v)
 		if strings.HasPrefix(v, prefixEval) {
-			fmt.Printf("E", v)
 			return true
 		}
 		if strings.HasPrefix(v, prefixRaw) {
-			fmt.Printf("R", v)
 			return true
 		}
-		fmt.Printf("X")
 		return false
 	})
 	if len(entries) == 0 {
