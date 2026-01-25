@@ -1,1 +1,2 @@
-ERROR: .attr needs to be defined by user
+ERROR:
+.attr needs to be defined by user
