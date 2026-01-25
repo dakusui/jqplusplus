@@ -1,6 +1,7 @@
 package internal
 
 import (
+	"fmt"
 	"sort"
 )
 
@@ -19,6 +20,12 @@ func Insert[T any](slice []T, index int, value T) []T {
 }
 
 func Filter[T any](in []T, pred func(T) bool) []T {
+	if len(in) == 0 {
+		fmt.Printf("Filter:   in is Empty\n")
+	} else {
+		fmt.Printf("Filter:   in is NOT Empty\n")
+	}
+
 	out := make([]T, 0, len(in))
 	for _, v := range in {
 		if pred(v) {
@@ -82,3 +89,35 @@ func ToAnySlice[T any](xs []T) []any {
 	}
 	return out
 }
+
+/*
+PASSING:
+=== RUN   TestLoadAndResolveInheritances_RefToStringFromInsideArray
+Filter:   in is NOT Empty
+Paths: paths is NOT empty
+Filter:   in is NOT Empty
+Paths: paths is NOT empty
+Filter:   in is NOT Empty
+Paths: paths is NOT empty
+Filter:   in is NOT Empty
+paths is NOT empty!!!!!!!!!!!!!!!!!!!!!!!!!!!
+Paths: paths is NOT empty
+Filter:   in is NOT Empty
+paths is empty!!!!!!!!!!!!!!!!!!!!!!!!!!!
+--- PASS: TestLoadAndResolveInheritances_RefToStringFromInsideArray (0.00s)
+PASS
+*/
+
+/*
+FAILING:
+=== RUN   TestLoadAndResolveInheritances_RefToStringFromInsideArray
+Filter:   in is NOT Empty
+Paths: paths is NOT empty
+Filter:   in is NOT Empty
+Paths: paths is NOT empty
+Filter:   in is NOT Empty
+Paths: paths is NOT empty
+Filter:   in is NOT Empty
+paths is empty!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+*/

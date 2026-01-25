@@ -1,6 +1,9 @@
 package internal
 
-import "fmt"
+import (
+	"fmt"
+	"sort"
+)
 
 type Entry struct {
 	Path  []any
@@ -9,6 +12,11 @@ type Entry struct {
 
 func Entries(obj map[string]any, pred func([]any) bool) []Entry {
 	paths := Paths(obj, pred)
+	if len(paths) == 0 {
+		fmt.Println("paths is empty!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+	} else {
+		fmt.Println("paths is NOT empty!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+	}
 	return Map(paths, func(path []any) Entry {
 		if val, ok := GetAtPath(obj, path); ok {
 			return Entry{Path: path, Value: val}
@@ -21,7 +29,19 @@ func Entries(obj map[string]any, pred func([]any) bool) []Entry {
 func Paths(obj map[string]any, pred func([]any) bool) [][]any {
 	var paths [][]any
 	walkAnyPath(nil, obj, &paths)
-	return Filter(paths, pred)
+	if len(paths) == 0 {
+		fmt.Printf("Paths: paths is empty\n")
+	} else {
+		fmt.Printf("Paths: paths is NOT empty\n")
+	}
+	savedPaths := DeepCopyAs(paths)
+	// Sort paths in dictionary order
+	sort.SliceStable(savedPaths, func(i, j int) bool {
+		x, _ := PathArrayToPathExpression(savedPaths[i])
+		y, _ := PathArrayToPathExpression(savedPaths[j])
+		return x < y
+	})
+	return Filter(savedPaths, pred)
 }
 
 func walkAnyPath(prefix []any, v any, out *[][]any) {

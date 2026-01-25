@@ -154,7 +154,8 @@ func toStringArray(v any) []string {
 	}
 }
 
-func ProcessKeySide(obj map[string]any, ttl int, invocationSpec InvocationSpec) (map[string]any, error) {
+func ProcessKeySide(obj_ map[string]any, ttl int, invocationSpec InvocationSpec) (map[string]any, error) {
+	ret := DeepCopyAs(obj_)
 	keyHavingPrefixForProcessing := func(path []any) bool {
 		last := path[len(path)-1]
 		switch last.(type) {
@@ -173,9 +174,9 @@ func ProcessKeySide(obj map[string]any, ttl int, invocationSpec InvocationSpec) 
 		After []string
 	}
 	// Process keys
-	pathsToBeProcessed := Paths(obj, keyHavingPrefixForProcessing)
+	pathsToBeProcessed := Paths(ret, keyHavingPrefixForProcessing)
 	if len(pathsToBeProcessed) == 0 {
-		return obj, nil
+		return ret, nil
 	}
 	if ttl <= 0 {
 		panic(fmt.Sprintf("ttl is 0, %v entries left.(%v)", len(pathsToBeProcessed), pathsToBeProcessed))
@@ -195,7 +196,7 @@ func ProcessKeySide(obj map[string]any, ttl int, invocationSpec InvocationSpec) 
 			spec := FromSpec(&invocationSpec).
 				AddVariable("$cur", p[0:len(p)-1]).
 				Build()
-			v, err := EvaluateExpression(obj, expr, []JSONType{String, Array}, *spec)
+			v, err := EvaluateExpression(ret, expr, []JSONType{String, Array}, *spec)
 			if err != nil {
 				panic(fmt.Sprintf("Failed to evaluate jq expression: %v", err))
 			}
@@ -208,7 +209,6 @@ func ProcessKeySide(obj map[string]any, ttl int, invocationSpec InvocationSpec) 
 		}
 		panic(fmt.Sprintf("Last element of path must start with eval: or raw: %v", p))
 	})
-	ret := DeepCopyAs(obj)
 	for _, c := range keyChanges {
 		var v any
 		v, ok := GetAtPath(ret, c.Before)
@@ -255,7 +255,8 @@ const prefixEval = "eval:"
 //
 // Panics if ttl reaches zero and some entries remain unresolved.
 func ProcessValueSide(obj map[string]any, ttl int, invocationSpec InvocationSpec) (map[string]any, error) {
-	entries := StringEntries(obj, func(v string) bool {
+	newObj := DeepCopyAs(obj)
+	entries := StringEntries(newObj, func(v string) bool {
 		if strings.HasPrefix(v, prefixEval) {
 			return true
 		}
@@ -265,12 +266,11 @@ func ProcessValueSide(obj map[string]any, ttl int, invocationSpec InvocationSpec
 		return false
 	})
 	if len(entries) == 0 {
-		return obj, nil
+		return newObj, nil
 	}
 	if ttl <= 0 {
 		return nil, fmt.Errorf("ttl is 0, %v entries left.(%v)", len(entries), entries)
 	}
-	newObj := DeepCopyAs(obj)
 	var newEntries []Entry
 	for _, e := range entries {
 		v := e.Value.(string)

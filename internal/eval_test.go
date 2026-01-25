@@ -70,6 +70,40 @@ func TestProcessValueSide(t *testing.T) {
 	}
 }
 
+func TestGivenEvalInArray_WhenProcessValueSide_ThenProcessed(t *testing.T) {
+	input := map[string]any{
+		"arr": []any{
+			map[string]any{
+				"k": map[string]any{
+					"v": "eval:string:ref(parentof($cur;2) + [\"content\"]) | tostring",
+				},
+				"content": map[string]any{
+					"k1": "v1",
+					"k2": "v2",
+				},
+			}}}
+
+	result, err := ProcessValueSide(input, 7, EmptyInvocationSpec())
+	if err != nil {
+		t.Errorf("ProcessKeySide failed for input '%s' with error: %s", input, err)
+	}
+
+	expected := map[string]any{
+		"arr": []any{
+			map[string]any{
+				"k": map[string]any{
+					"v": "{\"k1\":\"v1\",\"k2\":\"v2\"}",
+				},
+				"content": map[string]any{
+					"k1": "v1",
+					"k2": "v2",
+				},
+			}}}
+	if !reflect.DeepEqual(expected, result) {
+		t.Errorf("Expected '%s', but got '%s'", expected, result)
+	}
+}
+
 func TestProcessValueSide_2(t *testing.T) {
 	input := map[string]any{"a": "Hello", "X": "eval:string:$cur|tostring"}
 	//expected := "processedKey" // Replace this with the expected outcome of the input
