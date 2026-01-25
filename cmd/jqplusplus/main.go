@@ -8,7 +8,8 @@ import (
 	"path/filepath"
 )
 
-var version = "dev" // overridden via -ldflags
+var version = "dev"      // overridden via -ldflags
+var revision = "unknown" // overridden via -ldflags
 
 func main() {
 	if len(os.Args) > 1 && (os.Args[1] == "-h" || os.Args[1] == "--help") {
@@ -20,12 +21,12 @@ Options:
 
 If no files are provided, input is read from stdin.
 `
-		_, _ = os.Stdout.WriteString(help)
+		_, _ = os.Stderr.WriteString(help)
 		os.Exit(0)
 	}
 
 	if len(os.Args) > 1 && (os.Args[1] == "-v" || os.Args[1] == "--version") {
-		_, _ = os.Stdout.WriteString(version + "\n")
+		_, _ = os.Stderr.WriteString(fmt.Sprintf("jq++ version %v, build %v\n", version, revision))
 		os.Exit(0)
 	}
 
