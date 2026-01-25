@@ -26,11 +26,19 @@ func Filter[T any](in []T, pred func(T) bool) []T {
 		fmt.Printf("Filter:   in is NOT Empty\n")
 	}
 
-	out := make([]T, 0, len(in))
+	//out := make([]T, 0, len(in))
+	var out []T
 	for _, v := range in {
+		fmt.Printf(".")
 		if pred(v) {
+			fmt.Println("*")
 			out = append(out, v)
 		}
+	}
+	if len(out) == 0 {
+		fmt.Printf("Filter:   out is Empty\n")
+	} else {
+		fmt.Printf("Filter:   out is NOT Empty\n")
 	}
 	return out
 }

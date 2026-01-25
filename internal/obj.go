@@ -12,11 +12,7 @@ type Entry struct {
 
 func Entries(obj map[string]any, pred func([]any) bool) []Entry {
 	paths := Paths(obj, pred)
-	if len(paths) == 0 {
-		fmt.Println("paths is empty!!!!!!!!!!!!!!!!!!!!!!!!!!!")
-	} else {
-		fmt.Println("paths is NOT empty!!!!!!!!!!!!!!!!!!!!!!!!!!!")
-	}
+	fmt.Printf("%v: paths is empty!!!!!!!!!!!!!!!!!!!!!!!!!!!\n", len(paths))
 	return Map(paths, func(path []any) Entry {
 		if val, ok := GetAtPath(obj, path); ok {
 			return Entry{Path: path, Value: val}
@@ -27,8 +23,7 @@ func Entries(obj map[string]any, pred func([]any) bool) []Entry {
 
 // Paths returns all JSON paths in `Obj` that satisfy `pred`.
 func Paths(obj map[string]any, pred func([]any) bool) [][]any {
-	var paths [][]any
-	walkAnyPath(nil, obj, &paths)
+	paths := walkAnyPath(nil, obj)
 	if len(paths) == 0 {
 		fmt.Printf("Paths: paths is empty\n")
 	} else {
@@ -41,26 +36,43 @@ func Paths(obj map[string]any, pred func([]any) bool) [][]any {
 		y, _ := PathArrayToPathExpression(savedPaths[j])
 		return x < y
 	})
+	if len(savedPaths) == 0 {
+		fmt.Printf("Paths: savedPaths is empty\n")
+	} else {
+		fmt.Printf("Paths: savedPaths is NOT empty\n")
+	}
 	return Filter(savedPaths, pred)
 }
 
-func walkAnyPath(prefix []any, v any, out *[][]any) {
-	switch x := v.(type) {
+func walkAnyPath(prefix []any, v any) [][]any {
+	var out [][]any
 
+	switch x := v.(type) {
 	case map[string]any:
 		for k, v2 := range x {
-			p := append(prefix, k) // k is string
-			*out = append(*out, p)
-			walkAnyPath(p, v2, out)
+			p := append(copyPath(prefix), k) // k is string
+			out = append(out, p)
+			out = append(out, walkAnyPath(p, v2)...)
 		}
-
 	case []any:
 		for i, v2 := range x {
-			p := append(prefix, i) // i is int
-			*out = append(*out, p)
-			walkAnyPath(p, v2, out)
+			p := append(copyPath(prefix), i) // i is int
+			out = append(out, p)
+			out = append(out, walkAnyPath(p, v2)...)
 		}
 	}
+
+	return out
+}
+
+func copyPath(p []any) []any {
+	// IMPORTANT: avoid aliasing bugs caused by reusing prefix's backing array
+	if len(p) == 0 {
+		return nil
+	}
+	cp := make([]any, len(p))
+	copy(cp, p)
+	return cp
 }
 
 // GetAtPath returns the value at `path` inside `root`.
