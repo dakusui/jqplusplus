@@ -62,6 +62,7 @@ func MaterializeLocalNodes(obj map[string]any, localNodeDirectoryBase string) (s
 			return "", fmt.Errorf("convert content for %q: %w", name, err)
 		}
 
+		fmt.Printf("local node: %s:%s\n", target, v)
 		// Write file (0644); overwrite if exists
 		if err := os.WriteFile(target, data, 0o644); err != nil {
 			return "", fmt.Errorf("write %q: %w", target, err)
@@ -181,5 +182,9 @@ func ResolveFilePath(filename string, baseDir string, searchPaths []string) (str
 			return "", fmt.Errorf("file is a directory: %s", fullPath)
 		}
 	}
-	return "", fmt.Errorf("file not found: '%q' in %v: %w", filename, append(searchPaths, baseDir), fs.ErrNotExist)
+	return "", composeFileNotFoundError(filename, baseDir, searchPaths)
+}
+
+func composeFileNotFoundError(filename string, baseDir string, searchPaths []string) error {
+	return fmt.Errorf("file not found: '%q'\n  in %v: %w", filename, append(searchPaths, baseDir), fs.ErrNotExist)
 }
