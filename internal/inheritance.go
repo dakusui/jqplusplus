@@ -1,7 +1,9 @@
 package internal
 
 import (
+	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -23,7 +25,16 @@ func LoadAndResolveInheritances(baseDir string, filename string, searchPaths []s
 
 // LoadAndResolveInheritancesRecursively loads a JSON file, resolves $extends or $includes recursively, and merges parents.
 func LoadAndResolveInheritancesRecursively(baseDir string, targetFile string, nodepool NodePool) (*NodeEntryValue, error) {
-	absPath, bDir, err := ResolveFilePath(targetFile, baseDir, nodepool.SearchPaths())
+
+	var optional bool
+	if strings.HasSuffix(targetFile, "?") {
+		optional = true
+		targetFile = targetFile[:len(targetFile)-1]
+	}
+	absPath, err := ResolveFilePath(targetFile, baseDir, nodepool.SearchPaths())
+	if optional && errors.Is(err, fs.ErrNotExist) {
+		return &NodeEntryValue{Obj: map[string]any{}, CompilerOptions: make([]*JqModule, 0)}, nil
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -36,22 +47,31 @@ func LoadAndResolveInheritancesRecursively(baseDir string, targetFile string, no
 	if err != nil {
 		return nil, err
 	}
+	p, err := MaterializeLocalNodes(obj, nodepool.SessionDirectory())
+	if err != nil {
+		return nil, err
+	}
+	nodepool.Enter(p)
+	ret, err := expandInheritances(obj, compilerOption, nodepool, filepath.Dir(absPath))
+	nodepool.Leave(p)
+	return ret, err
+}
+
+// baseDir is a directory from which obj was read.
+func expandInheritances(obj map[string]any, compilerOption *JqModule, nodepool NodePool, baseDir string) (*NodeEntryValue, error) {
+	delete(obj, "$local")
 
 	var compilerOptions []*JqModule
 	if compilerOption != nil {
 		compilerOptions = append(compilerOptions, compilerOption)
 	}
-	nodeEntryValue, err := resolveBothInheritances(bDir, obj, compilerOptions, nodepool)
+	nodeEntryValue, err := resolveBothInheritances(baseDir, obj, compilerOptions, nodepool)
 	if err != nil {
 		return nil, err
 	}
 	obj = nodeEntryValue.Obj
 	compilerOptions = nodeEntryValue.CompilerOptions
 
-	p, err := MaterializeLocalNodes(obj, nodepool.SessionDirectory())
-	delete(obj, "$local")
-
-	nodepool.Enter(p)
 	for _, p := range DistinctBy(Map(Sort(Paths(obj, lastElementIsOneOf("$extends", "$includes")), lessPathArrays), DropLast[any]), pathKey) {
 		internal, ok := GetAtPath(obj, ToAnySlice(p))
 		if !ok {
@@ -61,7 +81,7 @@ func LoadAndResolveInheritancesRecursively(baseDir string, targetFile string, no
 		if !ok {
 			continue
 		}
-		nodeEntryValue, err := resolveBothInheritances(bDir, internalObj, compilerOptions, nodepool)
+		nodeEntryValue, err := resolveBothInheritances(baseDir, internalObj, compilerOptions, nodepool)
 		if err != nil {
 			return nil, err
 		}
@@ -69,7 +89,7 @@ func LoadAndResolveInheritancesRecursively(baseDir string, targetFile string, no
 		compilerOptions = nodeEntryValue.CompilerOptions
 		PutAtPath(obj, ToAnySlice(p), internalObj)
 	}
-	nodepool.Leave(p)
+
 	return &NodeEntryValue{obj, compilerOptions}, nil
 }
 

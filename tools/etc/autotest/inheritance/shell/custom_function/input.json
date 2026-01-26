@@ -1,0 +1,6 @@
+{
+  "$extends": [
+    "SS.jq"
+  ],
+  "key": "eval:string:\"hello_world=\" + SS::hello_world + \",HELLO\""
+}

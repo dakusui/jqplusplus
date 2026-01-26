@@ -1,0 +1,6 @@
+{
+  "$extends": [
+    "O.json?"
+  ],
+  "hello": "world"
+}

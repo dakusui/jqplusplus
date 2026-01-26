@@ -1,0 +1,4 @@
+{
+  "$extends": [ "A.yaml" ],
+  "o": "hello world"
+}

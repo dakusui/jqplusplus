@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
@@ -151,9 +152,9 @@ func CreateSessionDirectory() string {
 //  4. If it is a directory, return an error.
 //
 // 2. If the file is not found, return an error.
-func ResolveFilePath(filename string, baseDir string, searchPaths []string) (string, string, error) {
+func ResolveFilePath(filename string, baseDir string, searchPaths []string) (string, error) {
 	if filepath.IsAbs(filename) {
-		return filename, filepath.Dir(filename), nil
+		return filename, nil
 	}
 	beginning := 0
 	if baseDir != "" {
@@ -174,11 +175,15 @@ func ResolveFilePath(filename string, baseDir string, searchPaths []string) (str
 		if _, err := os.Stat(fullPath); err == nil {
 			// If it is a true file, return it.
 			if !os.IsNotExist(err) {
-				return fullPath, filepath.Dir(fullPath), nil
+				return fullPath, nil
 			}
 			// If it is a directory, return an error.
-			return "", "", fmt.Errorf("file is a directory: %s", fullPath)
+			return "", fmt.Errorf("file is a directory: %s", fullPath)
 		}
 	}
-	return "", "", fmt.Errorf("file not found: %s", filename)
+	return "", composeFileNotFoundError(filename, baseDir, searchPaths)
+}
+
+func composeFileNotFoundError(filename string, baseDir string, searchPaths []string) error {
+	return fmt.Errorf("file not found: '%q'\n  in %v: %w", filename, append(searchPaths, baseDir), fs.ErrNotExist)
 }

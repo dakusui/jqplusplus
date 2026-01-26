@@ -1,0 +1,2 @@
+ERROR: Error was detected during templating:
+cat: missingFile: No such file or directory

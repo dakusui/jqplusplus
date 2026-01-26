@@ -1,0 +1,8 @@
+{
+  "i": {
+    "$extends": [
+      "X.json"
+    ],
+    "o": "hello"
+  }
+}

@@ -1,0 +1,5 @@
+ERROR:
+eval:array:\\["hello", 1,2,3\\]
+was rendered into
+[hello, 1,2,3]
+and it seems not a wel-formed JSON.

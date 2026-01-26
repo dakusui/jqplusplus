@@ -1,0 +1,8 @@
+{
+  "i": {
+    "$extends": [
+      "S.sh;bash -eu;hello world"
+    ],
+    "o": "hello world"
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "$extends": [
+    "SS.sh;SOURCE"
+  ],
+  "key1": {
+    "key11": {
+      "key111": "eval:string:hello_world=$(call_cur),$(echo HELLO)"
+    }
+  }
+}

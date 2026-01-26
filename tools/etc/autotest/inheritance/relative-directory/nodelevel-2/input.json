@@ -1,0 +1,6 @@
+{
+  "$extends": [
+    "dir/X.json"
+  ],
+  "o": "hello world"
+}

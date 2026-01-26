@@ -1,0 +1,83 @@
+{
+  "a": {
+    "key": "eval:object:ref([\"b\"])"
+  },
+  "b": {
+    "key": "eval:object:ref([\"c\"])"
+  },
+  "c": {
+    "key": "eval:object:ref([\"d\"])"
+  },
+  "d": {
+    "key": "eval:object:ref([\"e\"])"
+  },
+  "e": {
+    "key": "eval:object:ref([\"f\"])"
+  },
+  "f": {
+    "key": "eval:object:ref([\"g\"])"
+  },
+  "g": {
+    "key": "eval:object:ref([\"h\"])"
+  },
+  "h": {
+    "key": "eval:object:ref([\"i\"])"
+  },
+  "i": {
+    "key": "eval:object:ref([\"j\"])"
+  },
+  "j": {
+    "key": "eval:object:ref([\"k\"])"
+  },
+  "k": {
+    "key": "eval:object:ref([\"l\"])"
+  },
+  "l": {
+    "key": "eval:object:ref([\"m\"])"
+  },
+  "m": {
+    "key": "eval:object:ref([\"n\"])"
+  },
+  "n": {
+    "key": "eval:object:ref([\"o\"])"
+  },
+  "o": {
+    "key": "eval:object:ref([\"p\"])"
+  },
+  "p": {
+    "key": "eval:object:ref([\"q\"])"
+  },
+  "q": {
+    "key": "eval:object:ref([\"r\"])"
+  },
+  "r": {
+    "key": "eval:object:ref([\"s\"])"
+  },
+  "s": {
+    "key": "eval:object:ref([\"t\"])"
+  },
+  "t": {
+    "key": "eval:object:ref([\"u\"])"
+  },
+  "u": {
+    "key": "eval:object:ref([\"v\"])"
+  },
+  "v": {
+    "key": "eval:object:ref([\"w\"])"
+  },
+  "w": {
+    "key": "eval:object:ref([\"x\"])"
+  },
+  "x": {
+    "key": "eval:object:ref([\"y\"])"
+  },
+  "y": {
+    "key": "eval:object:ref([\"z\"])"
+  },
+  "z": {
+    "key": "eval:object:ref([\"A\"])"
+  },
+  "A": {
+    "hello": "world"
+  }
+}

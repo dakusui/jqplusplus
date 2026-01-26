@@ -1,0 +1,14 @@
+{
+  "$local": {
+    "A": {
+      "a": "valueInA"
+    },
+    "B": {
+      "$extends": ["A"],
+      "b": "valueInB"
+    }
+  },
+  "C": {
+    "$extends": ["B"]
+  }
+}

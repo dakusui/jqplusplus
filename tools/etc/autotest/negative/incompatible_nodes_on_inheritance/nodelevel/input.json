@@ -1,0 +1,10 @@
+{
+  "node": {
+    "$extends": [
+      "I.json"
+    ],
+    "key": [
+      "STRING_IN_ARRAY"
+    ]
+  }
+}

@@ -1,0 +1,4 @@
+{
+  "testType": "normal",
+  "$comment": "Test if 'cur' function behaves correctly when it's called from inside a script that is extended."
+}

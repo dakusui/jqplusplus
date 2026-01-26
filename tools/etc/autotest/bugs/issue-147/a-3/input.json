@@ -1,0 +1,4 @@
+{
+  "key": "eval:string:refexpr(\".\\\"key-2.suffix\\\"\")",
+  "key-2.suffix": "Hello, world!"
+}

@@ -1,0 +1,4 @@
+{
+  "testType": "ignore",
+  "option": "--xargs='-I {}' {} -o out.{}"
+}

@@ -1,0 +1,7 @@
+{
+  "A": {
+    "$extends": [
+      "input/parent.json"
+    ]
+  }
+}

@@ -1,0 +1,7 @@
+{
+  "objectNode": {
+    "hello": "eval:string:ref([\"stringNode\"])"
+  },
+  "refObjectNode": "eval:object:ref([\"objectNode\"])",
+  "stringNode": "world"
+}

@@ -1,0 +1,4 @@
+{
+  "a": "template:$(ref .b)",
+  "b": "template:$(ref .a)"
+}

@@ -1,0 +1,9 @@
+{
+  "objectNode": {
+    "hello": "world"
+  },
+  "refObjectNode": {
+    "hello": "world"
+  },
+  "stringNode": "world"
+}

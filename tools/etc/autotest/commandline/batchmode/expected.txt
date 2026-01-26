@@ -1,0 +1,8 @@
+Usage:
+\[-h|--help\]
+\[-o OUT\]
+\[--validation=\[no|lenient|strict\]\]
+\[nested-templating-levels\]
+\[--xargs=\]
+\[--version\]
+TARGET

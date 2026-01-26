@@ -1,0 +1,4 @@
+{
+  "$extends": ["func.jq"],
+  "key": "eval:func::custom_func|tostring"
+}

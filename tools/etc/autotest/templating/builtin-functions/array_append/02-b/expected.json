@@ -1,0 +1,16 @@
+{
+  "a0": [
+    "hello",
+    "world"
+  ],
+  "a1": [
+    "HELLO",
+    "WORLD"
+  ],
+  "arr": [
+    "hello",
+    "world",
+    "HELLO",
+    "WORLD"
+  ]
+}
