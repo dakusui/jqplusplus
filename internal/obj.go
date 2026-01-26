@@ -50,7 +50,11 @@ func walkAnyPath(prefix []any, v any) [][]any {
 			out = append(out, walkAnyPath(p, v2)...)
 		}
 	}
-
+	sort.SliceStable(out, func(i, j int) bool {
+		ii, _ := PathArrayToPathExpression(out[i])
+		jj, _ := PathArrayToPathExpression(out[j])
+		return ii < jj
+	})
 	return out
 }
 

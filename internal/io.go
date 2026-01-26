@@ -62,7 +62,6 @@ func MaterializeLocalNodes(obj map[string]any, localNodeDirectoryBase string) (s
 			return "", fmt.Errorf("convert content for %q: %w", name, err)
 		}
 
-		fmt.Printf("local node: %s:%s\n", target, v)
 		// Write file (0644); overwrite if exists
 		if err := os.WriteFile(target, data, 0o644); err != nil {
 			return "", fmt.Errorf("write %q: %w", target, err)
