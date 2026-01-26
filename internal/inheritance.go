@@ -47,22 +47,31 @@ func LoadAndResolveInheritancesRecursively(baseDir string, targetFile string, no
 	if err != nil {
 		return nil, err
 	}
+	p, err := MaterializeLocalNodes(obj, nodepool.SessionDirectory())
+	if err != nil {
+		return nil, err
+	}
+	nodepool.Enter(p)
+	ret, err := expandInheritances(obj, compilerOption, nodepool, filepath.Dir(absPath))
+	nodepool.Leave(p)
+	return ret, err
+}
+
+// baseDir is a directory from which obj was read.
+func expandInheritances(obj map[string]any, compilerOption *JqModule, nodepool NodePool, baseDir string) (*NodeEntryValue, error) {
+	delete(obj, "$local")
 
 	var compilerOptions []*JqModule
 	if compilerOption != nil {
 		compilerOptions = append(compilerOptions, compilerOption)
 	}
-	nodeEntryValue, err := resolveBothInheritances(filepath.Dir(absPath), obj, compilerOptions, nodepool)
+	nodeEntryValue, err := resolveBothInheritances(baseDir, obj, compilerOptions, nodepool)
 	if err != nil {
 		return nil, err
 	}
 	obj = nodeEntryValue.Obj
 	compilerOptions = nodeEntryValue.CompilerOptions
 
-	p, err := MaterializeLocalNodes(obj, nodepool.SessionDirectory())
-	delete(obj, "$local")
-
-	nodepool.Enter(p)
 	for _, p := range DistinctBy(Map(Sort(Paths(obj, lastElementIsOneOf("$extends", "$includes")), lessPathArrays), DropLast[any]), pathKey) {
 		internal, ok := GetAtPath(obj, ToAnySlice(p))
 		if !ok {
@@ -72,7 +81,7 @@ func LoadAndResolveInheritancesRecursively(baseDir string, targetFile string, no
 		if !ok {
 			continue
 		}
-		nodeEntryValue, err := resolveBothInheritances(filepath.Dir(absPath), internalObj, compilerOptions, nodepool)
+		nodeEntryValue, err := resolveBothInheritances(baseDir, internalObj, compilerOptions, nodepool)
 		if err != nil {
 			return nil, err
 		}
@@ -80,7 +89,7 @@ func LoadAndResolveInheritancesRecursively(baseDir string, targetFile string, no
 		compilerOptions = nodeEntryValue.CompilerOptions
 		PutAtPath(obj, ToAnySlice(p), internalObj)
 	}
-	nodepool.Leave(p)
+
 	return &NodeEntryValue{obj, compilerOptions}, nil
 }
 

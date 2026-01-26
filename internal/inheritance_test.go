@@ -78,7 +78,7 @@ func TestLoadAndResolveInheritances_SingleLocalExtends(t *testing.T) {
 	}
 }
 
-func TestLoadAndResolveInheritances_LocalExtends(t *testing.T) {
+func TestLoadAndResolveInheritances_ExtendsLocalNodeInParent(t *testing.T) {
 	dir := t.TempDir()
 	_ = testutil.WriteTempJSON(t, dir, "parent.json", `
 {
@@ -88,7 +88,8 @@ func TestLoadAndResolveInheritances_LocalExtends(t *testing.T) {
     }
   }
 }`)
-	child := testutil.WriteTempJSON(t, dir, "child.json", `{
+	child := testutil.WriteTempJSON(t, dir, "child.json", `
+{
   "$extends": [
     "parent.json"
   ],
@@ -112,7 +113,7 @@ func TestLoadAndResolveInheritances_LocalExtends(t *testing.T) {
 	}
 }
 
-func TestLoadAndResolveInheritances_ExtendsWithLocal(t *testing.T) {
+func TestLoadAndResolveInheritances_InternalExtendsLocalNodeInParent(t *testing.T) {
 	dir := t.TempDir()
 	_ = testutil.WriteTempJSON(t, dir, "parent.json", `
 {
@@ -122,7 +123,8 @@ func TestLoadAndResolveInheritances_ExtendsWithLocal(t *testing.T) {
     }
   }
 }`)
-	child := testutil.WriteTempJSON(t, dir, "child.json", `{
+	child := testutil.WriteTempJSON(t, dir, "child.json", `
+{
   "i": {
     "$extends": [
       "parent.json"
@@ -150,7 +152,7 @@ func TestLoadAndResolveInheritances_ExtendsWithLocal(t *testing.T) {
 	}
 }
 
-func TestLoadAndResolveInheritances_ExtendsWithLocal2(t *testing.T) {
+func TestLoadAndResolveInheritances_ExtendsWithLocalOutOfScope_ThenFail(t *testing.T) {
 	dir := t.TempDir()
 	_ = testutil.WriteTempJSON(t, dir, "parent.json", `
 {
@@ -160,7 +162,8 @@ func TestLoadAndResolveInheritances_ExtendsWithLocal2(t *testing.T) {
     }
   }
 }`)
-	child := testutil.WriteTempJSON(t, dir, "child.json", `{
+	child := testutil.WriteTempJSON(t, dir, "child.json", `
+{
   "i": {
     "$extends": [
       "parent.json"
