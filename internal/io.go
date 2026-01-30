@@ -185,5 +185,5 @@ func ResolveFilePath(filename string, baseDir string, searchPaths []string) (str
 }
 
 func composeFileNotFoundError(filename string, baseDir string, searchPaths []string) error {
-	return fmt.Errorf("file not found: '%q'\n  in %v: %w", filename, append(searchPaths, baseDir), fs.ErrNotExist)
+	return fmt.Errorf("file not found: '%q'\n  in %v: %w", filename, strings.Join(append(searchPaths, baseDir), "\n     "), fs.ErrNotExist)
 }

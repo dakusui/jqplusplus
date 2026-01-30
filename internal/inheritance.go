@@ -52,6 +52,7 @@ func LoadAndResolveInheritancesRecursively(baseDir string, targetFile string, no
 		return nil, err
 	}
 	nodepool.Enter(p)
+
 	ret, err := expandInheritances(obj, compilerOption, nodepool, filepath.Dir(absPath))
 	nodepool.Leave(p)
 	return ret, err
