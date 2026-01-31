@@ -12,14 +12,10 @@ import (
 
 // MaterializeLocalNodes materializes Obj["$local"] into files under dir.
 // Returns dir (absolute) on success.
-func MaterializeLocalNodes(obj map[string]any, localNodeDirectoryBase string) (string, error) {
+func MaterializeLocalNodes(obj map[string]any, absDir string) (string, error) {
 	if obj == nil {
 		return "", errors.New("Obj is nil")
 	}
-	if strings.TrimSpace(localNodeDirectoryBase) == "" {
-		return "", errors.New("dir is empty")
-	}
-
 	localAny, ok := obj["$local"]
 	if !ok || localAny == nil {
 		return "", nil
@@ -30,12 +26,8 @@ func MaterializeLocalNodes(obj map[string]any, localNodeDirectoryBase string) (s
 		return "", fmt.Errorf(`"$local" must be an object (map[string]any), got %T`, localAny)
 	}
 
-	absDir, err := os.MkdirTemp(localNodeDirectoryBase, "localnodes-")
-	if err != nil {
-		return "", fmt.Errorf("mkdir temp dir: %w", err)
-	}
-
 	for name, v := range localObj {
+		fmt.Printf("Writing local node %q\n", name)
 		rel, err := sanitizeRelativePath(name)
 		if err != nil {
 			return "", fmt.Errorf("invalid $local key %q: %w", name, err)
@@ -66,6 +58,7 @@ func MaterializeLocalNodes(obj map[string]any, localNodeDirectoryBase string) (s
 		if err := os.WriteFile(target, data, 0o644); err != nil {
 			return "", fmt.Errorf("write %q: %w", target, err)
 		}
+		fmt.Printf("Written local node %v: %v\n", name, target)
 	}
 
 	return absDir, nil

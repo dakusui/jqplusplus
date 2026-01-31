@@ -1,11 +1,12 @@
 package internal
 
 import (
-	"github.com/dakusui/jqplusplus/internal/testutil"
 	"path/filepath"
 	"reflect"
 	"strings"
 	"testing"
+
+	"github.com/dakusui/jqplusplus/internal/testutil"
 )
 
 func TestLoadAndResolveInheritances_NoExtends(t *testing.T) {
@@ -86,7 +87,8 @@ func TestLoadAndResolveInheritances_ExtendsLocalNodeInParent(t *testing.T) {
     "X": {
       "x": "valueInX"
     }
-  }
+  },
+  "name": "parent.json"
 }`)
 	child := testutil.WriteTempJSON(t, dir, "child.json", `
 {
@@ -97,7 +99,8 @@ func TestLoadAndResolveInheritances_ExtendsLocalNodeInParent(t *testing.T) {
     "$extends": [
       "X"
     ]
-  }
+  },
+  "name": "child.json"
 }`)
 	result, err := LoadAndResolveInheritances(filepath.Dir(child), filepath.Base(child), []string{})
 	if err != nil {
@@ -107,6 +110,7 @@ func TestLoadAndResolveInheritances_ExtendsLocalNodeInParent(t *testing.T) {
 		"i": map[string]any{
 			"x": "valueInX",
 		},
+		"name": "child.json",
 	}
 	if !reflect.DeepEqual(result.Obj, expected) {
 		t.Errorf("expected %v, got %v", expected, result)

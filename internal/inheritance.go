@@ -25,7 +25,6 @@ func LoadAndResolveInheritances(baseDir string, filename string, searchPaths []s
 
 // LoadAndResolveInheritancesRecursively loads a JSON file, resolves $extends or $includes recursively, and merges parents.
 func LoadAndResolveInheritancesRecursively(baseDir string, targetFile string, nodepool NodePool) (*NodeEntryValue, error) {
-
 	var optional bool
 	if strings.HasSuffix(targetFile, "?") {
 		optional = true
@@ -39,7 +38,7 @@ func LoadAndResolveInheritancesRecursively(baseDir string, targetFile string, no
 		return nil, err
 	}
 	if nodepool.IsVisited(absPath) {
-		return nil, fmt.Errorf("circular filelevel inheritance detected: %s", absPath)
+		return nil, fmt.Errorf("circular file-level inheritance detected: %s", absPath)
 	}
 	nodepool.MarkVisited(absPath)
 
@@ -47,21 +46,14 @@ func LoadAndResolveInheritancesRecursively(baseDir string, targetFile string, no
 	if err != nil {
 		return nil, err
 	}
-	p, err := MaterializeLocalNodes(obj, nodepool.SessionDirectory())
-	if err != nil {
-		return nil, err
-	}
-	nodepool.Enter(p)
-
+	fmt.Printf("BEGIN: File-level inheritance: %s\n", targetFile)
 	ret, err := expandInheritances(obj, compilerOption, nodepool, filepath.Dir(absPath))
-	nodepool.Leave(p)
+	fmt.Printf("END: File-level inheritance: %s\n", targetFile)
 	return ret, err
 }
 
 // baseDir is a directory from which obj was read.
 func expandInheritances(obj map[string]any, compilerOption *JqModule, nodepool NodePool, baseDir string) (*NodeEntryValue, error) {
-	delete(obj, "$local")
-
 	var compilerOptions []*JqModule
 	if compilerOption != nil {
 		compilerOptions = append(compilerOptions, compilerOption)
@@ -73,8 +65,24 @@ func expandInheritances(obj map[string]any, compilerOption *JqModule, nodepool N
 	obj = nodeEntryValue.Obj
 	compilerOptions = nodeEntryValue.CompilerOptions
 
-	for _, p := range DistinctBy(Map(Sort(Paths(obj, lastElementIsOneOf("$extends", "$includes")), lessPathArrays), DropLast[any]), pathKey) {
-		internal, ok := GetAtPath(obj, ToAnySlice(p))
+	localNodeDirectoryBase := nodepool.SessionDirectory()
+	//	absDir := filepath.Join(localNodeDirectoryBase, baseDir, targetFile)
+	//	err = os.MkdirAll(absDir, 0o755)
+	absDir, err := os.MkdirTemp(localNodeDirectoryBase, "localnodes-*")
+	if err != nil {
+		return nil, fmt.Errorf("mkdir temp dir: %w", err)
+	}
+	nodepool.Enter(absDir)
+
+	_, err = MaterializeLocalNodes(obj, nodepool.LocalNodeDirectory())
+	if err != nil {
+		return nil, err
+	}
+	delete(obj, "$local")
+
+	for _, nodepath := range DistinctBy(Map(Sort(Paths(obj, lastElementIsOneOf("$extends", "$includes")), lessPathArrays), DropLast[any]), pathKey) {
+		fmt.Printf("BEGIN: Node-level inheritance: %s\n", nodepath)
+		internal, ok := GetAtPath(obj, ToAnySlice(nodepath))
 		if !ok {
 			continue
 		}
@@ -88,9 +96,9 @@ func expandInheritances(obj map[string]any, compilerOption *JqModule, nodepool N
 		}
 		internalObj = nodeEntryValue.Obj
 		compilerOptions = nodeEntryValue.CompilerOptions
-		PutAtPath(obj, ToAnySlice(p), internalObj)
+		PutAtPath(obj, ToAnySlice(nodepath), internalObj)
+		fmt.Printf("END: Node-level inheritance: %s\n", nodepath)
 	}
-
 	return &NodeEntryValue{obj, compilerOptions}, nil
 }
 
@@ -139,7 +147,6 @@ func resolveInheritances(obj map[string]any, compilerOptions []*JqModule, baseDi
 		}
 		delete(obj, mergeType.String())
 	}
-
 	return &NodeEntryValue{Obj: obj, CompilerOptions: tmpCompilerOptions}, nil
 }
 
@@ -264,3 +271,29 @@ func pathKey(p []any) string {
 	}
 	return b.String()
 }
+
+/*
+BEGIN: File-level inheritance: child.json
+ENTERED: [/tmp/jq++-session-2278310269/localnodes-2735272157]
+	BEGIN: File-level inheritance: parent.json
+	ENTERED: [/tmp/jq++-session-2278310269/localnodes-2735272157 /tmp/jq++-session-2278310269/localnodes-2709553687]
+	LEFT: [/tmp/jq++-session-2278310269/localnodes-2735272157]
+	ENTERED: [/tmp/jq++-session-2278310269/localnodes-2735272157 /tmp/jq++-session-2278310269/localnodes-3867521190]
+	LEFT: [/tmp/jq++-session-2278310269/localnodes-2735272157]
+	Writing local node "X"
+	Written local node "X"
+	END: File-level inheritance: parent.json
+	LEFT: []
+	ENTERED: [/tmp/jq++-session-2278310269/localnodes-1668519715]
+	LEFT: []
+	No local node directoryBEGIN: Node-level inheritance: [i]
+	ENTERED: [/tmp/jq++-session-2278310269/localnodes-387725387]
+		END: File-level inheritance: child.json
+			inheritance_test.go:107: unexpected error: file not found: '"X"'
+				  in /tmp/TestLoadAndResolveInheritances_ExtendsLocalNodeInParent3020370729/001
+					 /tmp/jq++-session-2278310269/localnodes-387725387
+					 /tmp/TestLoadAndResolveInheritances_ExtendsLocalNodeInParent3020370729/001: file does not exist
+		--- FAIL: TestLoadAndResolveInheritances_ExtendsLocalNodeInParent (0.00s)
+
+		FAIL
+*/

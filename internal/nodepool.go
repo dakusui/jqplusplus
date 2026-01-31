@@ -1,6 +1,7 @@
 package internal
 
 import (
+	"fmt"
 	"path/filepath"
 )
 
@@ -32,6 +33,7 @@ type NodePool interface {
 	// Leave removes the specified localNodeDirectory from the localNodeSearchPaths stack of the NodePool.
 	// If "" is passed as localNodeDirectory, this method will do nothing.
 	Leave(localNodeDirectory string)
+	LocalNodeDirectory() string
 }
 
 type NodePoolImpl struct {
@@ -63,9 +65,13 @@ func (p *NodePoolImpl) ReadNodeEntryValue(baseDir, filename string, compilerOpti
 	nodeEntryKey := NodeEntryKey{filename: filename, baseDir: baseDir}
 	ret, ok := p.cache[nodeEntryKey]
 	if !ok {
+		previous := len(p.SessionDirectory())
 		nodeEntryValue, err := LoadAndResolveInheritancesRecursively(baseDir, filename, p)
 		if err != nil {
 			return nil, err
+		}
+		for i := len(p.SearchPaths()); i > previous; {
+			p.Leave(p.LocalNodeDirectory())
 		}
 		p.cache[nodeEntryKey] = *nodeEntryValue
 		ret = *nodeEntryValue
@@ -84,19 +90,31 @@ func (p *NodePoolImpl) MarkVisited(absPath string) {
 
 func (p *NodePoolImpl) Enter(localNodeDirectory string) {
 	if localNodeDirectory == "" {
+		fmt.Printf("Entered: %v\n", p.localNodeSearchPaths)
 		return
 	}
-	p.localNodeSearchPaths = append(p.localNodeSearchPaths, localNodeDirectory)
+	p.localNodeSearchPaths = append([]string{localNodeDirectory}, p.localNodeSearchPaths...)
+	fmt.Printf("ENTERED: %v\n", p.localNodeSearchPaths)
 }
 
 func (p *NodePoolImpl) Leave(localNodeDirectory string) {
 	if localNodeDirectory == "" {
+		fmt.Printf("Left: %v\n", p.localNodeSearchPaths)
 		return
 	}
-	if localNodeDirectory != p.localNodeSearchPaths[len(p.localNodeSearchPaths)-1] {
+	if localNodeDirectory != p.localNodeSearchPaths[0] {
 		panic("Unexpected leave")
 	}
-	p.localNodeSearchPaths = p.localNodeSearchPaths[:len(p.localNodeSearchPaths)-1]
+	p.localNodeSearchPaths = p.localNodeSearchPaths[1:]
+	fmt.Printf("LEFT: %v\n", p.localNodeSearchPaths)
+}
+
+func (p *NodePoolImpl) LocalNodeDirectory() string {
+	if len(p.localNodeSearchPaths) == 0 {
+		fmt.Printf("No local node directory")
+		return ""
+	}
+	return p.localNodeSearchPaths[0]
 }
 
 func (p *NodePoolImpl) SessionDirectory() string {
