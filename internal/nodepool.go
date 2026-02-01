@@ -141,10 +141,6 @@ type NodeEntryKey struct {
 	baseDir  string
 }
 
-func NewNodeEntryKey(baseDir, filename string) NodeEntryKey {
-	return NodeEntryKey{filename: filename, baseDir: baseDir}
-}
-
 // NodeEntryValue represents the value corresponding to a NodeEntryKey in the NodePool cache.
 // It encapsulates a map of objects and a list of gojq.CompilerOption used for processing
 // jq queries.
@@ -169,6 +165,6 @@ func (e NodeEntryKey) String() string {
 	return filepath.Join(e.BaseDir(), e.Filename())
 }
 
-func NewNodeEntry(baseDir, filename string) NodeEntryKey {
+func NewNodeEntryKey(baseDir, filename string) NodeEntryKey {
 	return NodeEntryKey{filename: filename, baseDir: baseDir}
 }
