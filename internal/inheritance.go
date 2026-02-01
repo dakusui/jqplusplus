@@ -63,7 +63,6 @@ func LoadAndResolveInheritancesRecursively(baseDir string, targetFile string, no
 		}
 		delete(obj, "$local")
 	}
-
 	fmt.Printf("BEGIN: File-level inheritance: %s\n", targetFile)
 	ret, err := expandInheritances(obj, compilerOption, nodepool, filepath.Dir(absPath))
 	fmt.Printf("END: File-level inheritance: %s\n", targetFile)
@@ -77,9 +76,9 @@ func expandInheritances(obj map[string]any, compilerOption *JqModule, nodepool N
 		return nil, err
 	}
 
-	compilerOptions, value, err2 := expandNodeLevelInheritances(nodeEntryValue.Obj, nodeEntryValue.CompilerOptions, nodeEntryValue, nodepool, baseDir)
-	if err2 != nil {
-		return value, err2
+	compilerOptions, err := expandNodeLevelInheritances(nodeEntryValue, nodepool, baseDir)
+	if err != nil {
+		return nil, err
 	}
 	return &NodeEntryValue{nodeEntryValue.Obj, compilerOptions}, nil
 }
@@ -89,12 +88,13 @@ func expandFileLevelInheritances(obj map[string]any, compilerOption *JqModule, n
 	if compilerOption != nil {
 		compilerOptions = append(compilerOptions, compilerOption)
 	}
-	nodeEntryValue, err := resolveBothInheritances(baseDir, obj, compilerOptions, nodepool)
+	nodeEntryValue, err := resolveBothInheritances(obj, compilerOptions, nodepool, baseDir)
 	return nodeEntryValue, err
 }
 
-func expandNodeLevelInheritances(obj map[string]any, compilerOptions []*JqModule, nodeEntryValue *NodeEntryValue, nodepool NodePool, baseDir string) ([]*JqModule, *NodeEntryValue, error) {
-	compilerOptions = nodeEntryValue.CompilerOptions
+func expandNodeLevelInheritances(nodeEntryValue *NodeEntryValue, nodepool NodePool, baseDir string) ([]*JqModule, error) {
+	obj := nodeEntryValue.Obj
+	compilerOptions := nodeEntryValue.CompilerOptions
 	for _, nodepath := range DistinctBy(Map(Sort(Paths(obj, lastElementIsOneOf("$extends", "$includes")), lessPathArrays), DropLast[any]), pathKey) {
 		fmt.Printf("BEGIN: Node-level inheritance: %s\n", nodepath)
 		internal, ok := GetAtPath(obj, ToAnySlice(nodepath))
@@ -105,19 +105,19 @@ func expandNodeLevelInheritances(obj map[string]any, compilerOptions []*JqModule
 		if !ok {
 			continue
 		}
-		nodeEntryValue, err := resolveBothInheritances(baseDir, internalObj, compilerOptions, nodepool)
+		nodeEntryValue, err := resolveBothInheritances(internalObj, compilerOptions, nodepool, baseDir)
 		if err != nil {
-			return nil, nil, err
+			return nil, err
 		}
 		internalObj = nodeEntryValue.Obj
 		compilerOptions = nodeEntryValue.CompilerOptions
 		PutAtPath(obj, ToAnySlice(nodepath), internalObj)
 		fmt.Printf("END: Node-level inheritance: %s\n", nodepath)
 	}
-	return compilerOptions, nil, nil
+	return compilerOptions, nil
 }
 
-func resolveBothInheritances(baseDir string, obj map[string]any, compilerOptions []*JqModule, nodepool NodePool) (*NodeEntryValue, error) {
+func resolveBothInheritances(obj map[string]any, compilerOptions []*JqModule, nodepool NodePool, baseDir string) (*NodeEntryValue, error) {
 	ret := &NodeEntryValue{Obj: obj, CompilerOptions: compilerOptions}
 	ret, err := resolveInheritances(ret.Obj, ret.CompilerOptions, baseDir, Extends, nodepool)
 	if err != nil {
