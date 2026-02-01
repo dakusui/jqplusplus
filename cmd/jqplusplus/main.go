@@ -3,10 +3,14 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/dakusui/jqplusplus/internal"
 	"os"
 	"path/filepath"
+
+	"github.com/dakusui/jqplusplus/internal"
 )
+
+var version = "dev"      // overridden via -ldflags
+var revision = "unknown" // overridden via -ldflags
 
 func main() {
 	if len(os.Args) > 1 && (os.Args[1] == "-h" || os.Args[1] == "--help") {
@@ -14,10 +18,16 @@ func main() {
 
 Options:
   -h, --help   Show this help message
+  -v, --version Show version info
 
 If no files are provided, input is read from stdin.
 `
-		_, _ = os.Stdout.WriteString(help)
+		_, _ = os.Stderr.WriteString(help)
+		os.Exit(0)
+	}
+
+	if len(os.Args) > 1 && (os.Args[1] == "-v" || os.Args[1] == "--version") {
+		_, _ = os.Stderr.WriteString(fmt.Sprintf("jq++ version %v, build %v\n", version, revision))
 		os.Exit(0)
 	}
 
@@ -63,11 +73,11 @@ func inputFiles(args []string) ([]internal.NodeEntryKey, func(), error) {
 		}
 
 		in = []internal.NodeEntryKey{
-			internal.NewNodeEntry("", absolutePath),
+			internal.NewNodeEntryKey("", absolutePath),
 		}
 	} else {
 		in = internal.Map(args[1:], func(t string) internal.NodeEntryKey {
-			return internal.NewNodeEntry(filepath.Dir(t), filepath.Base(t))
+			return internal.NewNodeEntryKey(filepath.Dir(t), filepath.Base(t))
 		})
 	}
 	return in, exit, nil

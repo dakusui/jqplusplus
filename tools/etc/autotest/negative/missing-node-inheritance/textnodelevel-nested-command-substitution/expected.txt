@@ -1,0 +1,2 @@
+ERROR: Error was detected during templating:
+ERROR: Failed to access '."ABSENT"' and default value for it was not given.

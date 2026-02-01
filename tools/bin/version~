@@ -1,0 +1,4 @@
+#!/bin/bash
+
+git describe --tags --exact-match --dirty 2>/dev/null \
+  || git describe --tags --abbrev=0 --dirty 2>/dev/null | sed 's/$/-snapshot/'

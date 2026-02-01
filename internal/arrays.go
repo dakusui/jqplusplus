@@ -19,7 +19,8 @@ func Insert[T any](slice []T, index int, value T) []T {
 }
 
 func Filter[T any](in []T, pred func(T) bool) []T {
-	out := make([]T, 0, len(in))
+	//out := make([]T, 0, len(in))
+	var out []T
 	for _, v := range in {
 		if pred(v) {
 			out = append(out, v)
@@ -82,3 +83,35 @@ func ToAnySlice[T any](xs []T) []any {
 	}
 	return out
 }
+
+/*
+PASSING:
+=== RUN   TestLoadAndResolveInheritances_RefToStringFromInsideArray
+Filter:   in is NOT Empty
+Paths: paths is NOT empty
+Filter:   in is NOT Empty
+Paths: paths is NOT empty
+Filter:   in is NOT Empty
+Paths: paths is NOT empty
+Filter:   in is NOT Empty
+paths is NOT empty!!!!!!!!!!!!!!!!!!!!!!!!!!!
+Paths: paths is NOT empty
+Filter:   in is NOT Empty
+paths is empty!!!!!!!!!!!!!!!!!!!!!!!!!!!
+--- PASS: TestLoadAndResolveInheritances_RefToStringFromInsideArray (0.00s)
+PASS
+*/
+
+/*
+FAILING:
+=== RUN   TestLoadAndResolveInheritances_RefToStringFromInsideArray
+Filter:   in is NOT Empty
+Paths: paths is NOT empty
+Filter:   in is NOT Empty
+Paths: paths is NOT empty
+Filter:   in is NOT Empty
+Paths: paths is NOT empty
+Filter:   in is NOT Empty
+paths is empty!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+*/

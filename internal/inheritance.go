@@ -1,7 +1,10 @@
 package internal
 
 import (
+	"errors"
 	"fmt"
+	"io/fs"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -23,12 +26,20 @@ func LoadAndResolveInheritances(baseDir string, filename string, searchPaths []s
 
 // LoadAndResolveInheritancesRecursively loads a JSON file, resolves $extends or $includes recursively, and merges parents.
 func LoadAndResolveInheritancesRecursively(baseDir string, targetFile string, nodepool NodePool) (*NodeEntryValue, error) {
-	absPath, bDir, err := ResolveFilePath(targetFile, baseDir, nodepool.SearchPaths())
+	var optional bool
+	if strings.HasSuffix(targetFile, "?") {
+		optional = true
+		targetFile = targetFile[:len(targetFile)-1]
+	}
+	absPath, err := ResolveFilePath(targetFile, baseDir, nodepool.SearchPaths())
+	if optional && errors.Is(err, fs.ErrNotExist) {
+		return &NodeEntryValue{Obj: map[string]any{}, CompilerOptions: make([]*JqModule, 0)}, nil
+	}
 	if err != nil {
 		return nil, err
 	}
 	if nodepool.IsVisited(absPath) {
-		return nil, fmt.Errorf("circular filelevel inheritance detected: %s", absPath)
+		return nil, fmt.Errorf("circular file-level inheritance detected: %s", absPath)
 	}
 	nodepool.MarkVisited(absPath)
 
@@ -37,23 +48,58 @@ func LoadAndResolveInheritancesRecursively(baseDir string, targetFile string, no
 		return nil, err
 	}
 
-	var compilerOptions []*JqModule
-	if compilerOption != nil {
-		compilerOptions = append(compilerOptions, compilerOption)
+	{
+		// Materialize local nodes
+		localNodeDirectoryBase := nodepool.SessionDirectory()
+		absDir := filepath.Join(localNodeDirectoryBase, baseDir, targetFile)
+		err := os.MkdirAll(absDir, 0o755)
+		if err != nil {
+			return nil, fmt.Errorf("failed: mkdir temp dir: %w", err)
+		}
+		nodepool.Enter(absDir)
+		_, err = MaterializeLocalNodes(obj, nodepool.LocalNodeDirectory())
+		if err != nil {
+			return nil, err
+		}
+		delete(obj, "$local")
 	}
-	nodeEntryValue, err := resolveBothInheritances(bDir, obj, compilerOptions, nodepool)
-	if err != nil {
-		return nil, err
+
+	var nodeEntryValue *NodeEntryValue
+	{
+		// File-level inheritance
+		slog.Debug("BEGIN: File-level inheritance: ", "targetFile", targetFile)
+		nodeEntryValue, err = expandFileLevelInheritances(obj, compilerOptions(compilerOption), nodepool, baseDir)
+		if err != nil {
+			return nil, err
+		}
+		slog.Debug("END:   File-level inheritance: ", "targetFile", targetFile)
 	}
-	obj = nodeEntryValue.Obj
-	compilerOptions = nodeEntryValue.CompilerOptions
+	{
+		// Node-level inheritance
+		nodeEntryValue, err = expandNodeLevelInheritances(nodeEntryValue.Obj, nodeEntryValue.CompilerOptions, nodepool, baseDir)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return nodeEntryValue, nil
+}
 
-	p, err := MaterializeLocalNodes(obj, nodepool.SessionDirectory())
-	delete(obj, "$local")
+func compilerOptions(compilerOption *JqModule) []*JqModule {
+	if compilerOption == nil {
+		return []*JqModule{}
+	}
+	return []*JqModule{compilerOption}
+}
 
-	nodepool.Enter(p)
-	for _, p := range DistinctBy(Map(Sort(Paths(obj, lastElementIsOneOf("$extends", "$includes")), lessPathArrays), DropLast[any]), pathKey) {
-		internal, ok := GetAtPath(obj, ToAnySlice(p))
+func expandFileLevelInheritances(obj map[string]any, compilerOptions []*JqModule, nodepool NodePool, baseDir string) (*NodeEntryValue, error) {
+	nodeEntryValue, err := resolveBothInheritances(obj, compilerOptions, nodepool, baseDir)
+	return nodeEntryValue, err
+}
+
+func expandNodeLevelInheritances(obj map[string]any, compilerOptions []*JqModule, nodepool NodePool, baseDir string) (*NodeEntryValue, error) {
+	for _, nodepath := range DistinctBy(Map(Sort(Paths(obj, lastElementIsOneOf("$extends", "$includes")), lessPathArrays), DropLast[any]), pathKey) {
+		slog.Debug("BEGIN: Node-level inheritance: ", "nodepath", nodepath)
+		internal, ok := GetAtPath(obj, ToAnySlice(nodepath))
 		if !ok {
 			continue
 		}
@@ -61,32 +107,32 @@ func LoadAndResolveInheritancesRecursively(baseDir string, targetFile string, no
 		if !ok {
 			continue
 		}
-		nodeEntryValue, err := resolveBothInheritances(bDir, internalObj, compilerOptions, nodepool)
+		nodeEntryValue, err := resolveBothInheritances(internalObj, compilerOptions, nodepool, baseDir)
 		if err != nil {
 			return nil, err
 		}
 		internalObj = nodeEntryValue.Obj
 		compilerOptions = nodeEntryValue.CompilerOptions
-		PutAtPath(obj, ToAnySlice(p), internalObj)
+		PutAtPath(obj, ToAnySlice(nodepath), internalObj)
+		slog.Debug("END: Node-level inheritance: ", "nodepath", nodepath)
 	}
-	nodepool.Leave(p)
-	return &NodeEntryValue{obj, compilerOptions}, nil
+	return &NodeEntryValue{Obj: obj, CompilerOptions: compilerOptions}, nil
 }
 
-func resolveBothInheritances(baseDir string, obj map[string]any, compilerOptions []*JqModule, nodepool NodePool) (*NodeEntryValue, error) {
+func resolveBothInheritances(obj map[string]any, compilerOptions []*JqModule, nodepool NodePool, baseDir string) (*NodeEntryValue, error) {
 	ret := &NodeEntryValue{Obj: obj, CompilerOptions: compilerOptions}
-	ret, err := resolveInheritances(ret.Obj, ret.CompilerOptions, baseDir, Extends, nodepool)
+	ret, err := resolveInheritances(ret.Obj, ret.CompilerOptions, nodepool, baseDir, Extends)
 	if err != nil {
 		return nil, err
 	}
-	ret, err = resolveInheritances(ret.Obj, ret.CompilerOptions, baseDir, Includes, nodepool)
+	ret, err = resolveInheritances(ret.Obj, ret.CompilerOptions, nodepool, baseDir, Includes)
 	if err != nil {
 		return nil, err
 	}
 	return ret, nil
 }
 
-func resolveInheritances(obj map[string]any, compilerOptions []*JqModule, baseDir string, mergeType InheritType, nodepool NodePool) (*NodeEntryValue, error) {
+func resolveInheritances(obj map[string]any, compilerOptions []*JqModule, nodepool NodePool, baseDir string, mergeType InheritType) (*NodeEntryValue, error) {
 	tmpCompilerOptions := compilerOptions
 	// Check for $extends or $includes
 	inherits, ok := obj[mergeType.String()]
@@ -118,7 +164,6 @@ func resolveInheritances(obj map[string]any, compilerOptions []*JqModule, baseDi
 		}
 		delete(obj, mergeType.String())
 	}
-
 	return &NodeEntryValue{Obj: obj, CompilerOptions: tmpCompilerOptions}, nil
 }
 
@@ -223,7 +268,7 @@ func lessPathArrays(a []any, b []any) bool {
 	if e != nil {
 		panic(e)
 	}
-	return pea < peb
+	return pea > peb
 }
 
 func pathKey(p []any) string {
@@ -243,3 +288,29 @@ func pathKey(p []any) string {
 	}
 	return b.String()
 }
+
+/*
+BEGIN: File-level inheritance: child.json
+ENTERED: [/tmp/jq++-session-2278310269/localnodes-2735272157]
+	BEGIN: File-level inheritance: parent.json
+	ENTERED: [/tmp/jq++-session-2278310269/localnodes-2735272157 /tmp/jq++-session-2278310269/localnodes-2709553687]
+	LEFT: [/tmp/jq++-session-2278310269/localnodes-2735272157]
+	ENTERED: [/tmp/jq++-session-2278310269/localnodes-2735272157 /tmp/jq++-session-2278310269/localnodes-3867521190]
+	LEFT: [/tmp/jq++-session-2278310269/localnodes-2735272157]
+	Writing local node "X"
+	Written local node "X"
+	END: File-level inheritance: parent.json
+	LEFT: []
+	ENTERED: [/tmp/jq++-session-2278310269/localnodes-1668519715]
+	LEFT: []
+	No local node directoryBEGIN: Node-level inheritance: [i]
+	ENTERED: [/tmp/jq++-session-2278310269/localnodes-387725387]
+		END: File-level inheritance: child.json
+			inheritance_test.go:107: unexpected error: file not found: '"X"'
+				  in /tmp/TestLoadAndResolveInheritances_ExtendsLocalNodeInParent3020370729/001
+					 /tmp/jq++-session-2278310269/localnodes-387725387
+					 /tmp/TestLoadAndResolveInheritances_ExtendsLocalNodeInParent3020370729/001: file does not exist
+		--- FAIL: TestLoadAndResolveInheritances_ExtendsLocalNodeInParent (0.00s)
+
+		FAIL
+*/

@@ -1,0 +1,5 @@
+{
+  "a": ["hello world"],
+  "b": ["Hello World"],
+  "arr": "eval:array: .a + .b"
+}

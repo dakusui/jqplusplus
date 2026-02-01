@@ -1,6 +1,9 @@
 package internal
 
-import "fmt"
+import (
+	"fmt"
+	"sort"
+)
 
 type Entry struct {
 	Path  []any
@@ -19,34 +22,56 @@ func Entries(obj map[string]any, pred func([]any) bool) []Entry {
 
 // Paths returns all JSON paths in `Obj` that satisfy `pred`.
 func Paths(obj map[string]any, pred func([]any) bool) [][]any {
-	var paths [][]any
-	walkAnyPath(nil, obj, &paths)
-	return Filter(paths, pred)
+	paths := walkAnyPath(nil, obj)
+	savedPaths := DeepCopyAs(paths)
+	// Sort paths in dictionary order
+	sort.SliceStable(savedPaths, func(i, j int) bool {
+		x, _ := PathArrayToPathExpression(savedPaths[i])
+		y, _ := PathArrayToPathExpression(savedPaths[j])
+		return x < y
+	})
+	return Filter(savedPaths, pred)
 }
 
-func walkAnyPath(prefix []any, v any, out *[][]any) {
-	switch x := v.(type) {
+func walkAnyPath(prefix []any, v any) [][]any {
+	var out [][]any
 
+	switch x := v.(type) {
 	case map[string]any:
 		for k, v2 := range x {
-			p := append(prefix, k) // k is string
-			*out = append(*out, p)
-			walkAnyPath(p, v2, out)
+			p := append(copyPath(prefix), k) // k is string
+			out = append(out, p)
+			out = append(out, walkAnyPath(p, v2)...)
 		}
-
 	case []any:
 		for i, v2 := range x {
-			p := append(prefix, i) // i is int
-			*out = append(*out, p)
-			walkAnyPath(p, v2, out)
+			p := append(copyPath(prefix), i) // i is int
+			out = append(out, p)
+			out = append(out, walkAnyPath(p, v2)...)
 		}
 	}
+	sort.SliceStable(out, func(i, j int) bool {
+		ii, _ := PathArrayToPathExpression(out[i])
+		jj, _ := PathArrayToPathExpression(out[j])
+		return ii < jj
+	})
+	return out
+}
+
+func copyPath(p []any) []any {
+	// IMPORTANT: avoid aliasing bugs caused by reusing prefix's backing array
+	if len(p) == 0 {
+		return nil
+	}
+	cp := make([]any, len(p))
+	copy(cp, p)
+	return cp
 }
 
 // GetAtPath returns the value at `path` inside `root`.
 // Path segments: string => map key, int => array index.
 // ok=false if the path can't be followed.
-func GetAtPath(root any, path []any) (val any, ok bool) {
+func GetAtPath(root any, path []any) (any, bool) {
 	cur := root
 
 	for _, seg := range path {

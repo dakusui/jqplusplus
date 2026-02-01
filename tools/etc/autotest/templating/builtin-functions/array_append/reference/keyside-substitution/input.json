@@ -1,0 +1,11 @@
+{
+  "eval:\"helloBase\"": {
+    "a": [
+      "Hello"
+    ],
+    "b": [
+      "World"
+    ],
+    "arr": "eval:array:ref(parentof($cur) + [\"a\"]) + ref(parentof($cur) + [\"b\"])"
+  }
+}

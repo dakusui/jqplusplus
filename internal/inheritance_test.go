@@ -1,11 +1,13 @@
 package internal
 
 import (
-	"github.com/dakusui/jqplusplus/internal/testutil"
+	"os"
 	"path/filepath"
 	"reflect"
 	"strings"
 	"testing"
+
+	"github.com/dakusui/jqplusplus/internal/testutil"
 )
 
 func TestLoadAndResolveInheritances_NoExtends(t *testing.T) {
@@ -78,6 +80,110 @@ func TestLoadAndResolveInheritances_SingleLocalExtends(t *testing.T) {
 	}
 }
 
+func TestLoadAndResolveInheritances_ExtendsLocalNodeInParent(t *testing.T) {
+	dir := t.TempDir()
+	_ = testutil.WriteTempJSON(t, dir, "parent.json", `
+{
+  "$local": {
+    "X": {
+      "x": "valueInX"
+    }
+  },
+  "name": "parent.json"
+}`)
+	child := testutil.WriteTempJSON(t, dir, "child.json", `
+{
+  "$extends": [
+    "parent.json"
+  ],
+  "i": {
+    "$extends": [
+      "X"
+    ]
+  },
+  "name": "child.json"
+}`)
+	result, err := LoadAndResolveInheritances(filepath.Dir(child), filepath.Base(child), []string{})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	expected := map[string]any{
+		"i": map[string]any{
+			"x": "valueInX",
+		},
+		"name": "child.json",
+	}
+	if !reflect.DeepEqual(result.Obj, expected) {
+		t.Errorf("expected %v, got %v", expected, result)
+	}
+}
+
+func TestLoadAndResolveInheritances_InternalExtendsLocalNodeInParent(t *testing.T) {
+	dir := t.TempDir()
+	_ = testutil.WriteTempJSON(t, dir, "parent.json", `
+{
+  "$local": {
+    "X": {
+      "x": "valueInX"
+    }
+  }
+}`)
+	child := testutil.WriteTempJSON(t, dir, "child.json", `
+{
+  "i": {
+    "$extends": [
+      "parent.json"
+    ],
+    "Y": {
+      "$extends": [
+        "X"
+      ]
+    }
+  }
+}`)
+	result, err := LoadAndResolveInheritances(filepath.Dir(child), filepath.Base(child), []string{})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	expected := map[string]any{
+		"i": map[string]any{
+			"Y": map[string]any{
+				"x": "valueInX",
+			},
+		},
+	}
+	if !reflect.DeepEqual(result.Obj, expected) {
+		t.Errorf("expected %v, got %v", expected, result)
+	}
+}
+
+func TestLoadAndResolveInheritances_ExtendsWithLocalOutOfScope_ThenFail(t *testing.T) {
+	dir := t.TempDir()
+	_ = testutil.WriteTempJSON(t, dir, "parent.json", `
+{
+  "$local": {
+    "X": {
+      "x": "valueInX"
+    }
+  }
+}`)
+	child := testutil.WriteTempJSON(t, dir, "child.json", `
+{
+  "i": {
+    "$extends": [
+      "parent.json"
+    ]
+  },
+  "j": {
+    "$extends": ["X"]
+  }
+}`)
+	result, err := LoadAndResolveInheritances(filepath.Dir(child), filepath.Base(child), []string{})
+	if err == nil {
+		t.Fatalf("expected error was not raised: %v", result)
+	}
+}
+
 func TestLoadAndResolveInheritances_SingleExtendsNonExisting_ThenFail(t *testing.T) {
 	dir := t.TempDir()
 	_ = testutil.WriteTempJSON(t, dir, "parent.json", `{"a": 1, "b": 2}`)
@@ -88,6 +194,41 @@ func TestLoadAndResolveInheritances_SingleExtendsNonExisting_ThenFail(t *testing
 	}
 	if !strings.Contains(err.Error(), "file not found") || !strings.Contains(err.Error(), "nonExisting") {
 		t.Fatalf("unexpected error message: %v", err.Error())
+	}
+}
+
+func TestLoadAndResolveInheritances_ExtendsRelativelyAndIndirectly(t *testing.T) {
+	dir := t.TempDir()
+	dir = filepath.Join(dir, "dir")
+	os.Mkdir(dir, 0o755)
+	_ = testutil.WriteTempJSON(t, dir, "parent.json", `
+{
+  "$extends": ["Y.json"],
+  "x": "X"
+}`)
+	_ = testutil.WriteTempJSON(t, dir, "Y.json", `
+{
+  "y": "Y"
+}`)
+	child := testutil.WriteTempJSON(t, filepath.Dir(dir), "child.json", `
+{
+  "$extends": [
+    "dir/parent.json"
+  ],
+  "o": "hello world"
+}
+`)
+	result, err := LoadAndResolveInheritances(filepath.Dir(child), filepath.Base(child), []string{})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	expected := map[string]any{
+		"o": "hello world",
+		"x": "X",
+		"y": "Y",
+	}
+	if !reflect.DeepEqual(result.Obj, expected) {
+		t.Errorf("expected %v, got %v", expected, result)
 	}
 }
 

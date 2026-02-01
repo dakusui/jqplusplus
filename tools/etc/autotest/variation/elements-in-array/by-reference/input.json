@@ -1,0 +1,10 @@
+{
+  "internal": {
+    "nodeA": {
+      "aa": "aa"
+    }
+  },
+  "a": [
+    "eval:object:ref([\"internal\", \"nodeA\"])"
+  ]
+}

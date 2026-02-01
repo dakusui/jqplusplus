@@ -31,3 +31,7 @@ go.work.sum
 # Editor/IDE
 # .idea/
 # .vscode/
+
+# test result files
+**/test-error.txt
+**/test-output.*

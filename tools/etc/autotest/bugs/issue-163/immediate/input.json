@@ -1,0 +1,12 @@
+{
+  "$local": {
+    "A": {
+      "key": "hello world"
+    }
+  },
+  "test": {
+    "$extends": [
+      "A"
+    ]
+  }
+}

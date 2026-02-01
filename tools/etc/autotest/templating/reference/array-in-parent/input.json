@@ -1,0 +1,6 @@
+{
+  "arr": ["hello", 1,2,3],
+  "n": {
+    "a": "eval:array:ref(parentof($cur;2) + [\"arr\"])"
+  }
+}

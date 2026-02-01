@@ -1,0 +1,2 @@
+ERROR: Cyclic inheritance was detected in:.*/I\.json
+ERROR: File-level expansion failed for '.*/input\.json.*'

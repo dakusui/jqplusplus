@@ -1,0 +1,25 @@
+{
+  "$local": {
+    "database_default": {
+      "server": {
+        "ip": "192.168.1.5",
+        "port": 2000
+      },
+      "db_name": "test",
+      "user": {
+        "name": "root",
+        "password": "root"
+      }
+    }
+  },
+  "foo_database": {
+    "$extends": ["database_default"],
+    "server": {
+      "port": 2001
+    },
+    "db_name": "foo",
+    "user": {
+      "password": "foo_root"
+    }
+  }
+}

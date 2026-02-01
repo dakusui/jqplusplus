@@ -18,6 +18,7 @@ import (
 type InvocationSpec struct {
 	modules   []*JqModule
 	variables map[string]any
+	functions []*JqFunction
 }
 
 // VariableNames returns a slice of all variable names present in the InvocationSpec.
@@ -34,7 +35,6 @@ func (spec *InvocationSpec) VariableNames() []string {
 	for key := range spec.variables {
 		keys = append(keys, key)
 	}
-
 	sort.Strings(keys)
 
 	return keys
@@ -72,6 +72,16 @@ func (spec *InvocationSpec) VariableValues() []any {
 	i := 0
 	for _, v := range spec.VariableNames() {
 		ret[i] = spec.ValueOf(v)
+		i++
+	}
+	return ret
+}
+
+func (spec *InvocationSpec) Functions() []*JqFunction {
+	ret := make([]*JqFunction, len(spec.functions))
+	i := 0
+	for _, v := range spec.functions {
+		ret[i] = v
 		i++
 	}
 	return ret
@@ -139,7 +149,30 @@ func (b *InvocationSpecBuilder) AddVariable(name string, value any) *InvocationS
 	return b
 }
 
+func (b *InvocationSpecBuilder) AddFunction(name string, minArity, maxArity int, f func(any, []any) any) *InvocationSpecBuilder {
+	jqFunction := &JqFunction{
+		Name:     name,
+		MinArity: minArity,
+		MaxArity: maxArity,
+		Func:     f,
+	}
+	b.spec.functions = append(b.spec.functions, jqFunction)
+	return b
+}
+
 // Build returns the built InvocationSpec.
 func (b *InvocationSpecBuilder) Build() *InvocationSpec {
 	return b.spec
+}
+
+type JqModule struct {
+	CompilerOption gojq.CompilerOption
+	Name           string
+}
+
+type JqFunction struct {
+	Func     func(any, []any) any
+	Name     string
+	MinArity int
+	MaxArity int
 }

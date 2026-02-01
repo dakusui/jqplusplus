@@ -1,0 +1,14 @@
+{
+  "child": {
+    "key": [
+      "Hello",
+      "world!"
+    ],
+    "key-2": [
+      "Hello"
+    ],
+    "key-3": [
+      "world!"
+    ]
+  }
+}

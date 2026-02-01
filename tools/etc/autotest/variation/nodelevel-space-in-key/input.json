@@ -1,0 +1,10 @@
+{
+  "$local": {
+    "helloWorld": {
+      "HELLO": "WORLD"
+    }
+  },
+  "k e y": {
+    "$extends": ["helloWorld"]
+  }
+}

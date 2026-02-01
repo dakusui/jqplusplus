@@ -1,0 +1,8 @@
+{
+  "child": {
+    "$extends": [
+      "A.json",
+      "B.json"
+    ]
+  }
+}

@@ -1,0 +1,15 @@
+#!/bin/bash -eu
+
+function main() {
+  local _project_root
+  _project_root="$(dirname "$(dirname "$(dirname "${0}")")")"
+  (
+  cd "${_project_root}"
+  for i in 'test-output.*' 'test-error.txt'; do
+    find tools/etc/autotest -name "$i" -exec rm -f {} \;;
+  done
+  rm -fr "${_project_root}/docs"
+  )
+ }
+
+main "$@"

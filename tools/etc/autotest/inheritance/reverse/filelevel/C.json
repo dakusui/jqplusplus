@@ -1,0 +1,7 @@
+{
+  "$extends": ["D.json", "E.json"],
+  "$includes": ["B.json", "A.json"],
+  "attrA": "valueFromC",
+  "attrB": "valueFromC",
+  "attrC": "valueFromC"
+}

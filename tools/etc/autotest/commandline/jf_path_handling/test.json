@@ -1,0 +1,46 @@
+{
+  "testType": "ignore",
+  "args": {
+    "executor": "test.sh",
+    "testCases": [
+      {
+        "args": [
+          "testfile.txt",
+          "${JF_BASEDIR}/tests/commandline/jf_path_handling",
+          0,
+          "${JF_BASEDIR}/tests/commandline/jf_path_handling/testfile.txt"
+        ]
+      },
+      {
+        "args": [
+          "missing.txt",
+          "${JF_BASEDIR}/tests/commandline/jf_path_handling",
+          1
+        ]
+      },
+      {
+        "args": [
+          "testfile.txt",
+          "''",
+          1
+        ]
+      },
+      {
+        "args": [
+          "dir1/testfile2.txt",
+          "${JF_BASEDIR}/tests/commandline/jf_path_handling",
+          0,
+          "${JF_BASEDIR}/tests/commandline/jf_path_handling/dir1/testfile2.txt"
+        ]
+      },
+      {
+        "args": [
+          "testfile2.txt",
+          "${JF_BASEDIR}/tests/commandline/jf_path_handling:${JF_BASEDIR}/tests/commandline/jf_path_handling/dir1",
+          0,
+          "${JF_BASEDIR}/tests/commandline/jf_path_handling/dir1/testfile2.txt"
+        ]
+      }
+    ]
+  }
+}

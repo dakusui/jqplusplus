@@ -1,0 +1,11 @@
+{
+  "a0": [
+    "hello",
+    "world"
+  ],
+  "a1": [
+    "HELLO",
+    "WORLD"
+  ],
+  "arr": "eval:array:.a0 + .a1"
+}

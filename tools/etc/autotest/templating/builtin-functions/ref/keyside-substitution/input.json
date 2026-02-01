@@ -1,0 +1,6 @@
+{
+  "eval:\"helloBase\"": {
+    "a": "Hello",
+    "arr": "eval:string:ref(parent + [\"a\"])"
+  }
+}

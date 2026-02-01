@@ -1,0 +1,4 @@
+{
+  "objectNode": {"hello": "world"},
+  "snapshotVersion": "eval:object:ref([\"objectNode\"])"
+}

@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io/fs"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"strings"
@@ -11,30 +13,26 @@ import (
 
 // MaterializeLocalNodes materializes Obj["$local"] into files under dir.
 // Returns dir (absolute) on success.
-func MaterializeLocalNodes(obj map[string]any, localNodeDirectoryBase string) (string, error) {
+func MaterializeLocalNodes(obj map[string]any, absDir string) (string, error) {
+	slog.Debug("BEGIN: Materialization of local nodes")
 	if obj == nil {
+		slog.Debug("END: Materialization of local nodes (nil)")
 		return "", errors.New("Obj is nil")
 	}
-	if strings.TrimSpace(localNodeDirectoryBase) == "" {
-		return "", errors.New("dir is empty")
-	}
-
 	localAny, ok := obj["$local"]
 	if !ok || localAny == nil {
+		slog.Debug("END: Materialization of local nodes (no $local specifier)")
 		return "", nil
 	}
 
 	localObj, ok := localAny.(map[string]any)
 	if !ok {
+		slog.Debug("END: Materialization of local nodes (non object $local specifier)\n")
 		return "", fmt.Errorf(`"$local" must be an object (map[string]any), got %T`, localAny)
 	}
 
-	absDir, err := os.MkdirTemp(localNodeDirectoryBase, "localnodes-")
-	if err != nil {
-		return "", fmt.Errorf("mkdir temp dir: %w", err)
-	}
-
 	for name, v := range localObj {
+		slog.Debug("Writing local node", "name", name)
 		rel, err := sanitizeRelativePath(name)
 		if err != nil {
 			return "", fmt.Errorf("invalid $local key %q: %w", name, err)
@@ -65,8 +63,10 @@ func MaterializeLocalNodes(obj map[string]any, localNodeDirectoryBase string) (s
 		if err := os.WriteFile(target, data, 0o644); err != nil {
 			return "", fmt.Errorf("write %q: %w", target, err)
 		}
+		slog.Debug("Written local node", "name", name, "target", target)
 	}
 
+	slog.Debug("END: Materialization of local nodes")
 	return absDir, nil
 }
 
@@ -151,9 +151,9 @@ func CreateSessionDirectory() string {
 //  4. If it is a directory, return an error.
 //
 // 2. If the file is not found, return an error.
-func ResolveFilePath(filename string, baseDir string, searchPaths []string) (string, string, error) {
+func ResolveFilePath(filename string, baseDir string, searchPaths []string) (string, error) {
 	if filepath.IsAbs(filename) {
-		return filename, filepath.Dir(filename), nil
+		return filename, nil
 	}
 	beginning := 0
 	if baseDir != "" {
@@ -174,11 +174,15 @@ func ResolveFilePath(filename string, baseDir string, searchPaths []string) (str
 		if _, err := os.Stat(fullPath); err == nil {
 			// If it is a true file, return it.
 			if !os.IsNotExist(err) {
-				return fullPath, filepath.Dir(fullPath), nil
+				return fullPath, nil
 			}
 			// If it is a directory, return an error.
-			return "", "", fmt.Errorf("file is a directory: %s", fullPath)
+			return "", fmt.Errorf("file is a directory: %s", fullPath)
 		}
 	}
-	return "", "", fmt.Errorf("file not found: %s", filename)
+	return "", composeFileNotFoundError(filename, baseDir, searchPaths)
+}
+
+func composeFileNotFoundError(filename string, baseDir string, searchPaths []string) error {
+	return fmt.Errorf("file not found: '%q'\n  in %v: %w", filename, strings.Join(append(searchPaths, baseDir), "\n     "), fs.ErrNotExist)
 }

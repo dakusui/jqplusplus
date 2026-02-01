@@ -1,0 +1,2 @@
+ERROR: Type mismatch was detected for
+expected type:'object' actual type:'array'

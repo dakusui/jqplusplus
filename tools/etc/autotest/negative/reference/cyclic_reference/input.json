@@ -1,0 +1,4 @@
+{
+  "a": "eval:$(ref .b)",
+  "b": "eval:$(ref .a)"
+}

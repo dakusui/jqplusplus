@@ -1,7 +1,7 @@
 package internal
 
 import (
-	"github.com/itchyny/gojq"
+	"log/slog"
 	"path/filepath"
 )
 
@@ -11,50 +11,29 @@ type NodePool interface {
 	MarkVisited(absPath string)
 	SearchPaths() []string
 	SessionDirectory() string
+
+	// Enter adds a localNodeDirectory to the localNodeSearchPaths stack
+	// of the NodePool. This method can be used to manage the context
+	// of a node, where nodes are processed in a nested structure.
+	// If "" is passed as localNodeDirectory, this method will do nothing.
+	//
+	// Parameters:
+	// - localNodeDirectory: The directory path to be added to the search paths.
+	//
+	// Output:
+	// - This function outputs the added localNodeDirectory to stderr for debugging purposes.
+	//
+	// Example usage:
+	//   pool.Enter("/path/to/localNodeDir")
+	//
+	// Note: Ensure that for every call to Enter, a corresponding call
+	// to Leave is made to maintain the correct stack structure.
 	Enter(localNodeDirectory string)
+
+	// Leave removes the specified localNodeDirectory from the localNodeSearchPaths stack of the NodePool.
+	// If "" is passed as localNodeDirectory, this method will do nothing.
 	Leave(localNodeDirectory string)
-}
-
-type NodeEntryKey struct {
-	filename string
-	baseDir  string
-}
-
-func NewNodeEntryKey(baseDir, filename string) NodeEntryKey {
-	return NodeEntryKey{filename: filename, baseDir: baseDir}
-}
-
-// NodeEntryValue represents the value corresponding to a NodeEntryKey in the NodePool cache.
-// It encapsulates a map of objects and a list of gojq.CompilerOption used for processing
-// jq queries.
-//
-// Fields:
-// - Obj: A map containing arbitrary data associated with the NodeEntry.
-// - CompilerOptions: A list of options applied when compiling jq queries.
-type NodeEntryValue struct {
-	Obj             map[string]any
-	CompilerOptions []*JqModule
-}
-
-type JqModule struct {
-	CompilerOption gojq.CompilerOption
-	Name           string
-}
-
-func (e NodeEntryKey) BaseDir() string {
-	return e.baseDir
-}
-
-func (e NodeEntryKey) Filename() string {
-	return e.filename
-}
-
-func (e NodeEntryKey) String() string {
-	return filepath.Join(e.BaseDir(), e.Filename())
-}
-
-func NewNodeEntry(baseDir, filename string) NodeEntryKey {
-	return NodeEntryKey{filename: filename, baseDir: baseDir}
+	LocalNodeDirectory() string
 }
 
 type NodePoolImpl struct {
@@ -82,18 +61,27 @@ func NewNodePoolWithBaseSearchPaths(baseDir, sessionDirectory string, searchPath
 	}
 }
 
-func (p *NodePoolImpl) ReadNodeEntryValue(baseDir, filename string, compilerOptions []*JqModule) (*NodeEntryValue, error) {
+func (p *NodePoolImpl) ReadNodeEntryValue(baseDir_, filename_ string, compilerOptions []*JqModule) (*NodeEntryValue, error) {
+	baseDir := filepath.Dir(filepath.Join(baseDir_, filename_))
+	filename := filepath.Base(filepath.Join(baseDir_, filename_))
+	slog.Debug("NodePoolImpl:ReadingNodeEntry", "filename", filename)
 	nodeEntryKey := NodeEntryKey{filename: filename, baseDir: baseDir}
 	ret, ok := p.cache[nodeEntryKey]
 	if !ok {
+		slog.Debug("NodePoolImpl:CacheMiss", "filename", filename)
+		previous := len(p.SessionDirectory())
 		nodeEntryValue, err := LoadAndResolveInheritancesRecursively(baseDir, filename, p)
 		if err != nil {
 			return nil, err
+		}
+		for i := len(p.SearchPaths()); i > previous; {
+			p.Leave(p.LocalNodeDirectory())
 		}
 		p.cache[nodeEntryKey] = *nodeEntryValue
 		ret = *nodeEntryValue
 	}
 	ret.CompilerOptions = append(compilerOptions, ret.CompilerOptions...)
+	slog.Debug("NodePoolImpl:ReadNodeEntry", "filename", filename)
 	return &ret, nil
 }
 
@@ -106,14 +94,32 @@ func (p *NodePoolImpl) MarkVisited(absPath string) {
 }
 
 func (p *NodePoolImpl) Enter(localNodeDirectory string) {
-	p.localNodeSearchPaths = append(p.localNodeSearchPaths, localNodeDirectory)
+	if localNodeDirectory == "" {
+		slog.Debug("ENTERED", "localNodeSearchPaths", p.localNodeSearchPaths)
+		return
+	}
+	p.localNodeSearchPaths = append([]string{localNodeDirectory}, p.localNodeSearchPaths...)
+	slog.Debug("ENTERED", "localNodeSearchPaths", p.localNodeSearchPaths)
 }
 
 func (p *NodePoolImpl) Leave(localNodeDirectory string) {
-	if localNodeDirectory != p.localNodeSearchPaths[len(p.localNodeSearchPaths)-1] {
+	if localNodeDirectory == "" {
+		slog.Debug("LEFT", "localNodeSearchPaths", p.localNodeSearchPaths)
+		return
+	}
+	if localNodeDirectory != p.localNodeSearchPaths[0] {
 		panic("Unexpected leave")
 	}
-	p.localNodeSearchPaths = p.localNodeSearchPaths[:len(p.localNodeSearchPaths)-1]
+	p.localNodeSearchPaths = p.localNodeSearchPaths[1:]
+	slog.Debug("LEFT", "localNodeSearchPaths", p.localNodeSearchPaths)
+}
+
+func (p *NodePoolImpl) LocalNodeDirectory() string {
+	if len(p.localNodeSearchPaths) == 0 {
+		slog.Debug("No local node directory")
+		return ""
+	}
+	return p.localNodeSearchPaths[0]
 }
 
 func (p *NodePoolImpl) SessionDirectory() string {
@@ -130,4 +136,37 @@ func (p *NodePoolImpl) SearchPaths() []string {
 	paths = append(paths, p.baseSearchPaths...)
 
 	return Filter(paths, func(p string) bool { return p != "" })
+}
+
+type NodeEntryKey struct {
+	filename string
+	baseDir  string
+}
+
+// NodeEntryValue represents the value corresponding to a NodeEntryKey in the NodePool cache.
+// It encapsulates a map of objects and a list of gojq.CompilerOption used for processing
+// jq queries.
+//
+// Fields:
+// - Obj: A map containing arbitrary data associated with the NodeEntry.
+// - CompilerOptions: A list of options applied when compiling jq queries.
+type NodeEntryValue struct {
+	Obj             map[string]any
+	CompilerOptions []*JqModule
+}
+
+func (e NodeEntryKey) BaseDir() string {
+	return e.baseDir
+}
+
+func (e NodeEntryKey) Filename() string {
+	return e.filename
+}
+
+func (e NodeEntryKey) String() string {
+	return filepath.Join(e.BaseDir(), e.Filename())
+}
+
+func NewNodeEntryKey(baseDir, filename string) NodeEntryKey {
+	return NodeEntryKey{filename: filename, baseDir: baseDir}
 }

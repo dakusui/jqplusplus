@@ -1,0 +1,5 @@
+{
+  "hello": "HELLO",
+  "world": "WORLD",
+  "value": "eval:.hello  + \".\" + .world"
+}

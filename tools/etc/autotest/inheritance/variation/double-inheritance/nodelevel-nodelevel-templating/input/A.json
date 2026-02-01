@@ -1,0 +1,5 @@
+{
+  "a": "eval:string:\"A\"",
+  "b": "eval:string:\"B\"",
+  "o": "eval:string:ref(parent + [\"a\"]) + \"-\" + ref(parent + [\"b\"])"
+}
