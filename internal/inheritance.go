@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -53,7 +54,7 @@ func LoadAndResolveInheritancesRecursively(baseDir string, targetFile string, no
 		absDir := filepath.Join(localNodeDirectoryBase, baseDir, targetFile)
 		err := os.MkdirAll(absDir, 0o755)
 		if err != nil {
-			return nil, fmt.Errorf("mkdir temp dir: %w", err)
+			return nil, fmt.Errorf("failed: mkdir temp dir: %w", err)
 		}
 		nodepool.Enter(absDir)
 		_, err = MaterializeLocalNodes(obj, nodepool.LocalNodeDirectory())
@@ -96,7 +97,7 @@ func expandFileLevelInheritances(obj map[string]any, compilerOptions []*JqModule
 
 func expandNodeLevelInheritances(obj map[string]any, compilerOptions []*JqModule, nodepool NodePool, baseDir string) (*NodeEntryValue, error) {
 	for _, nodepath := range DistinctBy(Map(Sort(Paths(obj, lastElementIsOneOf("$extends", "$includes")), lessPathArrays), DropLast[any]), pathKey) {
-		fmt.Printf("BEGIN: Node-level inheritance: %s\n", nodepath)
+		slog.Debug("BEGIN: Node-level inheritance: ", "nodepath", nodepath)
 		internal, ok := GetAtPath(obj, ToAnySlice(nodepath))
 		if !ok {
 			continue
@@ -112,25 +113,25 @@ func expandNodeLevelInheritances(obj map[string]any, compilerOptions []*JqModule
 		internalObj = nodeEntryValue.Obj
 		compilerOptions = nodeEntryValue.CompilerOptions
 		PutAtPath(obj, ToAnySlice(nodepath), internalObj)
-		fmt.Printf("END: Node-level inheritance: %s\n", nodepath)
+		slog.Debug("END: Node-level inheritance: ", "nodepath", nodepath)
 	}
 	return &NodeEntryValue{Obj: obj, CompilerOptions: compilerOptions}, nil
 }
 
 func resolveBothInheritances(obj map[string]any, compilerOptions []*JqModule, nodepool NodePool, baseDir string) (*NodeEntryValue, error) {
 	ret := &NodeEntryValue{Obj: obj, CompilerOptions: compilerOptions}
-	ret, err := resolveInheritances(ret.Obj, ret.CompilerOptions, baseDir, Extends, nodepool)
+	ret, err := resolveInheritances(ret.Obj, ret.CompilerOptions, nodepool, baseDir, Extends)
 	if err != nil {
 		return nil, err
 	}
-	ret, err = resolveInheritances(ret.Obj, ret.CompilerOptions, baseDir, Includes, nodepool)
+	ret, err = resolveInheritances(ret.Obj, ret.CompilerOptions, nodepool, baseDir, Includes)
 	if err != nil {
 		return nil, err
 	}
 	return ret, nil
 }
 
-func resolveInheritances(obj map[string]any, compilerOptions []*JqModule, baseDir string, mergeType InheritType, nodepool NodePool) (*NodeEntryValue, error) {
+func resolveInheritances(obj map[string]any, compilerOptions []*JqModule, nodepool NodePool, baseDir string, mergeType InheritType) (*NodeEntryValue, error) {
 	tmpCompilerOptions := compilerOptions
 	// Check for $extends or $includes
 	inherits, ok := obj[mergeType.String()]
@@ -266,7 +267,7 @@ func lessPathArrays(a []any, b []any) bool {
 	if e != nil {
 		panic(e)
 	}
-	return pea < peb
+	return pea > peb
 }
 
 func pathKey(p []any) string {
