@@ -1,3 +1,3 @@
-function call_cur() {
-  cur
-}
+def call_cur:
+  parent;
+

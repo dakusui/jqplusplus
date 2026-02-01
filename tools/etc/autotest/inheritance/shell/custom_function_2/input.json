@@ -1,10 +1,10 @@
 {
   "$extends": [
-    "SS.sh;SOURCE"
+    "SS.jq"
   ],
   "key1": {
     "key11": {
-      "key111": "eval:string:hello_world=$(call_cur),$(echo HELLO)"
+      "key111": "eval:string:SS::call_cur | \"hello_world=\" + topathexpr(.) + \", HELLO\""
     }
   }
 }
