@@ -109,14 +109,14 @@ func processNodeEntryKey(nodeEntryKey internal.NodeEntryKey) (string, error) {
 	obj := nodeEntryValue.Obj
 	{
 		invocationSpec := internal.NewInvocationSpecBuilder().AddModules(nodeEntryValue.CompilerOptions...).Build()
-		obj, err = internal.ProcessKeySide(obj, 7, *invocationSpec)
+		obj, err = internal.ProcessKeySide(obj, 7, *invocationSpec, nodeEntryKey.BaseDir(), internal.SearchPaths())
 		if err != nil {
 			return "", err
 		}
 	}
 	{
 		invocationSpec := internal.NewInvocationSpecBuilder().AddModules(nodeEntryValue.CompilerOptions...).Build()
-		obj, err = internal.ProcessValueSide(obj, 7, *invocationSpec)
+		obj, err = internal.ProcessValueSide(obj, 7, *invocationSpec, nodeEntryKey.BaseDir(), internal.SearchPaths())
 		if err != nil {
 			return "", err
 		}
