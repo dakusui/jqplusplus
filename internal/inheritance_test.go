@@ -1,6 +1,7 @@
 package internal
 
 import (
+	"os"
 	"path/filepath"
 	"reflect"
 	"strings"
@@ -193,6 +194,41 @@ func TestLoadAndResolveInheritances_SingleExtendsNonExisting_ThenFail(t *testing
 	}
 	if !strings.Contains(err.Error(), "file not found") || !strings.Contains(err.Error(), "nonExisting") {
 		t.Fatalf("unexpected error message: %v", err.Error())
+	}
+}
+
+func TestLoadAndResolveInheritances_ExtendsRelativelyAndIndirectly(t *testing.T) {
+	dir := t.TempDir()
+	dir = filepath.Join(dir, "dir")
+	os.Mkdir(dir, 0o755)
+	_ = testutil.WriteTempJSON(t, dir, "parent.json", `
+{
+  "$extends": ["Y.json"],
+  "x": "X"
+}`)
+	_ = testutil.WriteTempJSON(t, dir, "Y.json", `
+{
+  "y": "Y"
+}`)
+	child := testutil.WriteTempJSON(t, filepath.Dir(dir), "child.json", `
+{
+  "$extends": [
+    "dir/parent.json"
+  ],
+  "o": "hello world"
+}
+`)
+	result, err := LoadAndResolveInheritances(filepath.Dir(child), filepath.Base(child), []string{})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	expected := map[string]any{
+		"o": "hello world",
+		"x": "X",
+		"y": "Y",
+	}
+	if !reflect.DeepEqual(result.Obj, expected) {
+		t.Errorf("expected %v, got %v", expected, result)
 	}
 }
 

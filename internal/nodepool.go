@@ -61,7 +61,9 @@ func NewNodePoolWithBaseSearchPaths(baseDir, sessionDirectory string, searchPath
 	}
 }
 
-func (p *NodePoolImpl) ReadNodeEntryValue(baseDir, filename string, compilerOptions []*JqModule) (*NodeEntryValue, error) {
+func (p *NodePoolImpl) ReadNodeEntryValue(baseDir_, filename_ string, compilerOptions []*JqModule) (*NodeEntryValue, error) {
+	baseDir := filepath.Dir(filepath.Join(baseDir_, filename_))
+	filename := filepath.Base(filepath.Join(baseDir_, filename_))
 	slog.Debug("NodePoolImpl:ReadingNodeEntry", "filename", filename)
 	nodeEntryKey := NodeEntryKey{filename: filename, baseDir: baseDir}
 	ret, ok := p.cache[nodeEntryKey]
