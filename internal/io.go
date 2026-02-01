@@ -13,16 +13,20 @@ import (
 // MaterializeLocalNodes materializes Obj["$local"] into files under dir.
 // Returns dir (absolute) on success.
 func MaterializeLocalNodes(obj map[string]any, absDir string) (string, error) {
+	fmt.Printf("BEGIN: Materialization of local nodes\n")
 	if obj == nil {
+		fmt.Printf("END: Materialization of local nodes (nil)\n")
 		return "", errors.New("Obj is nil")
 	}
 	localAny, ok := obj["$local"]
 	if !ok || localAny == nil {
+		fmt.Printf("END: Materialization of local nodes (no $local specifier)\n")
 		return "", nil
 	}
 
 	localObj, ok := localAny.(map[string]any)
 	if !ok {
+		fmt.Printf("END: Materialization of local nodes (non object $local specifier)\n")
 		return "", fmt.Errorf(`"$local" must be an object (map[string]any), got %T`, localAny)
 	}
 
@@ -61,6 +65,7 @@ func MaterializeLocalNodes(obj map[string]any, absDir string) (string, error) {
 		fmt.Printf("Written local node %v: %v\n", name, target)
 	}
 
+	fmt.Printf("END: Materialization of local nodes\n")
 	return absDir, nil
 }
 
