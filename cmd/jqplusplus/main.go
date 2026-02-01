@@ -3,9 +3,10 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/dakusui/jqplusplus/internal"
 	"os"
 	"path/filepath"
+
+	"github.com/dakusui/jqplusplus/internal"
 )
 
 var version = "dev"      // overridden via -ldflags
@@ -72,11 +73,11 @@ func inputFiles(args []string) ([]internal.NodeEntryKey, func(), error) {
 		}
 
 		in = []internal.NodeEntryKey{
-			internal.NewNodeEntry("", absolutePath),
+			internal.NewNodeEntryKey("", absolutePath),
 		}
 	} else {
 		in = internal.Map(args[1:], func(t string) internal.NodeEntryKey {
-			return internal.NewNodeEntry(filepath.Dir(t), filepath.Base(t))
+			return internal.NewNodeEntryKey(filepath.Dir(t), filepath.Base(t))
 		})
 	}
 	return in, exit, nil

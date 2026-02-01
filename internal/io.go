@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"strings"
@@ -13,25 +14,25 @@ import (
 // MaterializeLocalNodes materializes Obj["$local"] into files under dir.
 // Returns dir (absolute) on success.
 func MaterializeLocalNodes(obj map[string]any, absDir string) (string, error) {
-	fmt.Printf("BEGIN: Materialization of local nodes\n")
+	slog.Debug("BEGIN: Materialization of local nodes")
 	if obj == nil {
-		fmt.Printf("END: Materialization of local nodes (nil)\n")
+		slog.Debug("END: Materialization of local nodes (nil)")
 		return "", errors.New("Obj is nil")
 	}
 	localAny, ok := obj["$local"]
 	if !ok || localAny == nil {
-		fmt.Printf("END: Materialization of local nodes (no $local specifier)\n")
+		slog.Debug("END: Materialization of local nodes (no $local specifier)")
 		return "", nil
 	}
 
 	localObj, ok := localAny.(map[string]any)
 	if !ok {
-		fmt.Printf("END: Materialization of local nodes (non object $local specifier)\n")
+		slog.Debug("END: Materialization of local nodes (non object $local specifier)\n")
 		return "", fmt.Errorf(`"$local" must be an object (map[string]any), got %T`, localAny)
 	}
 
 	for name, v := range localObj {
-		fmt.Printf("Writing local node %q\n", name)
+		slog.Debug("Writing local node", "name", name)
 		rel, err := sanitizeRelativePath(name)
 		if err != nil {
 			return "", fmt.Errorf("invalid $local key %q: %w", name, err)
@@ -62,10 +63,10 @@ func MaterializeLocalNodes(obj map[string]any, absDir string) (string, error) {
 		if err := os.WriteFile(target, data, 0o644); err != nil {
 			return "", fmt.Errorf("write %q: %w", target, err)
 		}
-		fmt.Printf("Written local node %v: %v\n", name, target)
+		slog.Debug("Written local node", "name", name, "target", target)
 	}
 
-	fmt.Printf("END: Materialization of local nodes\n")
+	slog.Debug("END: Materialization of local nodes")
 	return absDir, nil
 }
 

@@ -2,11 +2,12 @@ package main
 
 import (
 	"encoding/json"
-	"github.com/dakusui/jqplusplus/internal"
-	"github.com/dakusui/jqplusplus/internal/testutil"
 	"path/filepath"
 	"reflect"
 	"testing"
+
+	"github.com/dakusui/jqplusplus/internal"
+	"github.com/dakusui/jqplusplus/internal/testutil"
 )
 
 func TestLoadAndResolveInheritances_SingleExtendsForJqFile(t *testing.T) {

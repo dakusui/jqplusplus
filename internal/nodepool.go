@@ -1,7 +1,7 @@
 package internal
 
 import (
-	"fmt"
+	"log/slog"
 	"path/filepath"
 )
 
@@ -62,11 +62,11 @@ func NewNodePoolWithBaseSearchPaths(baseDir, sessionDirectory string, searchPath
 }
 
 func (p *NodePoolImpl) ReadNodeEntryValue(baseDir, filename string, compilerOptions []*JqModule) (*NodeEntryValue, error) {
-	fmt.Printf("NodePoolImpl: Reading node entry: %s\n", filename)
+	slog.Debug("NodePoolImpl:ReadingNodeEntry", "filename", filename)
 	nodeEntryKey := NodeEntryKey{filename: filename, baseDir: baseDir}
 	ret, ok := p.cache[nodeEntryKey]
 	if !ok {
-		fmt.Printf("NodePoolImpl: Cache miss: %s\n", filename)
+		slog.Debug("NodePoolImpl:CacheMiss", "filename", filename)
 		previous := len(p.SessionDirectory())
 		nodeEntryValue, err := LoadAndResolveInheritancesRecursively(baseDir, filename, p)
 		if err != nil {
@@ -79,7 +79,7 @@ func (p *NodePoolImpl) ReadNodeEntryValue(baseDir, filename string, compilerOpti
 		ret = *nodeEntryValue
 	}
 	ret.CompilerOptions = append(compilerOptions, ret.CompilerOptions...)
-	fmt.Printf("NodePoolImpl: Read node entry: %s\n", filename)
+	slog.Debug("NodePoolImpl:ReadNodeEntry", "filename", filename)
 	return &ret, nil
 }
 
@@ -93,28 +93,28 @@ func (p *NodePoolImpl) MarkVisited(absPath string) {
 
 func (p *NodePoolImpl) Enter(localNodeDirectory string) {
 	if localNodeDirectory == "" {
-		fmt.Printf("Entered: %v\n", p.localNodeSearchPaths)
+		slog.Debug("ENTERED", "localNodeSearchPaths", p.localNodeSearchPaths)
 		return
 	}
 	p.localNodeSearchPaths = append([]string{localNodeDirectory}, p.localNodeSearchPaths...)
-	fmt.Printf("ENTERED: %v\n", p.localNodeSearchPaths)
+	slog.Debug("ENTERED", "localNodeSearchPaths", p.localNodeSearchPaths)
 }
 
 func (p *NodePoolImpl) Leave(localNodeDirectory string) {
 	if localNodeDirectory == "" {
-		fmt.Printf("Left: %v\n", p.localNodeSearchPaths)
+		slog.Debug("LEFT", "localNodeSearchPaths", p.localNodeSearchPaths)
 		return
 	}
 	if localNodeDirectory != p.localNodeSearchPaths[0] {
 		panic("Unexpected leave")
 	}
 	p.localNodeSearchPaths = p.localNodeSearchPaths[1:]
-	fmt.Printf("LEFT: %v\n", p.localNodeSearchPaths)
+	slog.Debug("LEFT", "localNodeSearchPaths", p.localNodeSearchPaths)
 }
 
 func (p *NodePoolImpl) LocalNodeDirectory() string {
 	if len(p.localNodeSearchPaths) == 0 {
-		fmt.Printf("No local node directory")
+		slog.Debug("No local node directory")
 		return ""
 	}
 	return p.localNodeSearchPaths[0]

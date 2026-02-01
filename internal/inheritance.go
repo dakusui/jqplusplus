@@ -67,11 +67,12 @@ func LoadAndResolveInheritancesRecursively(baseDir string, targetFile string, no
 	var nodeEntryValue *NodeEntryValue
 	{
 		// File-level inheritance
-		fmt.Printf("BEGIN: File-level inheritance: %s\n", targetFile)
+		slog.Debug("BEGIN: File-level inheritance: ", "targetFile", targetFile)
 		nodeEntryValue, err = expandFileLevelInheritances(obj, compilerOptions(compilerOption), nodepool, baseDir)
 		if err != nil {
 			return nil, err
 		}
+		slog.Debug("END:   File-level inheritance: ", "targetFile", targetFile)
 	}
 	{
 		// Node-level inheritance
@@ -84,7 +85,7 @@ func LoadAndResolveInheritancesRecursively(baseDir string, targetFile string, no
 }
 
 func compilerOptions(compilerOption *JqModule) []*JqModule {
-	if compilerOption != nil {
+	if compilerOption == nil {
 		return []*JqModule{}
 	}
 	return []*JqModule{compilerOption}
