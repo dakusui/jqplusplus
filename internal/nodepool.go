@@ -62,9 +62,11 @@ func NewNodePoolWithBaseSearchPaths(baseDir, sessionDirectory string, searchPath
 }
 
 func (p *NodePoolImpl) ReadNodeEntryValue(baseDir, filename string, compilerOptions []*JqModule) (*NodeEntryValue, error) {
+	fmt.Printf("NodePoolImpl: Reading node entry: %s\n", filename)
 	nodeEntryKey := NodeEntryKey{filename: filename, baseDir: baseDir}
 	ret, ok := p.cache[nodeEntryKey]
 	if !ok {
+		fmt.Printf("NodePoolImpl: Cache miss: %s\n", filename)
 		previous := len(p.SessionDirectory())
 		nodeEntryValue, err := LoadAndResolveInheritancesRecursively(baseDir, filename, p)
 		if err != nil {
@@ -77,6 +79,7 @@ func (p *NodePoolImpl) ReadNodeEntryValue(baseDir, filename string, compilerOpti
 		ret = *nodeEntryValue
 	}
 	ret.CompilerOptions = append(compilerOptions, ret.CompilerOptions...)
+	fmt.Printf("NodePoolImpl: Read node entry: %s\n", filename)
 	return &ret, nil
 }
 
