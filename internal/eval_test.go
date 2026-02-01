@@ -59,7 +59,7 @@ func TestProcessValueSide(t *testing.T) {
 	input := map[string]any{"a": "Hello", "X": "eval:.a"}
 	//expected := "processedKey" // Replace this with the expected outcome of the input
 
-	result, err := ProcessValueSide(input, 7, EmptyInvocationSpec())
+	result, err := ProcessValueSide(input, 7, EmptyInvocationSpec(), "", nil)
 	if err != nil {
 		t.Errorf("ProcessKeySide failed for input '%s' with error: %s", input, err)
 	}
@@ -83,7 +83,7 @@ func TestGivenEvalInArray_WhenProcessValueSide_ThenProcessed(t *testing.T) {
 				},
 			}}}
 
-	result, err := ProcessValueSide(input, 7, EmptyInvocationSpec())
+	result, err := ProcessValueSide(input, 7, EmptyInvocationSpec(), "", nil)
 	if err != nil {
 		t.Errorf("ProcessKeySide failed for input '%s' with error: %s", input, err)
 	}
@@ -108,7 +108,7 @@ func TestProcessValueSide_2(t *testing.T) {
 	input := map[string]any{"a": "Hello", "X": "eval:string:$cur|tostring"}
 	//expected := "processedKey" // Replace this with the expected outcome of the input
 
-	result, err := ProcessValueSide(input, 7, EmptyInvocationSpec())
+	result, err := ProcessValueSide(input, 7, EmptyInvocationSpec(), "", nil)
 	if err != nil {
 		t.Errorf("ProcessKeySide failed for input '%s' with error: %s", input, err)
 	}
@@ -123,7 +123,7 @@ func TestProcessKeySide(t *testing.T) {
 	input := map[string]any{"a": "Hello", "eval:.a": "X"}
 	//expected := "processedKey" // Replace this with the expected outcome of the input
 
-	result, err := ProcessKeySide(input, 7, EmptyInvocationSpec())
+	result, err := ProcessKeySide(input, 7, EmptyInvocationSpec(), "", nil)
 	if err != nil {
 		t.Errorf("ProcessKeySide failed for input '%s' with error: %s", input, err)
 	}
@@ -138,7 +138,7 @@ func TestProcessKeySide_2(t *testing.T) {
 	input := map[string]any{"a": []string{"Hello", "Howdy"}, "eval:.a": "X"}
 	//expected := "processedKey" // Replace this with the expected outcome of the input
 
-	result, err := ProcessKeySide(input, 7, EmptyInvocationSpec())
+	result, err := ProcessKeySide(input, 7, EmptyInvocationSpec(), "", nil)
 	if err != nil {
 		t.Errorf("ProcessKeySide failed for input '%s' with error: %s", input, err)
 	}

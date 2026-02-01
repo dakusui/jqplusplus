@@ -59,7 +59,7 @@ func resolveParent(args []any, expression string, currentPath []any) any {
 	return path[0 : len(path)-levels]
 }
 
-func CreateRefFunc(self any, currentPath []any, expression string, invocationSpec InvocationSpec) (string, int, int, func(any, []any) any) {
+func CreateRefFunc(self any, currentPath []any, expression string, invocationSpec InvocationSpec, baseDir string, searchPaths []string) (string, int, int, func(any, []any) any) {
 	return "ref", 1, 1, func(input any, args []any) any {
 		pathArg := args[0]
 		path, ok := pathArg.([]any)
@@ -67,7 +67,7 @@ func CreateRefFunc(self any, currentPath []any, expression string, invocationSpe
 			return fmt.Errorf("expression: %s at %v; ret(%v); %v must be an array", expression, currentPath, args, pathArg)
 		}
 
-		return resolveRef(self, path, currentPath, invocationSpec, expression, args)
+		return resolveRef(self, path, currentPath, invocationSpec, expression, args, baseDir, searchPaths)
 	}
 }
 
@@ -76,14 +76,14 @@ func CreateRefExprFunc(self any, currentPath []any, expression string, invocatio
 		pathArg := args[0]
 		pathexp, ok := pathArg.(string)
 		if !ok {
-			return fmt.Errorf("expression: %s at %v; ret(%v); %v must be an array", expression, currentPath, args, pathArg)
+			return fmt.Errorf("expression: %s at %v; ret(%v); %v must be a string", expression, currentPath, args, pathArg)
 		}
 		path, err := PathExpressionToPathArray(pathexp)
 		if err != nil {
 			return err
 		}
 
-		return resolveRef(self, path, currentPath, invocationSpec, expression, args)
+		return resolveRef(self, path, currentPath, invocationSpec, expression, args, "", nil)
 	}
 }
 
@@ -92,13 +92,13 @@ func CreateRefTagFunc(self any, currentPath []any, expression string, invocation
 		tagArg := args[0]
 		tag, ok := tagArg.(string)
 		if !ok {
-			return fmt.Errorf("expression: %s at %v; ret(%v); %v must be an array", expression, currentPath, args, tagArg)
+			return fmt.Errorf("expression: %s at %v; ret(%v); %v must be a string", expression, currentPath, args, tagArg)
 		}
 		pathLength := len(currentPath) - 1
 		for i := pathLength; i >= 0; i-- {
 			p := append(DeepCopy(currentPath[0:i]).([]any), tag)
 
-			ret := resolveRef(self, p, currentPath, invocationSpec, expression, args)
+			ret := resolveRef(self, p, currentPath, invocationSpec, expression, args, "", nil)
 			if _, ok := ret.(error); !ok {
 				return ret
 			}
@@ -108,11 +108,30 @@ func CreateRefTagFunc(self any, currentPath []any, expression string, invocation
 	}
 }
 
-func resolveRef(self any, path []any, currentPath []any, invocationSpec InvocationSpec, expression string, args []any) any {
+func CreateReadFileFunc(self any, currentPath []any, expression string, baseDir string, searchPaths []string) (string, int, int, func(any, []any) any) {
+	return "readfile", 1, 1, func(input any, args []any) any {
+		filenameArg := args[0]
+		targetFile, ok := filenameArg.(string)
+		if !ok {
+			return fmt.Errorf("expression: %s at %v; ret(%v); %v must be an array", expression, currentPath, args, filenameArg)
+		}
+		absPath, err := ResolveFilePath(targetFile, baseDir, searchPaths)
+		if err != nil {
+			return err
+		}
+		ret, _, err := LoadFileAsRawJSON(absPath)
+		if err != nil {
+			return err
+		}
+		return ret
+	}
+}
+
+func resolveRef(self any, path []any, currentPath []any, invocationSpec InvocationSpec, expression string, args []any, baseDir string, searchPaths []string) any {
 	if value, ok := GetAtPath(self, path); ok {
 		// Process only if value is a string
 		if str, ok := value.(string); ok {
-			ret, err := evaluateString(str, currentPath, self, invocationSpec)
+			ret, err := evaluateString(str, currentPath, self, invocationSpec, baseDir, searchPaths)
 			if err != nil {
 				return fmt.Errorf("expression: %s at %v; ref(%v) failed to eval for: %v", expression, path, args, err)
 			}
