@@ -72,26 +72,25 @@ func LoadAndResolveInheritancesRecursively(baseDir string, targetFile string, no
 
 // baseDir is a directory from which obj was read.
 func expandInheritances(obj map[string]any, compilerOption *JqModule, nodepool NodePool, baseDir string) (*NodeEntryValue, error) {
-	compilerOptions, nodeEntryValue, err := expandFileLevelInheritances(obj, compilerOption, nodepool, baseDir)
+	nodeEntryValue, err := expandFileLevelInheritances(obj, compilerOption, nodepool, baseDir)
 	if err != nil {
 		return nil, err
 	}
-	obj = nodeEntryValue.Obj
 
-	compilerOptions, value, err2 := expandNodeLevelInheritances(obj, compilerOptions, nodeEntryValue, nodepool, baseDir)
+	compilerOptions, value, err2 := expandNodeLevelInheritances(nodeEntryValue.Obj, nodeEntryValue.CompilerOptions, nodeEntryValue, nodepool, baseDir)
 	if err2 != nil {
 		return value, err2
 	}
-	return &NodeEntryValue{obj, compilerOptions}, nil
+	return &NodeEntryValue{nodeEntryValue.Obj, compilerOptions}, nil
 }
 
-func expandFileLevelInheritances(obj map[string]any, compilerOption *JqModule, nodepool NodePool, baseDir string) ([]*JqModule, *NodeEntryValue, error) {
+func expandFileLevelInheritances(obj map[string]any, compilerOption *JqModule, nodepool NodePool, baseDir string) (*NodeEntryValue, error) {
 	var compilerOptions []*JqModule
 	if compilerOption != nil {
 		compilerOptions = append(compilerOptions, compilerOption)
 	}
 	nodeEntryValue, err := resolveBothInheritances(baseDir, obj, compilerOptions, nodepool)
-	return compilerOptions, nodeEntryValue, err
+	return nodeEntryValue, err
 }
 
 func expandNodeLevelInheritances(obj map[string]any, compilerOptions []*JqModule, nodeEntryValue *NodeEntryValue, nodepool NodePool, baseDir string) ([]*JqModule, *NodeEntryValue, error) {
