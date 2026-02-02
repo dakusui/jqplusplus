@@ -119,7 +119,7 @@ func CreateReadFileFunc(self any, currentPath []any, expression string, baseDir 
 		if err != nil {
 			return err
 		}
-		ret, _, err := LoadFileAsRawJSON(absPath)
+		ret, _, err := ReadFileAsJSONElement(absPath)
 		if err != nil {
 			return err
 		}

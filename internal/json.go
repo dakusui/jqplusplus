@@ -3,16 +3,17 @@ package internal
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/BurntSushi/toml"
-	"github.com/gurkankaymak/hocon"
-	"github.com/itchyny/gojq"
-	"github.com/titanous/json5"
-	"gopkg.in/yaml.v3"
 	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
 	"unicode"
+
+	"github.com/BurntSushi/toml"
+	"github.com/gurkankaymak/hocon"
+	"github.com/itchyny/gojq"
+	"github.com/titanous/json5"
+	"gopkg.in/yaml.v3"
 )
 
 type FileType string
@@ -50,12 +51,12 @@ func detectFileType(name string) (FileType, bool) {
 	}
 }
 
-func readJSON(targetFileAbsPath string) (map[string]any, *JqModule, error) {
+func readJSON(targetFileAbsPath string) (any, *JqModule, error) {
 	data, err := os.ReadFile(targetFileAbsPath)
 	if err != nil {
 		return nil, nil, err
 	}
-	var obj map[string]any
+	var obj any
 	if err := json.Unmarshal(data, &obj); err != nil {
 		return nil, nil, err
 	}
@@ -78,7 +79,7 @@ func newModuleLoader(moduleName string, moduleBody *gojq.Query) *moduleLoader {
 	return &moduleLoader{moduleName, moduleBody}
 }
 
-func readJQ(targetFileAbsPath string) (map[string]any, *JqModule, error) {
+func readJQ(targetFileAbsPath string) (any, *JqModule, error) {
 	data, err := os.ReadFile(targetFileAbsPath)
 	if err != nil {
 		return nil, nil, err
@@ -93,7 +94,7 @@ func readJQ(targetFileAbsPath string) (map[string]any, *JqModule, error) {
 	return map[string]any{}, &JqModule{Name: name, CompilerOption: ret}, nil
 }
 
-func readYAML(path string) (map[string]any, *JqModule, error) {
+func readYAML(path string) (any, *JqModule, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return nil, nil, err
@@ -106,7 +107,7 @@ func readYAML(path string) (map[string]any, *JqModule, error) {
 	return m, nil, nil
 }
 
-func readTOML(path string) (map[string]any, *JqModule, error) {
+func readTOML(path string) (any, *JqModule, error) {
 	var m map[string]any
 	if _, err := toml.DecodeFile(path, &m); err != nil {
 		return nil, nil, err
@@ -114,7 +115,7 @@ func readTOML(path string) (map[string]any, *JqModule, error) {
 	return m, nil, nil
 }
 
-func readJSON5(path string) (map[string]any, *JqModule, error) {
+func readJSON5(path string) (any, *JqModule, error) {
 	b, err := os.ReadFile(path)
 	if err != nil {
 		return nil, nil, err
@@ -129,7 +130,7 @@ func readJSON5(path string) (map[string]any, *JqModule, error) {
 
 // readHOCON reads a HOCON file and returns it as a JSON-compatible map.
 // Top-level must be an object.
-func readHOCON(path string) (map[string]any, *JqModule, error) {
+func readHOCON(path string) (any, *JqModule, error) {
 	conf, err := hocon.ParseResource(path)
 	if err != nil {
 		return nil, nil, err
