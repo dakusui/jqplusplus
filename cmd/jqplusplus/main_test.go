@@ -95,3 +95,22 @@ func TestLoadAndResolveInheritances_RefToStringFromInsideArray(t *testing.T) {
 		t.Errorf("expected %v, got %v", string(expected), result)
 	}
 }
+
+func TestLoadAndResolveInheritances_ReadfileAsStringOnPath(t *testing.T) {
+	dir := t.TempDir()
+	_ = testutil.WriteTempJSON(t, dir, "parent.json",
+		`"hello"`)
+	child := testutil.WriteTempJSON(t, dir, "child.json",
+		`{
+  "key": "eval:string:readfile(\"parent.json\")"
+}`)
+	result, err := processNodeEntryKey((internal.NewNodeEntryKey(filepath.Dir(child), filepath.Base(child))))
+
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	expected, _ := json.MarshalIndent(map[string]any{"key": "hello"}, "", "  ")
+	if !reflect.DeepEqual(result, string(expected)) {
+		t.Errorf("expected %v, got %v", string(expected), string(result))
+	}
+}
