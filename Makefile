@@ -1,6 +1,6 @@
 # Makefile for cmd (standard Go project layout)
 
-BINARY_NAME=jq++
+BINARY_NAME=jqplusplus
 BINARY_PATH=bin/$(BINARY_NAME)
 CMD_PATH=cmd/jqplusplus
 
@@ -23,6 +23,7 @@ build:
 	$(GO) build -ldflags\
 	 "-X main.version=$(shell tools/bin/version) -X main.revision=$(shell tools/bin/revision)"\
 	 -o $(BINARY_PATH) ./$(CMD_PATH)
+	$(BINARY_PATH)
 
 run:
 	$(GO) run ./$(CMD_PATH)
