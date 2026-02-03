@@ -154,7 +154,7 @@ func toStringArray(v any) []string {
 	}
 }
 
-func ProcessKeySide(obj_ map[string]any, ttl int, invocationSpec InvocationSpec) (map[string]any, error) {
+func ProcessKeySide(obj_ map[string]any, ttl int, invocationSpec InvocationSpec, dir string, paths []string) (map[string]any, error) {
 	ret := DeepCopyAs(obj_)
 	keyHavingPrefixForProcessing := func(path []any) bool {
 		last := path[len(path)-1]
@@ -224,7 +224,7 @@ func ProcessKeySide(obj_ map[string]any, ttl int, invocationSpec InvocationSpec)
 			PutAtPath(ret, p, DeepCopyAs(v))
 		}
 	}
-	return ProcessKeySide(ret, ttl-1, invocationSpec)
+	return ProcessKeySide(ret, ttl-1, invocationSpec, "", nil)
 }
 
 const prefixRaw = "raw:"
@@ -254,7 +254,7 @@ const prefixEval = "eval:"
 //	An error if any "eval:" expression fails to evaluate.
 //
 // Panics if ttl reaches zero and some entries remain unresolved.
-func ProcessValueSide(obj map[string]any, ttl int, invocationSpec InvocationSpec) (map[string]any, error) {
+func ProcessValueSide(obj map[string]any, ttl int, invocationSpec InvocationSpec, baseDir string, searchPaths []string) (map[string]any, error) {
 	newObj := DeepCopyAs(obj)
 	entries := StringEntries(newObj, func(v string) bool {
 		if strings.HasPrefix(v, prefixEval) {
@@ -274,7 +274,7 @@ func ProcessValueSide(obj map[string]any, ttl int, invocationSpec InvocationSpec
 	var newEntries []Entry
 	for _, e := range entries {
 		v := e.Value.(string)
-		n, err := evaluateString(v, e.Path, newObj, invocationSpec)
+		n, err := evaluateString(v, e.Path, newObj, invocationSpec, baseDir, searchPaths)
 		if err != nil {
 			return nil, err
 		}
@@ -288,10 +288,10 @@ func ProcessValueSide(obj map[string]any, ttl int, invocationSpec InvocationSpec
 			return nil, fmt.Errorf("failed to put value at path %v", p)
 		}
 	}
-	return ProcessValueSide(newObj, ttl-1, invocationSpec)
+	return ProcessValueSide(newObj, ttl-1, invocationSpec, baseDir, searchPaths)
 }
 
-func evaluateString(str string, path []any, self any, invocationSpec InvocationSpec) (any, error) {
+func evaluateString(str string, path []any, self any, invocationSpec InvocationSpec, baseDir string, searchPaths []string) (any, error) {
 	var ret any
 	if strings.HasPrefix(str, prefixRaw) {
 		ret = str[len(prefixRaw):]
@@ -310,9 +310,10 @@ func evaluateString(str string, path []any, self any, invocationSpec InvocationS
 			AddFunction(CreateToPathExprFunc()).
 			AddFunction(CreateParentOfFunc(path, str)).
 			AddFunction(CreateParentFunc(path, str)).
-			AddFunction(CreateRefFunc(self, path, str, invocationSpec)).
+			AddFunction(CreateRefFunc(self, path, str, invocationSpec, baseDir, searchPaths)).
 			AddFunction(CreateRefExprFunc(self, path, str, invocationSpec)).
 			AddFunction(CreateRefTagFunc(self, path, str, invocationSpec)).
+			AddFunction(CreateReadFileFunc(self, path, str, baseDir, searchPaths)).
 			Build()
 		x, err := EvaluateExpression(self, w, []JSONType{expectedType}, *spec)
 		if err != nil {

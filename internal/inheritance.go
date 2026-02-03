@@ -43,7 +43,7 @@ func LoadAndResolveInheritancesRecursively(baseDir string, targetFile string, no
 	}
 	nodepool.MarkVisited(absPath)
 
-	obj, compilerOption, err := LoadFileAsRawJSON(absPath)
+	obj, compilerOption, err := ReadFileAsJSONObject(absPath)
 	if err != nil {
 		return nil, err
 	}
@@ -214,8 +214,16 @@ func (m InheritType) IsOrderReversed() bool {
 	}
 }
 
-// LoadFileAsRawJSON loads and parses a file (JSON, YAML, etc.) into a gojq-compatible object.
-func LoadFileAsRawJSON(path string) (map[string]any, *JqModule, error) {
+// ReadFileAsJSONObject loads and parses a file (JSON, YAML, etc.) into a gojq-compatible object.
+func ReadFileAsJSONObject(path string) (map[string]any, *JqModule, error) {
+	ret, jqModuel, err := ReadFileAsJSONElement(path)
+	if err != nil {
+		return nil, nil, err
+	}
+	return ret.(map[string]any), jqModuel, nil
+}
+
+func ReadFileAsJSONElement(path string) (any, *JqModule, error) {
 	ft, ok := detectFileType(path)
 	if !ok {
 		return nil, nil, fmt.Errorf("unsupported file type: %q (%s)", filepath.Ext(path), path)

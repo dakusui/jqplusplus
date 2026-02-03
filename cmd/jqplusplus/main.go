@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/dakusui/jqplusplus/internal"
 )
@@ -13,6 +14,22 @@ var version = "dev"      // overridden via -ldflags
 var revision = "unknown" // overridden via -ldflags
 
 func main() {
+	// Handle symbolic link creation when invoked as jqplusplus with no arguments
+	if len(os.Args) == 1 {
+		execPath, err := os.Executable()
+		if err == nil && strings.HasSuffix(filepath.Base(execPath), "jqplusplus") {
+			absExecPath, err := filepath.Abs(execPath)
+			if err != nil {
+				panic(err)
+			}
+			err = handleSymbolicLink(absExecPath)
+			if err != nil {
+				panic(err)
+			}
+			return
+		}
+	}
+
 	if len(os.Args) > 1 && (os.Args[1] == "-h" || os.Args[1] == "--help") {
 		help := `Usage: <program> [options] [files...]
 
@@ -101,6 +118,21 @@ func processNodeEntryKeys(in []internal.NodeEntryKey) int {
 	return ret
 }
 
+func handleSymbolicLink(execPath string) error {
+	execDir := filepath.Dir(execPath)
+	symlinkPath := filepath.Join(execDir, "jq++")
+
+	// Check if symlink exists
+	if _, err := os.Lstat(symlinkPath); err == nil {
+		// Remove existing symlink
+		_ = os.Remove(symlinkPath)
+	}
+
+	// Create a new symlink
+	err := os.Symlink(execPath, symlinkPath)
+	return err
+}
+
 func processNodeEntryKey(nodeEntryKey internal.NodeEntryKey) (string, error) {
 	nodeEntryValue, err := internal.LoadAndResolveInheritances(nodeEntryKey.BaseDir(), nodeEntryKey.Filename(), internal.SearchPaths())
 	if err != nil {
@@ -109,14 +141,14 @@ func processNodeEntryKey(nodeEntryKey internal.NodeEntryKey) (string, error) {
 	obj := nodeEntryValue.Obj
 	{
 		invocationSpec := internal.NewInvocationSpecBuilder().AddModules(nodeEntryValue.CompilerOptions...).Build()
-		obj, err = internal.ProcessKeySide(obj, 7, *invocationSpec)
+		obj, err = internal.ProcessKeySide(obj, 7, *invocationSpec, nodeEntryKey.BaseDir(), internal.SearchPaths())
 		if err != nil {
 			return "", err
 		}
 	}
 	{
 		invocationSpec := internal.NewInvocationSpecBuilder().AddModules(nodeEntryValue.CompilerOptions...).Build()
-		obj, err = internal.ProcessValueSide(obj, 7, *invocationSpec)
+		obj, err = internal.ProcessValueSide(obj, 7, *invocationSpec, nodeEntryKey.BaseDir(), internal.SearchPaths())
 		if err != nil {
 			return "", err
 		}
