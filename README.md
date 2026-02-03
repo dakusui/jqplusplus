@@ -17,8 +17,7 @@ This project follows the standard Go project layout.
 The easiest way to install `jqplusplus` is using `go install`:
 
 ```sh
-go install github.com/dakusui/jqplusplus/cmd/jqplusplus@latest
-[[ ! -e "$(dirname "$(which jqplusplus)")/jq++" ]] && jqplusplus
+go install github.com/dakusui/jqplusplus/cmd/jqplusplus@latest && jqplusplus
 ```
 
 This will install the `jqp++` binary to `$GOPATH/bin` or `$GOBIN` (if set). Make sure this directory is in your `PATH`.
