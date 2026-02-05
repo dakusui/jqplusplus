@@ -96,6 +96,20 @@ func TestLoadAndResolveInheritances_RefToStringFromInsideArray(t *testing.T) {
 	}
 }
 
+func TestLoadAndResolveInheritances_CyclicRef_ThenError(t *testing.T) {
+	dir := t.TempDir()
+	child := testutil.WriteTempJSON(t, dir, "child.json",
+		`{
+          "k1": "eval:refexpr(\".k2\")",
+          "k2": "eval:refexpr(\".k1\")"
+}`)
+	result, err := processNodeEntryKey((internal.NewNodeEntryKey(filepath.Dir(child), filepath.Base(child))))
+
+	if err == nil {
+		t.Fatalf("error expected but got: %v", result)
+	}
+}
+
 func TestLoadAndResolveInheritances_ReadfileAsStringOnPath(t *testing.T) {
 	dir := t.TempDir()
 	_ = testutil.WriteTempJSON(t, dir, "parent.json",

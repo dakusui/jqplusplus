@@ -82,7 +82,7 @@ func EvaluateExpression(
 
 	// Check if the result is an error
 	if err, isErr := result.(error); isErr {
-		return nil, fmt.Errorf("error while executing jq expression: %w", err)
+		return nil, err
 	}
 
 	// Validate and return the result based on the expected type
