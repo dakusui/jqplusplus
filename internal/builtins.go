@@ -60,6 +60,12 @@ func resolveParent(args []any, expression string, currentPath []any) any {
 }
 
 func CreateRefFunc(self any, currentPath []any, expression string, invocationSpec InvocationSpec, baseDir string, searchPaths []string) (string, int, int, func(any, []any) any) {
+	visited := map[string]bool{}
+	pathexpr, err := PathArrayToPathExpression(currentPath)
+	if err != nil {
+		panic(err)
+	}
+	visited[pathexpr] = true
 	return "ref", 1, 1, func(input any, args []any) any {
 		pathArg := args[0]
 		path, ok := pathArg.([]any)
@@ -67,11 +73,17 @@ func CreateRefFunc(self any, currentPath []any, expression string, invocationSpe
 			return fmt.Errorf("expression: %s at %v; ret(%v); %v must be an array", expression, currentPath, args, pathArg)
 		}
 
-		return resolveRef(self, path, currentPath, invocationSpec, expression, args, baseDir, searchPaths)
+		return resolveRef(self, path, currentPath, invocationSpec, expression, args, baseDir, searchPaths, visited)
 	}
 }
 
 func CreateRefExprFunc(self any, currentPath []any, expression string, invocationSpec InvocationSpec) (string, int, int, func(any, []any) any) {
+	visited := map[string]bool{}
+	pathexpr, err := PathArrayToPathExpression(currentPath)
+	if err != nil {
+		panic(err)
+	}
+	visited[pathexpr] = true
 	return "refexpr", 1, 1, func(input any, args []any) any {
 		pathArg := args[0]
 		pathexp, ok := pathArg.(string)
@@ -83,11 +95,17 @@ func CreateRefExprFunc(self any, currentPath []any, expression string, invocatio
 			return err
 		}
 
-		return resolveRef(self, path, currentPath, invocationSpec, expression, args, "", nil)
+		return resolveRef(self, path, currentPath, invocationSpec, expression, args, "", nil, visited)
 	}
 }
 
 func CreateRefTagFunc(self any, currentPath []any, expression string, invocationSpec InvocationSpec) (string, int, int, func(any, []any) any) {
+	visited := map[string]bool{}
+	pathexpr, err := PathArrayToPathExpression(currentPath)
+	if err != nil {
+		panic(err)
+	}
+	visited[pathexpr] = true
 	return "reftag", 1, 1, func(input any, args []any) any {
 		tagArg := args[0]
 		tag, ok := tagArg.(string)
@@ -98,7 +116,7 @@ func CreateRefTagFunc(self any, currentPath []any, expression string, invocation
 		for i := pathLength; i >= 0; i-- {
 			p := append(DeepCopy(currentPath[0:i]).([]any), tag)
 
-			ret := resolveRef(self, p, currentPath, invocationSpec, expression, args, "", nil)
+			ret := resolveRef(self, p, currentPath, invocationSpec, expression, args, "", nil, visited)
 			if _, ok := ret.(error); !ok {
 				return ret
 			}
@@ -127,7 +145,15 @@ func CreateReadFileFunc(self any, currentPath []any, expression string, baseDir 
 	}
 }
 
-func resolveRef(self any, path []any, currentPath []any, invocationSpec InvocationSpec, expression string, args []any, baseDir string, searchPaths []string) any {
+func resolveRef(self any, path []any, currentPath []any, invocationSpec InvocationSpec, expression string, args []any, baseDir string, searchPaths []string, visited map[string]bool) any {
+	pathexpr, err := PathArrayToPathExpression(path)
+	if err != nil {
+		panic(err)
+	}
+	if visited[pathexpr] {
+		return fmt.Errorf("path expression: %v already visited: %v", pathexpr, currentPath)
+	}
+	visited[pathexpr] = true
 	if value, ok := GetAtPath(self, path); ok {
 		// Process only if value is a string
 		if str, ok := value.(string); ok {

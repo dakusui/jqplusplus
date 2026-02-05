@@ -105,24 +105,8 @@ func TestLoadAndResolveInheritances_CyclicRef_ThenError(t *testing.T) {
 }`)
 	result, err := processNodeEntryKey((internal.NewNodeEntryKey(filepath.Dir(child), filepath.Base(child))))
 
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	expected, _ := json.MarshalIndent(
-		map[string]any{
-			"arr": []any{
-				map[string]any{
-					"k": map[string]any{
-						"v": "{\"k1\":\"v1\",\"k2\":\"v2\"}",
-						"content": map[string]any{
-							"k1": "v1",
-							"k2": "v2",
-						},
-					},
-				}}},
-		"", "  ")
-	if !reflect.DeepEqual(result, string(expected)) {
-		t.Errorf("expected %v, got %v", string(expected), result)
+	if err == nil {
+		t.Fatalf("error expected but got: %v", result)
 	}
 }
 
