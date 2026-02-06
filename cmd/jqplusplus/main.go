@@ -51,7 +51,7 @@ If no files are provided, input is read from stdin.
 	in, d, err := inputFiles(os.Args)
 	defer d()
 	if err != nil {
-		_, _ = os.Stderr.WriteString("Error processing arguments: " + err.Error() + "\n")
+		_, _ = os.Stderr.WriteString(fmt.Sprintf("ERROR: %s when processing argument %v\n", err.Error(), os.Args))
 		os.Exit(1)
 	}
 	exitCode := processNodeEntryKeys(in)
@@ -105,7 +105,7 @@ func processNodeEntryKeys(in []internal.NodeEntryKey) int {
 	for _, eachNodeEntryKey := range in {
 		v, err := processNodeEntryKey(eachNodeEntryKey)
 		if err != nil {
-			_, _ = os.Stderr.WriteString("Error processing file " + eachNodeEntryKey.String() + ": " + err.Error() + "\n")
+			_, _ = os.Stderr.WriteString(fmt.Sprintf("ERROR: %s in file: %s\n", err.Error(), eachNodeEntryKey.String()))
 			ret = 1
 			break
 		}
