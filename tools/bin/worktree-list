@@ -1,0 +1,23 @@
+#!/bin/bash -eu
+#
+# worktree-list
+#
+# Lists all worktrees for this repository.
+# Wraps "git worktree list".
+#
+# Usage:
+#   tools/bin/worktree-list
+#
+
+set -eu
+
+main() {
+  local _project_root
+  # Use the repo root (directory containing .git), not the current worktree root,
+  # so this script works from any subdirectory and from inside any linked worktree.
+  _project_root="$(cd "$(dirname "$(git rev-parse --git-common-dir)")" && pwd)"
+
+  git -C "${_project_root}" worktree list "$@"
+}
+
+main "$@"

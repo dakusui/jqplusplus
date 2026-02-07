@@ -1,0 +1,47 @@
+#!/bin/bash -eu
+#
+# worktree-remove <branch-name>
+#
+# Removes the worktree at {project_root}/worktrees/{branch-name}.
+# Wraps "git worktree remove".
+#
+# Usage:
+#   tools/bin/worktree-remove feature/my-branch
+#
+
+set -eu
+
+message() {
+  echo "$@" >&2
+}
+
+main() {
+  if [[ $# -lt 1 ]]; then
+    message "Usage: $0 <branch-name>"
+    message "  Removes the worktree at worktrees/<branch-name>."
+    exit 1
+  fi
+
+  local _branch_name="$1"
+  local _project_root
+  # Use the repo root (directory containing .git), not the current worktree root,
+  # so this script works from any subdirectory and from inside any linked worktree.
+  _project_root="$(cd "$(dirname "$(git rev-parse --git-common-dir)")" && pwd)"
+  local _worktree_path="${_project_root}/worktrees/${_branch_name}"
+
+  if [[ ! -d "${_worktree_path}" ]]; then
+    message "No worktree at ${_worktree_path}"
+    exit 0
+  fi
+
+  if [[ ! -f "${_worktree_path}/.git" ]]; then
+    message "Not a worktree: ${_worktree_path}"
+    exit 1
+  fi
+
+  message "Removing worktree at ${_worktree_path}"
+  git -C "${_project_root}" worktree remove "${_worktree_path}"
+  message "Done."
+}
+
+main "$@"
