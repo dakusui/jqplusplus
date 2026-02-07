@@ -12,30 +12,36 @@
 
 set -eu
 
-if [[ $# -lt 1 ]]; then
-  echo "Usage: $0 <branch-name>" >&2
-  echo "  Ensures the branch exists locally and creates a worktree under worktrees/<branch-name>." >&2
-  exit 1
-fi
-
-BRANCH_NAME="$1"
-PROJECT_ROOT="$(git rev-parse --show-toplevel)"
-WORKTREE_PATH="${PROJECT_ROOT}/worktrees/${BRANCH_NAME}"
-
-# 1. Check if branch exists locally
-if ! git rev-parse --verify --quiet "${BRANCH_NAME}" >/dev/null; then
-  echo "Branch '${BRANCH_NAME}' does not exist. Creating from current HEAD."
-  git branch "${BRANCH_NAME}"
-fi
-
-# 2. Create worktree if it doesn't already exist
-if [[ -d "${WORKTREE_PATH}" ]]; then
-  if [[ -f "${WORKTREE_PATH}/.git" ]]; then
-    echo "Worktree already exists at ${WORKTREE_PATH}"
-    exit 0
+main() {
+  if [[ $# -lt 1 ]]; then
+    echo "Usage: $0 <branch-name>" >&2
+    echo "  Ensures the branch exists locally and creates a worktree under worktrees/<branch-name>." >&2
+    exit 1
   fi
-fi
 
-echo "Creating worktree at ${WORKTREE_PATH}"
-git worktree add "${WORKTREE_PATH}" "${BRANCH_NAME}"
-echo "Done. Worktree at ${WORKTREE_PATH}"
+  local BRANCH_NAME="$1"
+  local PROJECT_ROOT
+  PROJECT_ROOT="$(git rev-parse --show-toplevel)"
+  cd "${PROJECT_ROOT}"
+  local WORKTREE_PATH="${PROJECT_ROOT}/worktrees/${BRANCH_NAME}"
+
+  # 1. Check if branch exists locally
+  if ! git rev-parse --verify --quiet "${BRANCH_NAME}" >/dev/null; then
+    echo "Branch '${BRANCH_NAME}' does not exist. Creating from current HEAD." >&2
+    git branch "${BRANCH_NAME}"
+  fi
+
+  # 2. Create worktree if it doesn't already exist
+  if [[ -d "${WORKTREE_PATH}" ]]; then
+    if [[ -f "${WORKTREE_PATH}/.git" ]]; then
+      echo "Worktree already exists at ${WORKTREE_PATH}" >&2
+      exit 0
+    fi
+  fi
+
+  echo "Creating worktree at ${WORKTREE_PATH}" >&2
+  git worktree add "${WORKTREE_PATH}" "${BRANCH_NAME}"
+  echo "Done. Worktree at ${WORKTREE_PATH}" >&2
+}
+
+main "$@"
