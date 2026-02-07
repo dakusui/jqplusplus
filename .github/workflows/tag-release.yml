@@ -1,0 +1,62 @@
+name: Tag release on main
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  tag-version:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write  # required to push the new tag
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # full history so we can see all tags
+
+      - name: Set origin URL and git config for push
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git remote set-url origin "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Get latest version tag and compute next
+        id: version
+        run: |
+          git fetch --tags
+
+          # Skip if this commit already has a version tag (e.g. re-run or already tagged)
+          EXISTING=$(git tag --points-at HEAD | grep -E '^v?[0-9]+\.[0-9]+\.[0-9]+$' || true)
+          if [ -n "$EXISTING" ]; then
+            echo "skip=true" >> $GITHUB_OUTPUT
+            echo "Commit already has version tag(s): $EXISTING"
+            exit 0
+          fi
+
+          # Latest tag matching x.y.z or vx.y.z, sorted by version descending
+          LATEST=$(git tag -l --sort=-version:refname | grep -E '^v?[0-9]+\.[0-9]+\.[0-9]+$' | head -1)
+          if [ -z "$LATEST" ]; then
+            NEW_VERSION="0.0.1"
+          else
+            NUM=${LATEST#v}
+            MAJOR=${NUM%%.*}
+            REST=${NUM#*.}
+            MINOR=${REST%%.*}
+            PATCH=${REST##*.}
+            PATCH=$((PATCH + 1))
+            NEW_VERSION="${MAJOR}.${MINOR}.${PATCH}"
+          fi
+
+          echo "skip=false" >> $GITHUB_OUTPUT
+          echo "new_version=${NEW_VERSION}" >> $GITHUB_OUTPUT
+          echo "tag=v${NEW_VERSION}" >> $GITHUB_OUTPUT
+          echo "New tag: v${NEW_VERSION}"
+
+      - name: Create and push tag
+        if: steps.version.outputs.skip != 'true'
+        run: |
+          git tag "${{ steps.version.outputs.tag }}"
+          git push origin "${{ steps.version.outputs.tag }}"
