@@ -12,36 +12,40 @@
 
 set -eu
 
+message() {
+  echo "$@" >&2
+}
+
 main() {
   if [[ $# -lt 1 ]]; then
-    echo "Usage: $0 <branch-name>" >&2
-    echo "  Ensures the branch exists locally and creates a worktree under worktrees/<branch-name>." >&2
+    message "Usage: $0 <branch-name>"
+    message "  Ensures the branch exists locally and creates a worktree under worktrees/<branch-name>."
     exit 1
   fi
 
-  local BRANCH_NAME="$1"
-  local PROJECT_ROOT
-  PROJECT_ROOT="$(git rev-parse --show-toplevel)"
-  cd "${PROJECT_ROOT}"
-  local WORKTREE_PATH="${PROJECT_ROOT}/worktrees/${BRANCH_NAME}"
+  local _branch_name="$1"
+  local _project_root
+  _project_root="$(git rev-parse --show-toplevel)"
+  cd "${_project_root}"
+  local _worktree_path="${_project_root}/worktrees/${_branch_name}"
 
   # 1. Check if branch exists locally
-  if ! git rev-parse --verify --quiet "${BRANCH_NAME}" >/dev/null; then
-    echo "Branch '${BRANCH_NAME}' does not exist. Creating from current HEAD." >&2
-    git branch "${BRANCH_NAME}"
+  if ! git rev-parse --verify --quiet "${_branch_name}" >/dev/null; then
+    message "Branch '${_branch_name}' does not exist. Creating from current HEAD."
+    git branch "${_branch_name}"
   fi
 
   # 2. Create worktree if it doesn't already exist
-  if [[ -d "${WORKTREE_PATH}" ]]; then
-    if [[ -f "${WORKTREE_PATH}/.git" ]]; then
-      echo "Worktree already exists at ${WORKTREE_PATH}" >&2
+  if [[ -d "${_worktree_path}" ]]; then
+    if [[ -f "${_worktree_path}/.git" ]]; then
+      message "Worktree already exists at ${_worktree_path}"
       exit 0
     fi
   fi
 
-  echo "Creating worktree at ${WORKTREE_PATH}" >&2
-  git worktree add "${WORKTREE_PATH}" "${BRANCH_NAME}"
-  echo "Done. Worktree at ${WORKTREE_PATH}" >&2
+  message "Creating worktree at ${_worktree_path}"
+  git worktree add "${_worktree_path}" "${_branch_name}"
+  message "Done. Worktree at ${_worktree_path}"
 }
 
 main "$@"
