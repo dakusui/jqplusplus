@@ -10,6 +10,11 @@ function message() {
 
 function main() {
   mkdir -p "$(pwd)/docs"
+  if [[ -d "tools/etc/docs/images" ]]; then
+    message -n "Copying images to docs/images"
+    cp -r tools/etc/docs/images docs/
+    message "...done"
+  fi
   while IFS= read -r -d '' i; do
     local _src_file="${i}"
     message -n "Processing '${_src_file}'"
