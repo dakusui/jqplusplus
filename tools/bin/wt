@@ -1,0 +1,57 @@
+#!/bin/bash -eu
+#
+# wt - worktree dispatcher
+#
+# Usage:
+#   wt add <branch-name>     Create worktree at worktrees/<branch-name>
+#   wt remove <branch-name> Remove worktree at worktrees/<branch-name>
+#   wt list [options...]    List all worktrees
+#   wt help                 Show this help
+#
+
+set -eu
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+usage() {
+  echo "Usage: wt <subcommand> [options...]" >&2
+  echo "" >&2
+  echo "Subcommands:" >&2
+  echo "  add <branch-name>     Create worktree at worktrees/<branch-name>" >&2
+  echo "  remove <branch-name>  Remove worktree at worktrees/<branch-name>" >&2
+  echo "  list [options...]     List all worktrees" >&2
+  echo "  help                  Show this help" >&2
+}
+
+main() {
+  if [[ $# -lt 1 ]]; then
+    usage
+    exit 1
+  fi
+
+  local _subcmd="$1"
+  shift
+
+  case "${_subcmd}" in
+    add)
+      exec "${SCRIPT_DIR}/worktree-add" "$@"
+      ;;
+    remove)
+      exec "${SCRIPT_DIR}/worktree-remove" "$@"
+      ;;
+    list)
+      exec "${SCRIPT_DIR}/worktree-list" "$@"
+      ;;
+    help|--help|-h)
+      usage
+      exit 0
+      ;;
+    *)
+      echo "wt: unknown subcommand '${_subcmd}'" >&2
+      usage
+      exit 1
+      ;;
+  esac
+}
+
+main "$@"
