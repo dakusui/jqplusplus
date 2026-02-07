@@ -1,0 +1,61 @@
+#!/bin/bash -eu
+#
+# Publishes documentation to the gh-pages branch.
+#
+# Workflow:
+#   1. Clone gh-pages branch under docs directory.
+#   2. gendoc is performed (generates docs into docs/).
+#   3. Under docs, newly generated documents are added and committed.
+#   4. Push to remote's gh-pages branch.
+#
+
+set -eu
+
+function message() {
+  local IFS=" "
+  echo -e "$*" >&2
+}
+
+function main() {
+  local _project_root
+  _project_root="$(cd "$(dirname "$(dirname "$(dirname "${0}")")")" && pwd)"
+  local _docs_dir="${_project_root}/docs"
+  local _remote_url
+
+  cd "${_project_root}"
+
+  _remote_url="$(git remote get-url origin)"
+  if [[ -z "${_remote_url}" ]]; then
+    message "Error: no remote 'origin' found."
+    exit 1
+  fi
+
+  message "Removing existing docs directory..."
+  rm -rf "${_docs_dir}"
+
+  if git ls-remote --exit-code --heads "${_remote_url}" gh-pages &>/dev/null; then
+    message "Cloning gh-pages branch into docs..."
+    git clone --single-branch --branch gh-pages "${_remote_url}" "${_docs_dir}"
+  else
+    message "gh-pages branch not found on remote; creating orphan branch in clone..."
+    git clone "${_remote_url}" "${_docs_dir}"
+    (cd "${_docs_dir}" && git checkout --orphan gh-pages && git rm -rf . 2>/dev/null || true)
+  fi
+
+  rm -fr "${_project_root}/docs/*"
+
+  message "Generating documentation..."
+  tools/bin/gendoc
+
+  message "Committing and pushing to gh-pages..."
+  (cd "${_docs_dir}" && git add -A && git status --short)
+  if (cd "${_docs_dir}" && git diff --staged --quiet); then
+    message "No changes to publish."
+    exit 0
+  fi
+  (cd "${_docs_dir}" && git commit -m "Update documentation" && git push origin gh-pages)
+
+  message "Published documentation to gh-pages."
+}
+
+main "$@"
