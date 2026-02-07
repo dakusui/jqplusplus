@@ -37,4 +37,4 @@ go.work.sum
 **/test-output.*
 
 # generated documentation
-docs
+/docs
