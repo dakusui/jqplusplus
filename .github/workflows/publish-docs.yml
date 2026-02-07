@@ -1,0 +1,23 @@
+name: Publish documentation
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  pubdoc:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write  # required for pushing to gh-pages
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set origin URL for push access
+        run: |
+          git remote set-url origin "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Publish documentation
+        run: make pubdoc
