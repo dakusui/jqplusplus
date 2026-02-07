@@ -14,10 +14,11 @@ else
 	GO := go
 endif
 
-.PHONY: all build run clean fmt
 
+.PHONY: all
 all: build
 
+.PHONY: build
 build:
 	@mkdir -p bin
 	$(GO) build -ldflags\
@@ -25,18 +26,27 @@ build:
 	 -o $(BINARY_PATH) ./$(CMD_PATH)
 	$(BINARY_PATH)
 
+.PHONY: run
 run:
 	$(GO) run ./$(CMD_PATH)
 
+.PHONY: doc
 doc:
 	gendoc
 
+.PHONY: pubdoc
+pubdoc:
+	tools/bin/pubdoc
+
+.PHONY: clean
 clean:
 	rm -rf bin/*
 	rm -rf docs/*.html
 
+.PHONY: fmt
 fmt:
 	$(GO) fmt ./...
 
+.PHONY: test
 test:
 	$(GO) test ./... 
