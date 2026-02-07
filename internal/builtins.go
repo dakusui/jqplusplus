@@ -43,7 +43,7 @@ func resolveParent(args []any, expression string, currentPath []any) any {
 		levelArgs, ok := v.(int)
 		if !ok {
 			pexr, _ := PathArrayToPathExpression(currentPath)
-			return fmt.Errorf("expression: '%s' at '%v' must result in an int but got %v(%T)", expression, pexr, v, v)
+			return fmt.Errorf("expression: '%s' at '%v' must be an int but got %v(%T)", expression, pexr, v, v)
 		}
 		levels = levelArgs
 	}
@@ -57,7 +57,7 @@ func resolveParent(args []any, expression string, currentPath []any) any {
 
 	if len(path) < levels {
 		pexr, _ := PathArrayToPathExpression(currentPath)
-		return fmt.Errorf("expression: '%s' at %v must result in less than %v but got %v(%T)", expression, pexr, len(path), pathArg, pathArg)
+		return fmt.Errorf("expression: '%s' at %v: argument must be less than or equal to %v but got %v", expression, pexr, len(path), levels)
 	}
 	return path[0 : len(path)-levels]
 }

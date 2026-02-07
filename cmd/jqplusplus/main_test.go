@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"path/filepath"
 	"reflect"
+	"strings"
 	"testing"
 
 	"github.com/dakusui/jqplusplus/internal"
@@ -115,29 +116,41 @@ func TestLoadAndResolveInheritances_RefOutside_ThenError(t *testing.T) {
 	child := testutil.WriteTempJSON(t, dir, "child.json",
 		`{
   "key":{
-    "hello world": "eval:string:topathexpr(parent(3)))"
-  }
-}
-`)
-	result, err := processNodeEntryKey((internal.NewNodeEntryKey(filepath.Dir(child), filepath.Base(child))))
-
-	if err == nil {
-		t.Fatalf("error expected but got: %v", result)
-	}
-}
-
-func TestLoadAndResolveInheritances_Ref(t *testing.T) {
-	dir := t.TempDir()
-	child := testutil.WriteTempJSON(t, dir, "child.json",
-		`{
-  "key":{
-    "hello world": "eval:string:topathexpr(parent(2))"
+    "hello world": "eval:string:topathexpr(parent(3))"
   }
 }`)
 	result, err := processNodeEntryKey((internal.NewNodeEntryKey(filepath.Dir(child), filepath.Base(child))))
 
 	if err == nil {
 		t.Fatalf("error expected but got: %v", result)
+	}
+	if !strings.Contains(err.Error(), "parent(3)") ||
+		!strings.Contains(err.Error(), "must be less than or equal to 2") ||
+		!strings.Contains(err.Error(), "but got 3") {
+		t.Fatalf("expected error 'parent(3) is out of scope' but got: %v", err)
+	}
+}
+
+func TestLoadAndResolveInheritances_Parent(t *testing.T) {
+	dir := t.TempDir()
+	child := testutil.WriteTempJSON(t, dir, "child.json",
+		`{
+  "key":{
+    "hello world": "eval:string:topathexpr(parent)"
+  }
+}`)
+	result, err := processNodeEntryKey((internal.NewNodeEntryKey(filepath.Dir(child), filepath.Base(child))))
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	expected, _ := json.MarshalIndent(
+		map[string]any{
+			"key": map[string]any{
+				"hello world": ".key"}},
+		"", "  ")
+	if !reflect.DeepEqual(result, string(expected)) {
+		t.Errorf("expected %v, got %v", string(expected), result)
 	}
 }
 
