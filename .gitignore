@@ -35,3 +35,6 @@ go.work.sum
 # test result files
 **/test-error.txt
 **/test-output.*
+
+# generated documentation
+docs
