@@ -1,6 +1,7 @@
 package internal
 
 import (
+	"encoding/json"
 	"fmt"
 )
 
@@ -168,5 +169,6 @@ func resolveRef(self any, path []any, currentPath []any, invocationSpec Invocati
 		}
 		return value
 	}
-	return fmt.Errorf("path: %v in expression: %v not found in object: %v", path, expression, self)
+	selfJSON, _ := json.Marshal(self)
+	return fmt.Errorf("path: %v in expression: %v not found in object: %s", path, expression, selfJSON)
 }
