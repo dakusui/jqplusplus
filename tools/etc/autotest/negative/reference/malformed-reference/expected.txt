@@ -1,1 +1,5 @@
- was rendered into '////' and it seems not a wel-formed JSON.
+ERROR:
+result type mismatch
+expected .+object
+but got string.xyzw.
+negative/reference/malformed-reference/input.json
