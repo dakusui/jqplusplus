@@ -70,7 +70,7 @@ func LoadAndResolveInheritancesRecursively(baseDir string, targetFile string, no
 		slog.Debug("BEGIN: File-level inheritance: ", "targetFile", targetFile)
 		nodeEntryValue, err = expandFileLevelInheritances(obj, compilerOptions(compilerOption), nodepool, baseDir)
 		if err != nil {
-			return nil, fmt.Errorf("%v: failed to resolve inheritances of '%v'", err, filepath.Join(baseDir, targetFile))
+			return nil, fmt.Errorf("%v: failed to resolve inheritances", err)
 		}
 		slog.Debug("END:   File-level inheritance: ", "targetFile", targetFile)
 	}
@@ -78,7 +78,7 @@ func LoadAndResolveInheritancesRecursively(baseDir string, targetFile string, no
 		// Node-level inheritance
 		nodeEntryValue, err = expandNodeLevelInheritances(nodeEntryValue.Obj, nodeEntryValue.CompilerOptions, nodepool, baseDir)
 		if err != nil {
-			return nil, fmt.Errorf("%v: failed to resolve inheritances of '%v'", err, filepath.Join(baseDir, targetFile))
+			return nil, fmt.Errorf("%v: failed to resolve inheritances", err)
 		}
 	}
 	return nodeEntryValue, nil

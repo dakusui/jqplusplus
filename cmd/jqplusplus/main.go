@@ -106,7 +106,7 @@ func processNodeEntryKeys(in []internal.NodeEntryKey) int {
 		v, err := processNodeEntryKey(eachNodeEntryKey)
 		if err != nil {
 			ret = 1
-			_, _ = os.Stderr.WriteString(fmt.Sprintf("ERROR: %s", err.Error()))
+			_, _ = os.Stderr.WriteString(fmt.Sprintf("ERROR: %s: in %v", err.Error(), eachNodeEntryKey))
 			break
 		}
 		_, err = os.Stdout.WriteString(v + "\n")
