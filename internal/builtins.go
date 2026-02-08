@@ -37,7 +37,9 @@ func CreateParentFunc(currentPath []any, expression string) (string, int, int, f
 
 func resolveParent(args []any, expression string, currentPath []any) any {
 	levels := 1
-	expressionAndLocation := newFunction(currentPath, expression)
+
+	expressionAndLocation := fmt.Sprintf("in expression: '%v'; at '%v'", expression, toPathExpression(currentPath))
+
 	if len(args) == 2 {
 		// Check if args[2] is an int
 		v := args[1]
@@ -58,14 +60,6 @@ func resolveParent(args []any, expression string, currentPath []any) any {
 		return fmt.Errorf("value less than or equal to %v expected but got '%v': %v", len(path), levels, expressionAndLocation)
 	}
 	return path[0 : len(path)-levels]
-}
-
-func newFunction(currentPath []any, expression string) string {
-	currentPathExpression, err := PathArrayToPathExpression(currentPath)
-	if err != nil {
-		currentPathExpression = fmt.Sprintf("%v", currentPathExpression)
-	}
-	return fmt.Sprintf("in expression: '%v'; at '%v'", expression, currentPathExpression)
 }
 
 func CreateRefFunc(self any, currentPath []any, expression string, invocationSpec InvocationSpec, baseDir string, searchPaths []string) (string, int, int, func(any, []any) any) {

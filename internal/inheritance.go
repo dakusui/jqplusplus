@@ -70,7 +70,7 @@ func LoadAndResolveInheritancesRecursively(baseDir string, targetFile string, no
 		slog.Debug("BEGIN: File-level inheritance: ", "targetFile", targetFile)
 		nodeEntryValue, err = expandFileLevelInheritances(obj, compilerOptions(compilerOption), nodepool, baseDir)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("%v: failed to resolve inheritances of '%v'", err, filepath.Join(baseDir, targetFile))
 		}
 		slog.Debug("END:   File-level inheritance: ", "targetFile", targetFile)
 	}
@@ -78,7 +78,7 @@ func LoadAndResolveInheritancesRecursively(baseDir string, targetFile string, no
 		// Node-level inheritance
 		nodeEntryValue, err = expandNodeLevelInheritances(nodeEntryValue.Obj, nodeEntryValue.CompilerOptions, nodepool, baseDir)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("%v: failed to resolve inheritances of '%v'", err, filepath.Join(baseDir, targetFile))
 		}
 	}
 	return nodeEntryValue, nil
@@ -109,7 +109,8 @@ func expandNodeLevelInheritances(obj map[string]any, compilerOptions []*JqModule
 		}
 		nodeEntryValue, err := resolveBothInheritances(internalObj, compilerOptions, nodepool, baseDir)
 		if err != nil {
-			return nil, err
+			np := toPathExpression(nodepath)
+			return nil, fmt.Errorf("%s: at '%v'", err, np)
 		}
 		internalObj = nodeEntryValue.Obj
 		compilerOptions = nodeEntryValue.CompilerOptions
@@ -297,28 +298,10 @@ func pathKey(p []any) string {
 	return b.String()
 }
 
-/*
-BEGIN: File-level inheritance: child.json
-ENTERED: [/tmp/jq++-session-2278310269/localnodes-2735272157]
-	BEGIN: File-level inheritance: parent.json
-	ENTERED: [/tmp/jq++-session-2278310269/localnodes-2735272157 /tmp/jq++-session-2278310269/localnodes-2709553687]
-	LEFT: [/tmp/jq++-session-2278310269/localnodes-2735272157]
-	ENTERED: [/tmp/jq++-session-2278310269/localnodes-2735272157 /tmp/jq++-session-2278310269/localnodes-3867521190]
-	LEFT: [/tmp/jq++-session-2278310269/localnodes-2735272157]
-	Writing local node "X"
-	Written local node "X"
-	END: File-level inheritance: parent.json
-	LEFT: []
-	ENTERED: [/tmp/jq++-session-2278310269/localnodes-1668519715]
-	LEFT: []
-	No local node directoryBEGIN: Node-level inheritance: [i]
-	ENTERED: [/tmp/jq++-session-2278310269/localnodes-387725387]
-		END: File-level inheritance: child.json
-			inheritance_test.go:107: unexpected error: file not found: '"X"'
-				  in /tmp/TestLoadAndResolveInheritances_ExtendsLocalNodeInParent3020370729/001
-					 /tmp/jq++-session-2278310269/localnodes-387725387
-					 /tmp/TestLoadAndResolveInheritances_ExtendsLocalNodeInParent3020370729/001: file does not exist
-		--- FAIL: TestLoadAndResolveInheritances_ExtendsLocalNodeInParent (0.00s)
-
-		FAIL
-*/
+func toPathExpression(nodepath []any) string {
+	np, err := PathArrayToPathExpression(nodepath)
+	if err != nil {
+		return fmt.Sprintf("%v", nodepath)
+	}
+	return np
+}

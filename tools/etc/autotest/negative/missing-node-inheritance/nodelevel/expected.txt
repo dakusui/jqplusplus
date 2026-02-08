@@ -1,1 +1,6 @@
-ERROR: File 'ABSENT' was not found
+ERROR
+file not found
+ABSENT
+.a
+failed to resolve inheritances
+negative/missing-node-inheritance/nodelevel/input.json

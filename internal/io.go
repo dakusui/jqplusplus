@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/fs"
 	"log/slog"
 	"os"
 	"path/filepath"
@@ -176,13 +175,13 @@ func ResolveFilePath(filename string, baseDir string, searchPaths []string) (str
 			if !os.IsNotExist(err) {
 				return fullPath, nil
 			}
-			// If it is a directory, return an error.
+			// If it is a directory, return an error.3
 			return "", fmt.Errorf("file is a directory: %s", fullPath)
 		}
 	}
-	return "", composeFileNotFoundError(filename, baseDir, searchPaths)
+	return "", composeFileNotFoundError(filename)
 }
 
-func composeFileNotFoundError(filename string, baseDir string, searchPaths []string) error {
-	return fmt.Errorf("file not found: '%q'\n  in %v: %w", filename, strings.Join(append(searchPaths, baseDir), "\n     "), fs.ErrNotExist)
+func composeFileNotFoundError(filename string) error {
+	return fmt.Errorf("file not found: '%q'", filename)
 }
