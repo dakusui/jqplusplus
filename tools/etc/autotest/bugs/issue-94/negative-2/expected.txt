@@ -1,2 +1,6 @@
-ERROR: Error was detected during templating:
-ERROR: Error was reported for node path:
+ERROR:
+an int expected but got 'xyz': 
+eval:string:topathexpr
+parent..xyz..
+.key..hello world..
+negative-2/input.json
