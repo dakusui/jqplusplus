@@ -1,5 +1,0 @@
-{
-  "key":{
-    "hello world": "eval:string:topathexpr(parent(parent($cur)))"
-  }
-}

@@ -37,12 +37,13 @@ func CreateParentFunc(currentPath []any, expression string) (string, int, int, f
 
 func resolveParent(args []any, expression string, currentPath []any) any {
 	levels := 1
+	expressionAndLocation := newFunction(currentPath, expression)
 	if len(args) == 2 {
 		// Check if args[2] is an int
 		v := args[1]
 		levelArgs, ok := v.(int)
 		if !ok {
-			return fmt.Errorf("expression: %s at %v; parent(%v); %v must be an int", expression, currentPath, args, v)
+			return fmt.Errorf("an int expected but got '%v': %v", v, expressionAndLocation)
 		}
 		levels = levelArgs
 	}
@@ -50,13 +51,21 @@ func resolveParent(args []any, expression string, currentPath []any) any {
 	pathArg := args[0]
 	path, ok := pathArg.([]any)
 	if !ok {
-		return fmt.Errorf("expression: %s at %v; parent(%v); %v must be an array", expression, currentPath, args, pathArg)
+		return fmt.Errorf("an array expected but got '%v': %v", pathArg, expressionAndLocation)
 	}
 
 	if len(path) < levels {
-		return fmt.Errorf("expression: %s at %v parent(%v); %v must be smaller than %v", expression, currentPath, args, levels, len(path))
+		return fmt.Errorf("value less than or equal to %v expected but got '%v': %v", len(path), levels, expressionAndLocation)
 	}
 	return path[0 : len(path)-levels]
+}
+
+func newFunction(currentPath []any, expression string) string {
+	currentPathExpression, err := PathArrayToPathExpression(currentPath)
+	if err != nil {
+		currentPathExpression = fmt.Sprintf("%v", currentPathExpression)
+	}
+	return fmt.Sprintf("in expression: '%v'; at '%v'", expression, currentPathExpression)
 }
 
 func CreateRefFunc(self any, currentPath []any, expression string, invocationSpec InvocationSpec, baseDir string, searchPaths []string) (string, int, int, func(any, []any) any) {
