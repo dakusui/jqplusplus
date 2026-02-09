@@ -39,15 +39,9 @@ func LoadAndResolveInheritancesRecursively(baseDir string, targetFile string, no
 		return nil, err
 	}
 	if nodepool.IsVisited(absPath) {
-		return nil, fmt.Errorf(
-			"circular inheritance detected: [%s]",
-			strings.Join(Map(nodepool.VisitedFiles(absPath),
-				func(in string) string {
-					if baseDir != "" && strings.HasPrefix(in, baseDir) {
-						return strings.TrimPrefix(strings.TrimPrefix(in, baseDir), string(filepath.Separator))
-					}
-					return in
-				}), " -> "))
+		visitedFiles := nodepool.VisitedFiles(absPath)
+		circulatingFiles := formatCirculatingFileLoop(visitedFiles, baseDir)
+		return nil, fmt.Errorf("circular inheritance detected: [%s]", circulatingFiles)
 	}
 	nodepool.MarkVisited(absPath)
 

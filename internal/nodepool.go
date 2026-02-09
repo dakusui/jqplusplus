@@ -3,7 +3,6 @@ package internal
 import (
 	"log/slog"
 	"path/filepath"
-	"sort"
 )
 
 type NodePool interface {
@@ -95,28 +94,8 @@ func (p *NodePoolImpl) IsVisited(absPath string) bool {
 }
 
 func (p *NodePoolImpl) VisitedFiles(absPath string) []string {
-	baseVal, ok := p.visited[absPath]
-	if !ok {
-		return nil
-	}
-	type pathVal struct {
-		path string
-		val  int
-	}
-	var rest []pathVal
-	for path, val := range p.visited {
-		if val > baseVal {
-			rest = append(rest, pathVal{path, val})
-		}
-	}
-	sort.Slice(rest, func(i, j int) bool { return rest[i].val < rest[j].val })
-	result := make([]string, 0, 2+len(rest))
-	result = append(result, absPath)
-	for _, pv := range rest {
-		result = append(result, pv.path)
-	}
-	result = append(result, absPath)
-	return result
+	visited := p.visited
+	return extractVisitedLoop(visited, absPath)
 }
 
 func (p *NodePoolImpl) MarkVisited(absPath string) {

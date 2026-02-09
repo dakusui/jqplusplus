@@ -64,12 +64,12 @@ func resolveParent(args []any, expression string, currentPath []any) any {
 }
 
 func CreateRefFunc(self any, currentPath []any, expression string, invocationSpec InvocationSpec, baseDir string, searchPaths []string) (string, int, int, func(any, []any) any) {
-	visited := map[string]bool{}
+	visited := map[string]int{}
 	pathexpr, err := PathArrayToPathExpression(currentPath)
 	if err != nil {
 		panic(err)
 	}
-	visited[pathexpr] = true
+	visited[pathexpr] = len(visited)
 	return "ref", 1, 1, func(input any, args []any) any {
 		pathArg := args[0]
 		path, ok := pathArg.([]any)
@@ -82,12 +82,12 @@ func CreateRefFunc(self any, currentPath []any, expression string, invocationSpe
 }
 
 func CreateRefExprFunc(self any, currentPath []any, expression string, invocationSpec InvocationSpec) (string, int, int, func(any, []any) any) {
-	visited := map[string]bool{}
+	visited := map[string]int{}
 	pathexpr, err := PathArrayToPathExpression(currentPath)
 	if err != nil {
 		panic(err)
 	}
-	visited[pathexpr] = true
+	visited[pathexpr] = len(visited)
 	return "refexpr", 1, 1, func(input any, args []any) any {
 		pathArg := args[0]
 		pathexp, ok := pathArg.(string)
@@ -104,12 +104,12 @@ func CreateRefExprFunc(self any, currentPath []any, expression string, invocatio
 }
 
 func CreateRefTagFunc(self any, currentPath []any, expression string, invocationSpec InvocationSpec) (string, int, int, func(any, []any) any) {
-	visited := map[string]bool{}
+	visited := map[string]int{}
 	pathexpr, err := PathArrayToPathExpression(currentPath)
 	if err != nil {
 		panic(err)
 	}
-	visited[pathexpr] = true
+	visited[pathexpr] = len(visited)
 	return "reftag", 1, 1, func(input any, args []any) any {
 		tagArg := args[0]
 		tag, ok := tagArg.(string)
@@ -149,21 +149,21 @@ func CreateReadFileFunc(self any, currentPath []any, expression string, baseDir 
 	}
 }
 
-func resolveRef(self any, path []any, currentPath []any, invocationSpec InvocationSpec, expression string, args []any, baseDir string, searchPaths []string, visited map[string]bool) any {
+func resolveRef(self any, path []any, currentPath []any, invocationSpec InvocationSpec, expression string, args []any, baseDir string, searchPaths []string, visited map[string]int) any {
 	pathexpr, err := PathArrayToPathExpression(path)
 	if err != nil {
 		panic(err)
 	}
-	if visited[pathexpr] {
-		return fmt.Errorf("path expression: %v already visited: %v", pathexpr, currentPath)
+	if _, ok := visited[pathexpr]; ok {
+		return fmt.Errorf("circular reference detected at: %v (%v)", pathexpr, formatCirculatingFileLoop(extractVisitedLoop(visited, pathexpr), ""))
 	}
-	visited[pathexpr] = true
+	visited[pathexpr] = len(visited)
 	if value, ok := GetAtPath(self, path); ok {
 		// Process only if value is a string
 		if str, ok := value.(string); ok {
 			ret, err := evaluateString(str, currentPath, self, invocationSpec, baseDir, searchPaths)
 			if err != nil {
-				return fmt.Errorf("expression: %s at %v; ref(%v) failed to eval for: %v", expression, path, args, err)
+				return fmt.Errorf("%v: expression: %s at %v", err, expression, currentPath)
 			}
 			return ret
 		}

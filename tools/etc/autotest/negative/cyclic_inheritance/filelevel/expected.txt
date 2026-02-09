@@ -1,7 +1,6 @@
 ERROR
 circular inheritance detected
-input.json
-I.json
+input.json -> I.json -> input.json
 .j
 .i
 failed to resolve file-level inheritances
