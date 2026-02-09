@@ -39,7 +39,7 @@ func LoadAndResolveInheritancesRecursively(baseDir string, targetFile string, no
 		return nil, err
 	}
 	if nodepool.IsVisited(absPath) {
-		visitedFiles := nodepool.VisitedFiles(absPath)
+		visitedFiles := append(nodepool.VisitedFiles(absPath), absPath)
 		circulatingFiles := formatCirculatingFileLoop(visitedFiles, baseDir)
 		return nil, fmt.Errorf("circular inheritance detected: [%s]", circulatingFiles)
 	}
@@ -84,14 +84,6 @@ func LoadAndResolveInheritancesRecursively(baseDir string, targetFile string, no
 		}
 	}
 	return nodeEntryValue, nil
-}
-
-func composeInheritanceResolutionErr(err error, level string) error {
-	msg := fmt.Sprintf("failed to resolve %s-level inheritances", level)
-	if strings.Contains(string(err.Error()), msg) {
-		return err
-	}
-	return fmt.Errorf("%v: %s", err, msg)
 }
 
 func compilerOptions(compilerOption *JqModule) []*JqModule {

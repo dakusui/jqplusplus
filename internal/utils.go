@@ -1,6 +1,7 @@
 package internal
 
 import (
+	"fmt"
 	"path/filepath"
 	"sort"
 	"strings"
@@ -28,16 +29,29 @@ func extractVisitedLoop(visited map[string]int, absPath string) []string {
 	}
 	var rest []pathVal
 	for path, val := range visited {
-		if val > baseVal {
+		if val >= baseVal {
 			rest = append(rest, pathVal{path, val})
 		}
 	}
 	sort.Slice(rest, func(i, j int) bool { return rest[i].val < rest[j].val })
-	result := make([]string, 0, 2+len(rest))
-	result = append(result, absPath)
+	result := make([]string, 0, 1+len(rest))
 	for _, pv := range rest {
 		result = append(result, pv.path)
 	}
-	result = append(result, absPath)
 	return result
+}
+
+func composeExpressionError(err error, expression string, currentPath []any) error {
+	if !strings.Contains(err.Error(), "expression: ") {
+		return fmt.Errorf("%v: expression: %s at %v", err, expression, currentPath)
+	}
+	return err
+}
+
+func composeInheritanceResolutionErr(err error, level string) error {
+	msg := fmt.Sprintf("failed to resolve %s-level inheritances", level)
+	if strings.Contains(string(err.Error()), msg) {
+		return err
+	}
+	return fmt.Errorf("%v: %s", err, msg)
 }

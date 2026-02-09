@@ -1,6 +1,6 @@
 ERROR:
 circular reference detected
-.a
-.a -> .b -> .a
-eval:refexpr...b..
+\.a
+\.b -> \.a
+eval:refexpr..\.a..
 negative/reference/cyclic_reference/input.json

@@ -274,7 +274,8 @@ func ProcessValueSide(obj map[string]any, ttl int, invocationSpec InvocationSpec
 	var newEntries []Entry
 	for _, e := range entries {
 		v := e.Value.(string)
-		n, err := evaluateString(v, e.Path, newObj, invocationSpec, baseDir, searchPaths)
+		visited := map[string]int{}
+		n, err := evaluateString(v, e.Path, newObj, invocationSpec, baseDir, searchPaths, visited)
 		if err != nil {
 			return nil, err
 		}
@@ -291,7 +292,7 @@ func ProcessValueSide(obj map[string]any, ttl int, invocationSpec InvocationSpec
 	return ProcessValueSide(newObj, ttl-1, invocationSpec, baseDir, searchPaths)
 }
 
-func evaluateString(str string, path []any, self any, invocationSpec InvocationSpec, baseDir string, searchPaths []string) (any, error) {
+func evaluateString(str string, path []any, self any, invocationSpec InvocationSpec, baseDir string, searchPaths []string, visited map[string]int) (any, error) {
 	var ret any
 	if strings.HasPrefix(str, prefixRaw) {
 		ret = str[len(prefixRaw):]
@@ -310,9 +311,9 @@ func evaluateString(str string, path []any, self any, invocationSpec InvocationS
 			AddFunction(CreateToPathExprFunc()).
 			AddFunction(CreateParentOfFunc(path, str)).
 			AddFunction(CreateParentFunc(path, str)).
-			AddFunction(CreateRefFunc(self, path, str, invocationSpec, baseDir, searchPaths)).
-			AddFunction(CreateRefExprFunc(self, path, str, invocationSpec)).
-			AddFunction(CreateRefTagFunc(self, path, str, invocationSpec)).
+			AddFunction(CreateRefFunc(self, path, str, invocationSpec, baseDir, searchPaths, visited)).
+			AddFunction(CreateRefExprFunc(self, path, str, invocationSpec, visited)).
+			AddFunction(CreateRefTagFunc(self, path, str, invocationSpec, visited)).
 			AddFunction(CreateReadFileFunc(self, path, str, baseDir, searchPaths)).
 			Build()
 		x, err := EvaluateExpression(self, w, []JSONType{expectedType}, *spec)
