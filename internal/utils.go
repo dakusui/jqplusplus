@@ -50,8 +50,8 @@ func composeExpressionError(err error, expression string, currentPath []any) err
 
 func composeInheritanceResolutionErr(err error, level string) error {
 	msg := fmt.Sprintf("failed to resolve %s-level inheritances", level)
-	if strings.Contains(string(err.Error()), msg) {
-		return err
+	if !strings.Contains(string(err.Error()), msg) {
+		return fmt.Errorf("%v: %s", err, msg)
 	}
-	return fmt.Errorf("%v: %s", err, msg)
+	return err
 }

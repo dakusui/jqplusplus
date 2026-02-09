@@ -147,10 +147,13 @@ func resolveRef(self any, path []any, currentPath []any, invocationSpec Invocati
 			if err != nil {
 				return composeExpressionError(err, expression, currentPath)
 			}
+			delete(visited, pathexpr)
 			return ret
 		}
+		delete(visited, pathexpr)
 		return value
 	}
 	selfJSON, _ := json.Marshal(self)
+	delete(visited, pathexpr)
 	return fmt.Errorf("path: %v in expression: %v not found in object: %s", path, expression, selfJSON)
 }
