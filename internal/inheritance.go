@@ -39,7 +39,15 @@ func LoadAndResolveInheritancesRecursively(baseDir string, targetFile string, no
 		return nil, err
 	}
 	if nodepool.IsVisited(absPath) {
-		return nil, fmt.Errorf("circular file-level inheritance detected: %s", absPath)
+		return nil, fmt.Errorf(
+			"circular inheritance detected: [%s]",
+			strings.Join(Map(nodepool.VisitedFiles(absPath),
+				func(in string) string {
+					if baseDir != "" && strings.HasPrefix(in, baseDir) {
+						return strings.TrimPrefix(strings.TrimPrefix(in, baseDir), string(filepath.Separator))
+					}
+					return in
+				}), " -> "))
 	}
 	nodepool.MarkVisited(absPath)
 
@@ -70,7 +78,7 @@ func LoadAndResolveInheritancesRecursively(baseDir string, targetFile string, no
 		slog.Debug("BEGIN: File-level inheritance: ", "targetFile", targetFile)
 		nodeEntryValue, err = expandFileLevelInheritances(obj, compilerOptions(compilerOption), nodepool, baseDir)
 		if err != nil {
-			return nil, fmt.Errorf("%v: failed to resolve inheritances", err)
+			return nil, composeInheritanceResolutionErr(err, "file")
 		}
 		slog.Debug("END:   File-level inheritance: ", "targetFile", targetFile)
 	}
@@ -78,10 +86,18 @@ func LoadAndResolveInheritancesRecursively(baseDir string, targetFile string, no
 		// Node-level inheritance
 		nodeEntryValue, err = expandNodeLevelInheritances(nodeEntryValue.Obj, nodeEntryValue.CompilerOptions, nodepool, baseDir)
 		if err != nil {
-			return nil, fmt.Errorf("%v: failed to resolve inheritances", err)
+			return nil, composeInheritanceResolutionErr(err, "node")
 		}
 	}
 	return nodeEntryValue, nil
+}
+
+func composeInheritanceResolutionErr(err error, level string) error {
+	msg := fmt.Sprintf("failed to resolve %s-level inheritances", level)
+	if strings.Contains(string(err.Error()), msg) {
+		return err
+	}
+	return fmt.Errorf("%v: %s", err, msg)
 }
 
 func compilerOptions(compilerOption *JqModule) []*JqModule {

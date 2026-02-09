@@ -1,2 +1,8 @@
-ERROR: Cyclic inheritance was detected in
+ERROR
+circular inheritance detected
+input.json
 I.json
+.j
+.i
+failed to resolve node-level inheritances
+negative/cyclic_inheritance/nodelevel/input.json

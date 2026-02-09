@@ -3,11 +3,13 @@ package internal
 import (
 	"log/slog"
 	"path/filepath"
+	"sort"
 )
 
 type NodePool interface {
 	ReadNodeEntryValue(baseDir, filename string, compilerOptions []*JqModule) (*NodeEntryValue, error)
 	IsVisited(absPath string) bool
+	VisitedFiles(absPath string) []string
 	MarkVisited(absPath string)
 	SearchPaths() []string
 	SessionDirectory() string
@@ -47,7 +49,7 @@ type NodePoolImpl struct {
 	// ensures that previously resolved entries can be retrieved efficiently
 	// without redundant operations.
 	cache   map[NodeEntryKey]NodeEntryValue
-	visited map[string]bool
+	visited map[string]int
 }
 
 func NewNodePoolWithBaseSearchPaths(baseDir, sessionDirectory string, searchPaths []string) *NodePoolImpl {
@@ -57,7 +59,7 @@ func NewNodePoolWithBaseSearchPaths(baseDir, sessionDirectory string, searchPath
 		localNodeSearchPaths: []string{},
 		baseSearchPaths:      searchPaths,
 		cache:                map[NodeEntryKey]NodeEntryValue{},
-		visited:              map[string]bool{},
+		visited:              map[string]int{},
 	}
 }
 
@@ -86,11 +88,39 @@ func (p *NodePoolImpl) ReadNodeEntryValue(baseDir_, filename_ string, compilerOp
 }
 
 func (p *NodePoolImpl) IsVisited(absPath string) bool {
-	return p.visited[absPath]
+	if _, ok := p.visited[absPath]; ok {
+		return true
+	}
+	return false
+}
+
+func (p *NodePoolImpl) VisitedFiles(absPath string) []string {
+	baseVal, ok := p.visited[absPath]
+	if !ok {
+		return nil
+	}
+	type pathVal struct {
+		path string
+		val  int
+	}
+	var rest []pathVal
+	for path, val := range p.visited {
+		if val > baseVal {
+			rest = append(rest, pathVal{path, val})
+		}
+	}
+	sort.Slice(rest, func(i, j int) bool { return rest[i].val < rest[j].val })
+	result := make([]string, 0, 2+len(rest))
+	result = append(result, absPath)
+	for _, pv := range rest {
+		result = append(result, pv.path)
+	}
+	result = append(result, absPath)
+	return result
 }
 
 func (p *NodePoolImpl) MarkVisited(absPath string) {
-	p.visited[absPath] = true
+	p.visited[absPath] = len(p.visited)
 }
 
 func (p *NodePoolImpl) Enter(localNodeDirectory string) {

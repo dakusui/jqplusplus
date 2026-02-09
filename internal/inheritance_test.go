@@ -307,6 +307,7 @@ func TestLoadAndResolveInheritances_CircularExtends(t *testing.T) {
 	if err == nil || err.Error() == "" {
 		t.Errorf("expected error for circular filelevel, got: %v", err)
 	}
+	fmt.Println(err)
 }
 
 func TestLoadAndResolveInheritances_SingleIncludes(t *testing.T) {
