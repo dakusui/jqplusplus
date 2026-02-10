@@ -163,5 +163,5 @@ func marshal(v any) any {
 	if err != nil {
 		return v
 	}
-	return marshal(ret)
+	return ret
 }
