@@ -108,7 +108,7 @@ func CreateRefTagFunc(self any, currentPath []any, expression string, invocation
 			}
 		}
 
-		return fmt.Errorf("tag: '%v' cannot be found from path: %v in obect: %v", tag, currentPath, self)
+		return fmt.Errorf("tag: '%v' cannot be found from path: %v in obect: %v", tag, currentPath, marshal(self))
 	}
 }
 
@@ -155,5 +155,13 @@ func resolveRef(self any, path []any, currentPath []any, invocationSpec Invocati
 	}
 	selfJSON, _ := json.Marshal(self)
 	delete(visited, pathexpr)
-	return fmt.Errorf("path: %v in expression: %v not found in object: %s", path, expression, selfJSON)
+	return fmt.Errorf("path: %v in expression: %v not found in object: %s", toPathExpression(path), expression, selfJSON)
+}
+
+func marshal(v any) any {
+	ret, err := json.Marshal(v)
+	if err != nil {
+		return v
+	}
+	return marshal(ret)
 }
