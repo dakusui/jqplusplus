@@ -38,6 +38,24 @@ func TestLoadAndResolveInheritances_SingleExtends(t *testing.T) {
 	}
 }
 
+func TestLoadAndResolveInheritances_OptionalExtends(t *testing.T) {
+	dir := t.TempDir()
+	child := testutil.WriteTempJSON(t, dir, "child.json", `{
+  "$extends": [
+    "O.json?"
+  ],
+  "hello": "world"
+}`)
+	result, err := LoadAndResolveInheritances(filepath.Dir(child), filepath.Base(child), []string{})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	expected := map[string]interface{}{"hello": "world"}
+	if !reflect.DeepEqual(result.Obj, expected) {
+		t.Errorf("expected %v, got %v", expected, result)
+	}
+}
+
 func TestLoadAndResolveInheritances_MultipleExtends(t *testing.T) {
 	dir := t.TempDir()
 	_ = testutil.WriteTempJSON(t, dir, "p1.json", `{"a": 1, "b": 2}`)

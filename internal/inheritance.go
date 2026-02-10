@@ -36,7 +36,7 @@ func LoadAndResolveInheritancesRecursively(baseDir string, targetFile string, no
 		return &NodeEntryValue{Obj: map[string]any{}, CompilerOptions: make([]*JqModule, 0)}, nil
 	}
 	if err != nil {
-		return nil, err
+		return nil, composeFileNotFoundError(targetFile)
 	}
 	if nodepool.IsVisited(absPath) {
 		visitedFiles := append(nodepool.VisitedFiles(absPath), absPath)
@@ -84,6 +84,9 @@ func LoadAndResolveInheritancesRecursively(baseDir string, targetFile string, no
 		}
 	}
 	return nodeEntryValue, nil
+}
+func composeFileNotFoundError(filename string) error {
+	return fmt.Errorf("file not found: %q", filename)
 }
 
 func compilerOptions(compilerOption *JqModule) []*JqModule {
