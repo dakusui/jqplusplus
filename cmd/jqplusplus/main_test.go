@@ -110,6 +110,22 @@ func TestLoadAndResolveInheritances_CyclicRef_ThenError(t *testing.T) {
 	}
 }
 
+func TestLoadAndResolveInheritances_IndirectCyclicRef_ThenPanic(t *testing.T) {
+	dir := t.TempDir()
+	child := testutil.WriteTempJSON(t, dir, "child.json",
+		`{
+  "a": {
+    "key": "eval:object:ref([\"a\"])"
+  }
+}`)
+	defer func() {
+		if r := recover(); r == nil {
+			t.Fatalf("panic expected for indirect cyclic reference, but call returned normally")
+		}
+	}()
+	_, _ = processNodeEntryKey((internal.NewNodeEntryKey(filepath.Dir(child), filepath.Base(child))))
+}
+
 func TestLoadAndResolveInheritances_MIssingReftAG_ThenError(t *testing.T) {
 	dir := t.TempDir()
 	child := testutil.WriteTempJSON(t, dir, "child.json",

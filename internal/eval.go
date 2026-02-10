@@ -88,7 +88,7 @@ func EvaluateExpression(
 	// Validate and return the result based on the expected type
 	expected := isExpected(result, expectedTypes...)
 	if !expected {
-		return nil, fmt.Errorf("result type mismatch: expected one of %s but got %T(%v)", expectedTypes, result, result)
+		return nil, fmt.Errorf("result type mismatch: expected one of %s but got %T(%v)", expectedTypes, result, marshal(result))
 	}
 	return result, nil
 }
