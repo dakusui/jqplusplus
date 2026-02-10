@@ -1,5 +1,5 @@
 ERROR: 
 file not found
 ABSENT
-failed to resolve inheritances
+failed to resolve file-level inheritances
 negative/missing-node-inheritance/filelevel/input.json

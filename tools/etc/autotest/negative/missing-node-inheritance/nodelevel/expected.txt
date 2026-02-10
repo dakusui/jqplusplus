@@ -2,5 +2,5 @@ ERROR
 file not found
 ABSENT
 .a
-failed to resolve inheritances
+failed to resolve node-level inheritances
 negative/missing-node-inheritance/nodelevel/input.json
