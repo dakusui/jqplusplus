@@ -153,9 +153,8 @@ func resolveRef(self any, path []any, currentPath []any, invocationSpec Invocati
 		delete(visited, pathexpr)
 		return value
 	}
-	selfJSON, _ := json.Marshal(self)
 	delete(visited, pathexpr)
-	return fmt.Errorf("path: %v in expression: %v not found in object: %s", toPathExpression(path), expression, selfJSON)
+	return fmt.Errorf("path: %v in expression: %v not found in object: %s", toPathExpression(path), expression, marshal(self))
 }
 
 func marshal(v any) any {
@@ -163,5 +162,5 @@ func marshal(v any) any {
 	if err != nil {
 		return v
 	}
-	return ret
+	return string(ret)
 }
