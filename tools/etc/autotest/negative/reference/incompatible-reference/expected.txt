@@ -1,2 +1,5 @@
-ERROR: Type mismatch was detected for
-expected type:'object' actual type:'array'
+ERROR: 
+result type mismatch
+expected one of \\\[object\\\]
+but got string\\\(abc\\\)
+negative/reference/incompatible-reference/input.json

@@ -1,5 +1,5 @@
 {
   "a": {
-    "key": "eval:object:$(ref .a)"
+    "key": "eval:object:ref([\"a\"])"
   }
 }

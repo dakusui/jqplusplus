@@ -1,3 +1,5 @@
-ERROR: Malformed JSON was given
+ERROR:
+looking for beginning of value: at '.a'
+failed to resove node-level inheritances
 nodelevel\/M\.json
 // MALFORMED

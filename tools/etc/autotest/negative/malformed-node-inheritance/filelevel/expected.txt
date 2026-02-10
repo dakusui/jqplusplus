@@ -1,1 +1,4 @@
-ERROR: Malformed JSON was given
+ERROR:
+invalid character '/' looking for beginning of value
+failed to resolve file-level inheritances: 
+negative/malformed-node-inheritance/filelevel/input.json
