@@ -1,5 +1,5 @@
 ERROR:
 result type mismatch
 expected .+object
-but got string.xyzw.
+but got string..xyzw..
 negative/reference/malformed-reference/input.json

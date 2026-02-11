@@ -1,5 +1,5 @@
 ERROR: 
 result type mismatch
 expected one of \\\[object\\\]
-but got string\\\(abc\\\)
+but got string\\\(\"abc\"\\\)
 negative/reference/incompatible-reference/input.json

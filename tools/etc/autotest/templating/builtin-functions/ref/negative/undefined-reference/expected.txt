@@ -4,4 +4,4 @@ eval:array:refexpr
 not found in object:
 \"a\":..Hello..,
 \"arr\":\"eval:array:
-templating/builtin-functions/array_append/negative/undefined-reference/input.json
+templating/builtin-functions/ref/negative/undefined-reference/input.json
