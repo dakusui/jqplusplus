@@ -1,0 +1,5 @@
+MESSAGE BIG: /home/hiroshi/Documents/github/dakusui/jqplusplus/worktrees/test-calibrations-negative-tests/tools/etc/autotest/templating/builtin-functions/ref/negative/00/test.json 
+CYCLIC OBJECT GENERATION BUG: /home/hiroshi/Documents/github/dakusui/jqplusplus/worktrees/test-calibrations-negative-tests/tools/etc/autotest/templating/nested-templating/negative/test.json 
+MESSAGE BUG: /home/hiroshi/Documents/github/dakusui/jqplusplus/worktrees/test-calibrations-negative-tests/tools/etc/autotest/negative/malformed-node-inheritance/nodelevel/test.json 
+MESSAGE BUG (TYPE MISMATCH ON INHERITANCE; PANICKING): /home/hiroshi/Documents/github/dakusui/jqplusplus/worktrees/test-calibrations-negative-tests/tools/etc/autotest/inheritance/nodelevel/negative/test.json 
+
