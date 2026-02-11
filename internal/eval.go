@@ -55,7 +55,7 @@ func EvaluateExpression(
 	expressionWithImportStatements := composeExpressionString(expression, invocationSpec.ModuleNames())
 	query, err := gojq.Parse(expressionWithImportStatements)
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse jq expression: '%v' <%w>", expressionWithImportStatements, err)
+		return nil, fmt.Errorf("failed to evaluate jq expression: '%v' error: %w", expressionWithImportStatements, err)
 	}
 
 	var options []gojq.CompilerOption
@@ -318,7 +318,7 @@ func evaluateString(str string, path []any, self any, invocationSpec InvocationS
 			Build()
 		x, err := EvaluateExpression(self, w, []JSONType{expectedType}, *spec)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("%v: in expression: %v at: %v", err, str, toPathExpression(path))
 		}
 		ret = x
 	} else {

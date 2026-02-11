@@ -1,0 +1,9 @@
+ERROR:
+failed to evaluate jq expression
+unknownfunction
+unexpected token
+at
+.arr
+in expression: 
+eval:array:unknownfunction
+templating/builtin-functions/ref/negative/01/input.json

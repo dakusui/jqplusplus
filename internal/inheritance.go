@@ -154,7 +154,7 @@ func resolveInheritances(obj map[string]any, compilerOptions []*JqModule, nodepo
 		for i, parent := range parentFiles {
 			nodeEntryValue, err := nodepool.ReadNodeEntryValue(baseDir, parent, tmpCompilerOptions)
 			if err != nil {
-				return nil, err
+				return nil, fmt.Errorf("%v: parent: %v", err, parent)
 			}
 			if i == 0 {
 				mergedParents = nodeEntryValue.Obj
@@ -224,9 +224,13 @@ func (m InheritType) IsOrderReversed() bool {
 func ReadFileAsJSONObject(path string) (map[string]any, *JqModule, error) {
 	ret, jqModuel, err := ReadFileAsJSONElement(path)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, fmt.Errorf("%v: failed to read file: %s", err, path)
 	}
-	return ret.(map[string]any), jqModuel, nil
+	m, ok := ret.(map[string]any)
+	if !ok {
+		return nil, nil, fmt.Errorf("expected JSON object, but got %T(%v): in %s", ret, ret, path)
+	}
+	return m, jqModuel, nil
 }
 
 func ReadFileAsJSONElement(path string) (any, *JqModule, error) {

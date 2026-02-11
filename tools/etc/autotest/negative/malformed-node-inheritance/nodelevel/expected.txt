@@ -1,5 +1,5 @@
 ERROR:
-looking for beginning of value: at '.a'
-failed to resove node-level inheritances
-nodelevel\/M\.json
-// MALFORMED
+invalid character '/'
+at '.a'
+failed to resolve node-level inheritances
+M\.json

@@ -1,3 +1,6 @@
 ERROR:
+failed to evaluate
 refexpr
+unexpected token
 .arr
+templating/builtin-functions/ref/negative/00/input.json
