@@ -1,2 +1,4 @@
-ERROR: Error was detected during templating:
-cat: missingFile: No such file or directory
+ERROR:
+error
+intentional error
+templating/negative/failing/input.json

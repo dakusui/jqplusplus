@@ -1,2 +1,5 @@
-ERROR: Error was detected during templating:
-ERROR: Failed to access '."ABSENT"' and default value for it was not given.
+ERROR
+path: .ABSENT.
+eval:string:refexpr.+ABSENT
+not found in
+negative/missing-node-inheritance/textnodelevel/input.json

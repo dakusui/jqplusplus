@@ -38,3 +38,4 @@ go.work.sum
 
 # generated documentation
 /docs
+/tools/tmp

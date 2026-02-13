@@ -1,3 +1,0 @@
-ERROR: Error was detected during templating:
-array_append
-ERROR: Failed to access '."A"' and default value for it was not given.

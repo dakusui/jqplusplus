@@ -1,4 +1,4 @@
 {
-  "a": "eval:$(ref .b)",
-  "b": "eval:$(ref .a)"
+  "a": "eval:refexpr(\".b\")",
+  "b": "eval:refexpr(\".a\")"
 }

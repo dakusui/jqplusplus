@@ -1,1 +1,8 @@
-ERROR: The specified tag:'missingTag' was not found from the current path:'."k0"."k1"'
+ERROR:
+tag: 'missingTag'
+cannot be found from path:
+\.k0\.k1
+in obect:
+\"k0\":.\"k1\"
+eval:string:reftag
+templating/builtin-functions/reftag/negative/input.json

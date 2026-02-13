@@ -1,3 +1,5 @@
-ERROR: Type mismatch was detected for:
-expected type:'array'
-actual type:'object'
+ERROR:
+result type mismatch
+expected.+array
+but got map
+negative/typemismatch-object-to-array/input.json

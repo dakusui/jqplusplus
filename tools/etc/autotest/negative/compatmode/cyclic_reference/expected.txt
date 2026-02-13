@@ -1,2 +1,0 @@
-ERROR: Cyclic reference was detected in
-\.b

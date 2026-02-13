@@ -1,6 +1,7 @@
 package internal
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -32,6 +33,24 @@ func TestLoadAndResolveInheritances_SingleExtends(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 	expected := map[string]interface{}{"a": float64(1), "b": float64(3), "c": float64(4)}
+	if !reflect.DeepEqual(result.Obj, expected) {
+		t.Errorf("expected %v, got %v", expected, result)
+	}
+}
+
+func TestLoadAndResolveInheritances_OptionalExtends(t *testing.T) {
+	dir := t.TempDir()
+	child := testutil.WriteTempJSON(t, dir, "child.json", `{
+  "$extends": [
+    "O.json?"
+  ],
+  "hello": "world"
+}`)
+	result, err := LoadAndResolveInheritances(filepath.Dir(child), filepath.Base(child), []string{})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	expected := map[string]interface{}{"hello": "world"}
 	if !reflect.DeepEqual(result.Obj, expected) {
 		t.Errorf("expected %v, got %v", expected, result)
 	}
@@ -184,7 +203,7 @@ func TestLoadAndResolveInheritances_ExtendsWithLocalOutOfScope_ThenFail(t *testi
 	}
 }
 
-func TestLoadAndResolveInheritances_SingleExtendsNonExisting_ThenFail(t *testing.T) {
+func TestLoadAndResolveInheritances_SingleExtendsAtFileLevelNonExisting_ThenFail(t *testing.T) {
 	dir := t.TempDir()
 	_ = testutil.WriteTempJSON(t, dir, "parent.json", `{"a": 1, "b": 2}`)
 	child := testutil.WriteTempJSON(t, dir, "child.json", `{"$extends": ["nonExisting.json"], "b": 3, "c": 4}`)
@@ -195,6 +214,21 @@ func TestLoadAndResolveInheritances_SingleExtendsNonExisting_ThenFail(t *testing
 	if !strings.Contains(err.Error(), "file not found") || !strings.Contains(err.Error(), "nonExisting") {
 		t.Fatalf("unexpected error message: %v", err.Error())
 	}
+	fmt.Print(err.Error())
+}
+
+func TestLoadAndResolveInheritances_SingleExtendsAtNodeLevelNonExisting_ThenFail(t *testing.T) {
+	dir := t.TempDir()
+	_ = testutil.WriteTempJSON(t, dir, "parent.json", `{"a": 1, "b": 2}`)
+	child := testutil.WriteTempJSON(t, dir, "child.json", `{"key":{"$extends": ["nonExisting.json"], "b": 3, "c": 4}}`)
+	result, err := LoadAndResolveInheritances(filepath.Dir(child), filepath.Base(child), []string{})
+	if err == nil {
+		t.Fatalf("expected error was not raised: %v", result)
+	}
+	if !strings.Contains(err.Error(), "file not found") || !strings.Contains(err.Error(), "nonExisting") {
+		t.Fatalf("unexpected error message: %v", err.Error())
+	}
+	fmt.Print(err.Error())
 }
 
 func TestLoadAndResolveInheritances_ExtendsRelativelyAndIndirectly(t *testing.T) {
@@ -291,6 +325,7 @@ func TestLoadAndResolveInheritances_CircularExtends(t *testing.T) {
 	if err == nil || err.Error() == "" {
 		t.Errorf("expected error for circular filelevel, got: %v", err)
 	}
+	fmt.Println(err)
 }
 
 func TestLoadAndResolveInheritances_SingleIncludes(t *testing.T) {

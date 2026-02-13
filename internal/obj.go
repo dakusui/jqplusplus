@@ -2,6 +2,7 @@ package internal
 
 import (
 	"fmt"
+	"reflect"
 	"sort"
 )
 
@@ -353,24 +354,124 @@ func RemovePath(root any, path []any) bool {
 	}
 }
 
-// DeepCopy creates a deep copy of the given value.
-// It recursively copies maps and slices, while preserving primitive values.
-func DeepCopy(v any) any {
+// ContainsCyclicReference returns true if and only if v contains a cyclic
+// reference (a map or slice that is reachable from itself through its own
+// nested values). It is intended as a precheck for DeepCopy: if this returns
+// true, DeepCopy(v) will panic.
+func ContainsCyclicReference(v any) bool {
+	visiting := make(map[uintptr]struct{})
+	return containsCyclicRef(v, visiting)
+}
+
+func containsCyclicRef(v any, visiting map[uintptr]struct{}) bool {
 	switch x := v.(type) {
 	case map[string]any:
+		if x == nil {
+			return false
+		}
+		ptr := reflect.ValueOf(x).Pointer()
+		if ptr != 0 {
+			if _, ok := visiting[ptr]; ok {
+				return true
+			}
+			visiting[ptr] = struct{}{}
+			defer delete(visiting, ptr)
+		}
+		for _, val := range x {
+			if containsCyclicRef(val, visiting) {
+				return true
+			}
+		}
+		return false
+	case []any:
+		if x == nil {
+			return false
+		}
+		ptr := reflect.ValueOf(x).Pointer()
+		if ptr != 0 {
+			if _, ok := visiting[ptr]; ok {
+				return true
+			}
+			visiting[ptr] = struct{}{}
+			defer delete(visiting, ptr)
+		}
+		for _, val := range x {
+			if containsCyclicRef(val, visiting) {
+				return true
+			}
+		}
+		return false
+	default:
+		return false
+	}
+}
+
+// DeepCopy creates a deep copy of the given value.
+// It recursively copies maps and slices, while preserving primitive values.
+// If it encounters a cyclic reference in maps or slices, it panics instead of
+// recursing infinitely (which could otherwise lead to OOM).
+func DeepCopy(v any) any {
+	return deepCopy(v, make(map[uintptr]visitState))
+}
+
+type visitState uint8
+
+const (
+	visitUnseen visitState = iota
+	visitVisiting
+	visitDone
+)
+
+func deepCopy(v any, states map[uintptr]visitState) any {
+	switch x := v.(type) {
+	case map[string]any:
+		if x == nil {
+			return x
+		}
+		ptr := reflect.ValueOf(x).Pointer()
+		if ptr != 0 {
+			switch states[ptr] {
+			case visitVisiting:
+				panic("DeepCopy: cyclic reference detected in map")
+			case visitDone:
+				// Already fully copied once via another path; it's safe to copy again.
+			default:
+				states[ptr] = visitVisiting
+				defer func() {
+					states[ptr] = visitDone
+				}()
+			}
+		}
 		result := make(map[string]any, len(x))
 		for k, val := range x {
-			result[k] = DeepCopy(val)
+			result[k] = deepCopy(val, states)
 		}
 		return result
 	case []any:
+		if x == nil {
+			return x
+		}
+		ptr := reflect.ValueOf(x).Pointer()
+		if ptr != 0 {
+			switch states[ptr] {
+			case visitVisiting:
+				panic("DeepCopy: cyclic reference detected in slice")
+			case visitDone:
+				// Already fully copied once via another path; it's safe to copy again.
+			default:
+				states[ptr] = visitVisiting
+				defer func() {
+					states[ptr] = visitDone
+				}()
+			}
+		}
 		result := make([]any, len(x))
 		for i, val := range x {
-			result[i] = DeepCopy(val)
+			result[i] = deepCopy(val, states)
 		}
 		return result
 	default:
-		// Primitive types (string, int, float64, bool, nil) are returned as-is
+		// Primitive types (string, int, float64, bool, nil) are returned as-is.
 		return v
 	}
 }

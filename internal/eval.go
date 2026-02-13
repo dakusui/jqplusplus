@@ -55,7 +55,7 @@ func EvaluateExpression(
 	expressionWithImportStatements := composeExpressionString(expression, invocationSpec.ModuleNames())
 	query, err := gojq.Parse(expressionWithImportStatements)
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse jq expression: '%v' <%w>", expressionWithImportStatements, err)
+		return nil, fmt.Errorf("failed to evaluate jq expression: '%v' error: %w", expressionWithImportStatements, err)
 	}
 
 	var options []gojq.CompilerOption
@@ -88,7 +88,7 @@ func EvaluateExpression(
 	// Validate and return the result based on the expected type
 	expected := isExpected(result, expectedTypes...)
 	if !expected {
-		return nil, fmt.Errorf("result type mismatch: expected one of %s but got %T", expectedTypes, result)
+		return nil, fmt.Errorf("result type mismatch: expected one of %s but got %T(%v)", expectedTypes, result, marshal(result))
 	}
 	return result, nil
 }
@@ -269,12 +269,15 @@ func ProcessValueSide(obj map[string]any, ttl int, invocationSpec InvocationSpec
 		return newObj, nil
 	}
 	if ttl <= 0 {
-		return nil, fmt.Errorf("ttl is 0, %v entries left.(%v)", len(entries), entries)
+		return nil, fmt.Errorf("%v entries left unevaluated: %v", len(entries), entries)
 	}
 	var newEntries []Entry
+	valuesBeforeEvaluation := map[string]any{}
 	for _, e := range entries {
 		v := e.Value.(string)
-		n, err := evaluateString(v, e.Path, newObj, invocationSpec, baseDir, searchPaths)
+		valuesBeforeEvaluation[toPathExpression(e.Path)] = v
+		visited := map[string]int{}
+		n, err := evaluateString(v, e.Path, newObj, invocationSpec, baseDir, searchPaths, visited)
 		if err != nil {
 			return nil, err
 		}
@@ -287,11 +290,15 @@ func ProcessValueSide(obj map[string]any, ttl int, invocationSpec InvocationSpec
 		if !PutAtPath(newObj, p, v) {
 			return nil, fmt.Errorf("failed to put value at path %v", p)
 		}
+		if ContainsCyclicReference(newObj) {
+			pexp := toPathExpression(p)
+			return nil, fmt.Errorf("value: %v at %v makes the output cyclic", valuesBeforeEvaluation[pexp], pexp)
+		}
 	}
 	return ProcessValueSide(newObj, ttl-1, invocationSpec, baseDir, searchPaths)
 }
 
-func evaluateString(str string, path []any, self any, invocationSpec InvocationSpec, baseDir string, searchPaths []string) (any, error) {
+func evaluateString(str string, path []any, self any, invocationSpec InvocationSpec, baseDir string, searchPaths []string, visited map[string]int) (any, error) {
 	var ret any
 	if strings.HasPrefix(str, prefixRaw) {
 		ret = str[len(prefixRaw):]
@@ -310,20 +317,20 @@ func evaluateString(str string, path []any, self any, invocationSpec InvocationS
 			AddFunction(CreateToPathExprFunc()).
 			AddFunction(CreateParentOfFunc(path, str)).
 			AddFunction(CreateParentFunc(path, str)).
-			AddFunction(CreateRefFunc(self, path, str, invocationSpec, baseDir, searchPaths)).
-			AddFunction(CreateRefExprFunc(self, path, str, invocationSpec)).
-			AddFunction(CreateRefTagFunc(self, path, str, invocationSpec)).
+			AddFunction(CreateRefFunc(self, path, str, invocationSpec, baseDir, searchPaths, visited)).
+			AddFunction(CreateRefExprFunc(self, path, str, invocationSpec, visited)).
+			AddFunction(CreateRefTagFunc(self, path, str, invocationSpec, visited)).
 			AddFunction(CreateReadFileFunc(self, path, str, baseDir, searchPaths)).
 			Build()
 		x, err := EvaluateExpression(self, w, []JSONType{expectedType}, *spec)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("%v: in expression: %v at: %v", err, str, toPathExpression(path))
 		}
 		ret = x
 	} else {
-		//panic(fmt.Sprintf("Fishy value was found: <%s> at %v", str, path))
 		ret = str
 	}
+	//return DeepCopy(ret), nil
 	return ret, nil
 }
 

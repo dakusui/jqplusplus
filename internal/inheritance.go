@@ -36,10 +36,12 @@ func LoadAndResolveInheritancesRecursively(baseDir string, targetFile string, no
 		return &NodeEntryValue{Obj: map[string]any{}, CompilerOptions: make([]*JqModule, 0)}, nil
 	}
 	if err != nil {
-		return nil, err
+		return nil, composeFileNotFoundError(targetFile)
 	}
 	if nodepool.IsVisited(absPath) {
-		return nil, fmt.Errorf("circular file-level inheritance detected: %s", absPath)
+		visitedFiles := append(nodepool.VisitedFiles(absPath), absPath)
+		circulatingFiles := formatCirculatingFileLoop(visitedFiles, baseDir)
+		return nil, fmt.Errorf("circular inheritance detected: [%s]", circulatingFiles)
 	}
 	nodepool.MarkVisited(absPath)
 
@@ -70,7 +72,7 @@ func LoadAndResolveInheritancesRecursively(baseDir string, targetFile string, no
 		slog.Debug("BEGIN: File-level inheritance: ", "targetFile", targetFile)
 		nodeEntryValue, err = expandFileLevelInheritances(obj, compilerOptions(compilerOption), nodepool, baseDir)
 		if err != nil {
-			return nil, err
+			return nil, composeInheritanceResolutionErr(err, "file")
 		}
 		slog.Debug("END:   File-level inheritance: ", "targetFile", targetFile)
 	}
@@ -78,10 +80,13 @@ func LoadAndResolveInheritancesRecursively(baseDir string, targetFile string, no
 		// Node-level inheritance
 		nodeEntryValue, err = expandNodeLevelInheritances(nodeEntryValue.Obj, nodeEntryValue.CompilerOptions, nodepool, baseDir)
 		if err != nil {
-			return nil, err
+			return nil, composeInheritanceResolutionErr(err, "node")
 		}
 	}
 	return nodeEntryValue, nil
+}
+func composeFileNotFoundError(filename string) error {
+	return fmt.Errorf("file not found: %q", filename)
 }
 
 func compilerOptions(compilerOption *JqModule) []*JqModule {
@@ -109,7 +114,8 @@ func expandNodeLevelInheritances(obj map[string]any, compilerOptions []*JqModule
 		}
 		nodeEntryValue, err := resolveBothInheritances(internalObj, compilerOptions, nodepool, baseDir)
 		if err != nil {
-			return nil, err
+			np := toPathExpression(nodepath)
+			return nil, fmt.Errorf("%s: at '%v'", err, np)
 		}
 		internalObj = nodeEntryValue.Obj
 		compilerOptions = nodeEntryValue.CompilerOptions
@@ -148,7 +154,7 @@ func resolveInheritances(obj map[string]any, compilerOptions []*JqModule, nodepo
 		for i, parent := range parentFiles {
 			nodeEntryValue, err := nodepool.ReadNodeEntryValue(baseDir, parent, tmpCompilerOptions)
 			if err != nil {
-				return nil, err
+				return nil, fmt.Errorf("%v: parent: %v", err, parent)
 			}
 			if i == 0 {
 				mergedParents = nodeEntryValue.Obj
@@ -218,9 +224,13 @@ func (m InheritType) IsOrderReversed() bool {
 func ReadFileAsJSONObject(path string) (map[string]any, *JqModule, error) {
 	ret, jqModuel, err := ReadFileAsJSONElement(path)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, fmt.Errorf("%v: failed to read file: %s", err, path)
 	}
-	return ret.(map[string]any), jqModuel, nil
+	m, ok := ret.(map[string]any)
+	if !ok {
+		return nil, nil, fmt.Errorf("expected JSON object, but got %T(%v): in %s", ret, ret, path)
+	}
+	return m, jqModuel, nil
 }
 
 func ReadFileAsJSONElement(path string) (any, *JqModule, error) {
@@ -297,28 +307,10 @@ func pathKey(p []any) string {
 	return b.String()
 }
 
-/*
-BEGIN: File-level inheritance: child.json
-ENTERED: [/tmp/jq++-session-2278310269/localnodes-2735272157]
-	BEGIN: File-level inheritance: parent.json
-	ENTERED: [/tmp/jq++-session-2278310269/localnodes-2735272157 /tmp/jq++-session-2278310269/localnodes-2709553687]
-	LEFT: [/tmp/jq++-session-2278310269/localnodes-2735272157]
-	ENTERED: [/tmp/jq++-session-2278310269/localnodes-2735272157 /tmp/jq++-session-2278310269/localnodes-3867521190]
-	LEFT: [/tmp/jq++-session-2278310269/localnodes-2735272157]
-	Writing local node "X"
-	Written local node "X"
-	END: File-level inheritance: parent.json
-	LEFT: []
-	ENTERED: [/tmp/jq++-session-2278310269/localnodes-1668519715]
-	LEFT: []
-	No local node directoryBEGIN: Node-level inheritance: [i]
-	ENTERED: [/tmp/jq++-session-2278310269/localnodes-387725387]
-		END: File-level inheritance: child.json
-			inheritance_test.go:107: unexpected error: file not found: '"X"'
-				  in /tmp/TestLoadAndResolveInheritances_ExtendsLocalNodeInParent3020370729/001
-					 /tmp/jq++-session-2278310269/localnodes-387725387
-					 /tmp/TestLoadAndResolveInheritances_ExtendsLocalNodeInParent3020370729/001: file does not exist
-		--- FAIL: TestLoadAndResolveInheritances_ExtendsLocalNodeInParent (0.00s)
-
-		FAIL
-*/
+func toPathExpression(nodepath []any) string {
+	np, err := PathArrayToPathExpression(nodepath)
+	if err != nil {
+		return fmt.Sprintf("%v", nodepath)
+	}
+	return np
+}
