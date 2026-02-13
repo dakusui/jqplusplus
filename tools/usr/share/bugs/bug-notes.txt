@@ -1,4 +1,4 @@
-       CYCLIC OBJECT GENERATION BUG:                          templating/nested-templating/negative/test.json 
+FIXED: CYCLIC OBJECT GENERATION BUG:                          templating/nested-templating/negative/test.json 
 FIXED: MESSAGE BUG:                                           templating/builtin-functions/ref/negative/00/test.json 
 FIXED: MESSAGE BUG:                                           negative/malformed-node-inheritance/nodelevel/test.json 
 FIXED: MESSAGE BUG (TYPE MISMATCH ON INHERITANCE; PANICKING): inheritance/nodelevel/negative/test.json 
