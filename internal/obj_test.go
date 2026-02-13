@@ -164,3 +164,32 @@ func TestDeepCopy_PanicsOnCyclicSlice(t *testing.T) {
 
 	_ = DeepCopy(s)
 }
+
+func TestContainsCyclicReference_NoCycle(t *testing.T) {
+	v := map[string]any{
+		"a": 1,
+		"b": []any{
+			map[string]any{"k": "v"},
+		},
+	}
+	if ContainsCyclicReference(v) {
+		t.Fatal("ContainsCyclicReference should be false for acyclic value")
+	}
+}
+
+func TestContainsCyclicReference_CyclicMap(t *testing.T) {
+	m := map[string]any{}
+	m["self"] = m
+	if !ContainsCyclicReference(m) {
+		t.Fatal("ContainsCyclicReference should be true for map that references itself")
+	}
+}
+
+func TestContainsCyclicReference_CyclicSlice(t *testing.T) {
+	var s []any
+	s = append(s, nil)
+	s[0] = s
+	if !ContainsCyclicReference(s) {
+		t.Fatal("ContainsCyclicReference should be true for slice that references itself")
+	}
+}

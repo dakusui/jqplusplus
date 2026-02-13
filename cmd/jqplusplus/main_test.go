@@ -124,6 +124,12 @@ func TestLoadAndResolveInheritances_IncompatibleCallInExpresseion_ThenError(t *t
 	}
 }
 
+/*
+map[string]interface {} [
+
+	"key": map[string]interface {} [
+	  "key": *(*interface {})(0xc0000ee6d8), ], ]
+*/
 func TestLoadAndResolveInheritances_IndirectCyclicRef_ThenPanic(t *testing.T) {
 	dir := t.TempDir()
 	child := testutil.WriteTempJSON(t, dir, "child.json",
@@ -132,12 +138,10 @@ func TestLoadAndResolveInheritances_IndirectCyclicRef_ThenPanic(t *testing.T) {
     "key": "eval:object:ref([\"a\"])"
   }
 }`)
-	defer func() {
-		if r := recover(); r == nil {
-			t.Fatalf("panic expected for indirect cyclic reference, but call returned normally")
-		}
-	}()
-	_, _ = processNodeEntryKey((internal.NewNodeEntryKey(filepath.Dir(child), filepath.Base(child))))
+	result, err := processNodeEntryKey((internal.NewNodeEntryKey(filepath.Dir(child), filepath.Base(child))))
+	if err == nil {
+		t.Fatalf("error expected but got: %v", result)
+	}
 }
 
 func TestLoadAndResolveInheritances_MIssingReftAG_ThenError(t *testing.T) {

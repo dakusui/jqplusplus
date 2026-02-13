@@ -269,11 +269,13 @@ func ProcessValueSide(obj map[string]any, ttl int, invocationSpec InvocationSpec
 		return newObj, nil
 	}
 	if ttl <= 0 {
-		return nil, fmt.Errorf("ttl is 0, %v entries left.(%v)", len(entries), entries)
+		return nil, fmt.Errorf("%v entries left unevaluated: %v", len(entries), entries)
 	}
 	var newEntries []Entry
+	valuesBeforeEvaluation := map[string]any{}
 	for _, e := range entries {
 		v := e.Value.(string)
+		valuesBeforeEvaluation[toPathExpression(e.Path)] = v
 		visited := map[string]int{}
 		n, err := evaluateString(v, e.Path, newObj, invocationSpec, baseDir, searchPaths, visited)
 		if err != nil {
@@ -287,6 +289,10 @@ func ProcessValueSide(obj map[string]any, ttl int, invocationSpec InvocationSpec
 
 		if !PutAtPath(newObj, p, v) {
 			return nil, fmt.Errorf("failed to put value at path %v", p)
+		}
+		if ContainsCyclicReference(newObj) {
+			pexp := toPathExpression(p)
+			return nil, fmt.Errorf("value: %v at %v makes the output cyclic", valuesBeforeEvaluation[pexp], pexp)
 		}
 	}
 	return ProcessValueSide(newObj, ttl-1, invocationSpec, baseDir, searchPaths)
@@ -322,9 +328,9 @@ func evaluateString(str string, path []any, self any, invocationSpec InvocationS
 		}
 		ret = x
 	} else {
-		//panic(fmt.Sprintf("Fishy value was found: <%s> at %v", str, path))
 		ret = str
 	}
+	//return DeepCopy(ret), nil
 	return ret, nil
 }
 

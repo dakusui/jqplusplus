@@ -354,6 +354,58 @@ func RemovePath(root any, path []any) bool {
 	}
 }
 
+// ContainsCyclicReference returns true if and only if v contains a cyclic
+// reference (a map or slice that is reachable from itself through its own
+// nested values). It is intended as a precheck for DeepCopy: if this returns
+// true, DeepCopy(v) will panic.
+func ContainsCyclicReference(v any) bool {
+	visiting := make(map[uintptr]struct{})
+	return containsCyclicRef(v, visiting)
+}
+
+func containsCyclicRef(v any, visiting map[uintptr]struct{}) bool {
+	switch x := v.(type) {
+	case map[string]any:
+		if x == nil {
+			return false
+		}
+		ptr := reflect.ValueOf(x).Pointer()
+		if ptr != 0 {
+			if _, ok := visiting[ptr]; ok {
+				return true
+			}
+			visiting[ptr] = struct{}{}
+			defer delete(visiting, ptr)
+		}
+		for _, val := range x {
+			if containsCyclicRef(val, visiting) {
+				return true
+			}
+		}
+		return false
+	case []any:
+		if x == nil {
+			return false
+		}
+		ptr := reflect.ValueOf(x).Pointer()
+		if ptr != 0 {
+			if _, ok := visiting[ptr]; ok {
+				return true
+			}
+			visiting[ptr] = struct{}{}
+			defer delete(visiting, ptr)
+		}
+		for _, val := range x {
+			if containsCyclicRef(val, visiting) {
+				return true
+			}
+		}
+		return false
+	default:
+		return false
+	}
+}
+
 // DeepCopy creates a deep copy of the given value.
 // It recursively copies maps and slices, while preserving primitive values.
 // If it encounters a cyclic reference in maps or slices, it panics instead of
