@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="generator" content="Asciidoctor 2.0.26">
-<title>A doc for style</title>
+<title>Builtin variables</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Open+Sans:300,300italic,400,400italic,600,600italic%7CNoto+Serif:400,400italic,700,700italic%7CDroid+Sans+Mono:400,700">
 <style>
 /*! Asciidoctor default stylesheet | MIT License | https://asciidoctor.org */
@@ -434,13 +434,351 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 @media amzn-kf8{#header,#content,#footnotes,#footer{padding:0}}
 </style>
 </head>
-<body class="article">
+<body class="article toc2 toc-left">
 <div id="header">
-<h1>A doc for style</h1>
+<div id="toc" class="toc2">
+<div id="toctitle">Table of Contents</div>
+<ul class="sectlevel1">
+<li><a href="#_builtin_variables">Builtin variables</a></li>
+<li><a href="#_builtin_functions">Builtin Functions</a>
+<ul class="sectlevel2">
+<li><a href="#_path_conversion">Path conversion</a></li>
+<li><a href="#_topathexpr">topathexpr</a></li>
+</ul>
+</li>
+<li><a href="#_parent_path">Parent path</a>
+<ul class="sectlevel2">
+<li><a href="#_parent">parent</a></li>
+<li><a href="#_reference_and_lookup">Reference and lookup</a></li>
+</ul>
+</li>
+<li><a href="#_file">File</a>
+<ul class="sectlevel2">
+<li><a href="#_readfile">readfile</a></li>
+</ul>
+</li>
+</ul>
+</div>
 </div>
 <div id="content">
+<div class="sect1">
+<h2 id="_builtin_variables">Builtin variables</h2>
+<div class="sectionbody">
 <div class="paragraph">
-<p>This file is used to generate style element for <code>index.sh</code>.</p>
+<p>jq++ injects the following variables into every <code>eval:</code> expression. They are available as jq variables (e.g. <code>$cur</code>, <code>$curexpr</code>).</p>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1"><strong>$cur</strong></dt>
+<dd>
+<p>The current path as a path array (JSON array of path segments: object keys as strings, array indices as integers).
+When evaluating a <strong>value</strong> (<code>eval:</code> in a value), <code>$cur</code> is the path to that value.
+When evaluating a <strong>key</strong> (<code>eval:</code> in a key), <code>$cur</code> is the path to the parent object (the path of the object that contains the key being computed).
+Use with <code>parent</code>, <code>parentof</code>, <code>ref</code>, or <code>topathexpr</code> to navigate or refer to locations.</p>
+</dd>
+<dt class="hdlist1"><strong>$curexpr</strong></dt>
+<dd>
+<p>The current path as a path expression string (e.g. <code>".foo.bar[0]"</code>).
+Available only when evaluating a <strong>value</strong>; not set when evaluating a key.
+Useful for debugging or when you need the path in string form.</p>
+</dd>
+</dl>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_builtin_functions">Builtin Functions</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>jq++ provides builtin functions that are available inside <code>eval:</code> expressions. Each function is described below with example usage. Examples use the <code>eval:string:</code> or <code>eval:array:</code> prefix so the expression result is used as the value of the key.</p>
+</div>
+<div class="sect2">
+<h3 id="_path_conversion">Path conversion</h3>
+<div class="sect3">
+<h4 id="_topatharray">topatharray</h4>
+<div class="paragraph">
+<p><strong>Signature:</strong> <code>topatharray(path_expression_string)</code></p>
+</div>
+<div class="paragraph">
+<p>Converts a path expression string (e.g. <code>".foo.bar[0]"</code>) into a path array: a JSON array of path segments (object keys as strings, array indices as integers). Useful for manipulating paths programmatically and passing them to <code>ref</code> or <code>parentof</code>.</p>
+</div>
+<div class="paragraph">
+<p><strong>Example:</strong> <code>examples/builtins/topatharray/input.json</code></p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-json" data-lang="json">{
+  "pathArray": "eval:array:topatharray(\".foo.bar[0]\")"
+}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p><strong>Result:</strong> The key <code>pathArray</code> becomes the array corresponding to the path expression:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-json" data-lang="json">{
+  "pathArray": ["foo", "bar", 0]
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_topathexpr">topathexpr</h3>
+<div class="paragraph">
+<p><strong>Signature:</strong> <code>topathexpr(path_array)</code></p>
+</div>
+<div class="paragraph">
+<p>Converts a path array (slice of keys and indices) into a path expression string (e.g. <code>".foo.bar[0]"</code>). Non-alphanumeric keys are quoted in bracket notation.</p>
+</div>
+<div class="paragraph">
+<p><strong>Example:</strong> <code>examples/builtins/topathexpr/input.json</code></p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-json" data-lang="json">{
+  "nested": {
+    "pathExpr": "eval:string:topathexpr(parent)"
+  }
+}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p><strong>Result:</strong> The key <code>pathExpr</code> becomes the path expression string for the current parent path:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-json" data-lang="json">{
+  "nested": {
+    "pathExpr": ".nested"
+  }
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_parent_path">Parent path</h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="_parent">parent</h3>
+<div class="paragraph">
+<p><strong>Signature:</strong> <code>parent</code> or <code>parent(level)</code></p>
+</div>
+<div class="paragraph">
+<p>Returns the path array of the parent of the current node. With no arguments, goes up one level; with one integer argument, goes up that many levels. Used with the builtin variable <code>$cur</code> (current path array). Typically used as <code>parent</code> or <code>parent(2)</code> inside expressions.</p>
+</div>
+<div class="paragraph">
+<p><strong>Example:</strong> <code>examples/builtins/parent/input.json</code></p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-json" data-lang="json">{
+  "a": {
+    "b": {
+      "value": "eval:string:topathexpr(parent)"
+    }
+  }
+}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p><strong>Result:</strong> At <code>a.b.value</code>, <code>topathexpr(parent)</code> yields the path to the parent key <code>b</code>:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-json" data-lang="json">{
+  "a": {
+    "b": {
+      "value": ".a.b"
+    }
+  }
+}</code></pre>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_parentof">parentof</h4>
+<div class="paragraph">
+<p><strong>Signature:</strong> <code>parentof(path_array)</code> or <code>parentof(path_array; level)</code></p>
+</div>
+<div class="paragraph">
+<p>Returns the path array with the last segment(s) removed. First argument is a path array; optional second argument is the number of levels to remove (default 1). Often used with <code>$cur</code> to go up from the current path, e.g. <code>parentof($cur; 2)</code> then append a key and pass to <code>ref</code>.</p>
+</div>
+<div class="paragraph">
+<p><strong>Example:</strong> <code>examples/builtins/parentof/input.json</code></p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-json" data-lang="json">{
+  "releaseVersion": "2.0.0",
+  "l1": {
+    "l2": {
+      "snapshotVersion": "eval:string:ref(parentof($cur; 3) + [\"releaseVersion\"]) + \"-SNAPSHOT\""
+    }
+  }
+}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p><strong>Result:</strong> <code>releaseVersion</code> at root is copied into <code>l1.l2.snapshotVersion</code> using <code>parentof($cur; 3)</code> to reach root:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-json" data-lang="json">{
+  "releaseVersion": "2.0.0",
+  "l1": {
+    "l2": {
+      "snapshotVersion": "2.0.0-SNAPSHOT"
+    }
+  }
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_reference_and_lookup">Reference and lookup</h3>
+<div class="sect3">
+<h4 id="_ref">ref</h4>
+<div class="paragraph">
+<p><strong>Signature:</strong> <code>ref(path_array)</code></p>
+</div>
+<div class="paragraph">
+<p>Returns the value in the current JSON root at the given path array. If that value is a string, it is evaluated as an expression (e.g. another reference or expression). Path array is built from strings (object keys) and integers (array indices). Circular references are detected and reported as errors.</p>
+</div>
+<div class="paragraph">
+<p><strong>Example:</strong> <code>examples/builtins/ref/input.json</code></p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-json" data-lang="json">{
+  "shared": "common value",
+  "node": {
+    "usesShared": "eval:string:ref([\"shared\"])"
+  }
+}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p><strong>Result:</strong> The key that uses <code>ref(["shared"])</code> is replaced by the value at root <code>shared</code>:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-json" data-lang="json">{
+  "shared": "common value",
+  "node": {
+    "usesShared": "common value"
+  }
+}</code></pre>
+</div>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_refexpr">refexpr</h4>
+<div class="paragraph">
+<p><strong>Signature:</strong> <code>refexpr(path_expression_string)</code></p>
+</div>
+<div class="paragraph">
+<p>Like <code>ref</code>, but takes a path expression string (e.g. <code>".foo.bar"</code>) instead of a path array. Resolves the path from the root and returns the value; if it is a string, that string is evaluated as an expression.</p>
+</div>
+<div class="paragraph">
+<p><strong>Example:</strong> <code>examples/builtins/refexpr/input.json</code></p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-json" data-lang="json">{
+  "source": "original",
+  "copy": "eval:string:refexpr(\".source\")",
+  "chained": "eval:string:refexpr(\".copy\")"
+}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p><strong>Result:</strong> <code>copy</code> and <code>chained</code> resolve to the value of <code>source</code>:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-json" data-lang="json">{
+  "source": "original",
+  "copy": "original",
+  "chained": "original"
+}</code></pre>
+</div>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_reftag">reftag</h4>
+<div class="paragraph">
+<p><strong>Signature:</strong> <code>reftag(tag_name)</code></p>
+</div>
+<div class="paragraph">
+<p>Searches upward from the current path for an object that has a key equal to <code>tag_name</code>, then returns the value at that key. If that value is a string, it is evaluated as an expression. Used to implement “tagged” reference points in the tree.</p>
+</div>
+<div class="paragraph">
+<p><strong>Example:</strong> <code>examples/builtins/reftag/input.json</code></p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-json" data-lang="json">{
+  "thetag": "Hello, mytag",
+  "k0": {
+    "k1": "eval:string:reftag(\"thetag\")"
+  }
+}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p><strong>Result:</strong> The key using <code>reftag("thetag")</code> is replaced by the value of <code>thetag</code> from an ancestor object:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-json" data-lang="json">{
+  "thetag": "Hello, mytag",
+  "k0": {
+    "k1": "Hello, mytag"
+  }
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_file">File</h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="_readfile">readfile</h3>
+<div class="paragraph">
+<p><strong>Signature:</strong> <code>readfile(filename_string)</code></p>
+</div>
+<div class="paragraph">
+<p>Resolves the filename relative to the current file’s directory and search paths, reads the file, and parses its contents as JSON. The result is the parsed JSON value (object, array, string, number, boolean, or null). Often used with <code>eval:string:</code> when the file contains a single string to use as a string value.</p>
+</div>
+<div class="paragraph">
+<p><strong>Example:</strong> <code>examples/builtins/readfile/input.json</code> (and <code>other.json</code> in the same directory).</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-json" data-lang="json">{
+  "key": "eval:string:readfile(\"other.json\")"
+}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p><strong>Result:</strong> The key using <code>readfile("other.json")</code> is replaced by the parsed content of <code>other.json</code> (here a string):</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-json" data-lang="json">{
+  "key": "hello"
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
 </div>
 </div>
 <div id="footer">

@@ -601,7 +601,7 @@ You keep one source of truth and generate each variant by extending it.</p>
 <div class="content">
 <pre class="highlight"><code class="language-json" data-lang="json">{
   "$extends": ["greeting.json", "name.json"],
-  "sayHello": "eval:$(ref .greeting), $(ref .yourname). Today is $(date). How are you doing?"
+  "sayHello": "eval:refexpr(\".greeting\") + \", \" + refexpr(\".yourname\") + \". Today is \" + (now|todate)"
 }</code></pre>
 </div>
 </div>
@@ -611,9 +611,9 @@ You keep one source of truth and generate each variant by extending it.</p>
 <div class="listingblock">
 <div class="content">
 <pre class="highlight"><code class="language-json" data-lang="json">{
-  "yourname": "Mark",
   "greeting": "Hello",
-  "sayHello": "Hello, Mark. Today is Fri Aug 30 22:04:40 UTC 2019. How are you doing?"
+  "sayHello": "Hello, Mark. Today is 2026-02-14T13:07:57Z",
+  "yourname": "Mark"
 }</code></pre>
 </div>
 </div>
@@ -761,7 +761,7 @@ If you use jq++ for the “structure and value resolution” step and keep JSON 
 </div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2026-02-13 23:40:55 UTC
+Last updated 2026-02-14 13:18:36 UTC
 </div>
 </div>
 </body>
