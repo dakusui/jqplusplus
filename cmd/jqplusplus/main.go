@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime/debug"
 	"strings"
 
 	"github.com/dakusui/jqplusplus/internal"
@@ -12,6 +13,30 @@ import (
 
 var version = "dev"      // overridden via -ldflags
 var revision = "unknown" // overridden via -ldflags
+
+// versionStrings returns (version, revision) for display. When the binary was
+// built with "go install ...@version" (so version/revision are still "dev"/"unknown"),
+// the module version is read from the Go build info.
+func versionStrings() (string, string) {
+	v, r := version, revision
+	if v == "dev" || r == "unknown" {
+		if info, ok := debug.ReadBuildInfo(); ok && info.Main.Version != "" && info.Main.Version != "(devel)" {
+			v = info.Main.Version
+			// Use first 7 chars of VCS revision from build settings if available
+			for _, s := range info.Settings {
+				if s.Key == "vcs.revision" && s.Value != "" {
+					rev := s.Value
+					if len(rev) > 7 {
+						rev = rev[:7]
+					}
+					r = rev
+					break
+				}
+			}
+		}
+	}
+	return v, r
+}
 
 func main() {
 	// Handle symbolic link creation when invoked as jqplusplus with no arguments
@@ -44,7 +69,8 @@ If no files are provided, input is read from stdin.
 	}
 
 	if len(os.Args) > 1 && (os.Args[1] == "-v" || os.Args[1] == "--version") {
-		_, _ = os.Stderr.WriteString(fmt.Sprintf("jq++ version %v, build %v\n", version, revision))
+		v, r := versionStrings()
+		_, _ = os.Stderr.WriteString(fmt.Sprintf("jq++ version %v, build %v\n", v, r))
 		os.Exit(0)
 	}
 
