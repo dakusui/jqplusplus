@@ -19,7 +19,14 @@ Converts a path expression string (e.g. `".foo.bar[0]"`) into a path array: a JS
 include::examples/builtins/topatharray/input.json[]
 ----
 
-*Result:* The key `pathArray` becomes the array corresponding to the path expression (e.g. `["foo","bar",0]`).
+*Result:* The key `pathArray` becomes the array corresponding to the path expression:
+
+[source,json]
+----
+{
+  "pathArray": ["foo", "bar", 0]
+}
+----
 
 === topathexpr
 
@@ -34,7 +41,16 @@ Converts a path array (slice of keys and indices) into a path expression string 
 include::examples/builtins/topathexpr/input.json[]
 ----
 
-*Result:* The key `pathExpr` becomes the path expression string for the current parent path (e.g. `".nested"` when evaluated at `nested.pathExpr`).
+*Result:* The key `pathExpr` becomes the path expression string for the current parent path:
+
+[source,json]
+----
+{
+  "nested": {
+    "pathExpr": ".nested"
+  }
+}
+----
 
 == Parent path
 
@@ -51,7 +67,18 @@ Returns the path array of the parent of the current node. With no arguments, goe
 include::examples/builtins/parent/input.json[]
 ----
 
-*Result:* A key like `parentPath` is replaced by the path expression of the parent of the current key (e.g. at `a.b.value`, `parent` gives the path to `b`).
+*Result:* At `a.b.value`, `topathexpr(parent)` yields the path to the parent key `b`:
+
+[source,json]
+----
+{
+  "a": {
+    "b": {
+      "value": ".a.b"
+    }
+  }
+}
+----
 
 ==== parentof
 
@@ -66,7 +93,19 @@ Returns the path array with the last segment(s) removed. First argument is a pat
 include::examples/builtins/parentof/input.json[]
 ----
 
-*Result:* e.g. `releaseVersion` at root is copied into `l1.l2.snapshotVersion` as `"2.0.0-SNAPSHOT"` (using `parentof($cur; 3)` to reach root).
+*Result:* `releaseVersion` at root is copied into `l1.l2.snapshotVersion` using `parentof($cur; 3)` to reach root:
+
+[source,json]
+----
+{
+  "releaseVersion": "2.0.0",
+  "l1": {
+    "l2": {
+      "snapshotVersion": "2.0.0-SNAPSHOT"
+    }
+  }
+}
+----
 
 === Reference and lookup
 
@@ -83,7 +122,17 @@ Returns the value in the current JSON root at the given path array. If that valu
 include::examples/builtins/ref/input.json[]
 ----
 
-*Result:* The key that uses `ref([\"shared\"])` is replaced by the value at root `shared` (e.g. a string or nested structure).
+*Result:* The key that uses `ref(["shared"])` is replaced by the value at root `shared`:
+
+[source,json]
+----
+{
+  "shared": "common value",
+  "node": {
+    "usesShared": "common value"
+  }
+}
+----
 
 ==== refexpr
 
@@ -98,7 +147,16 @@ Like `ref`, but takes a path expression string (e.g. `".foo.bar"`) instead of a 
 include::examples/builtins/refexpr/input.json[]
 ----
 
-*Result:* e.g. `copy` takes the value of `source`, and chained refs resolve (e.g. `refexpr(\".copy\")` → value of `source`).
+*Result:* `copy` and `chained` resolve to the value of `source`:
+
+[source,json]
+----
+{
+  "source": "original",
+  "copy": "original",
+  "chained": "original"
+}
+----
 
 ==== reftag
 
@@ -113,7 +171,17 @@ Searches upward from the current path for an object that has a key equal to `tag
 include::examples/builtins/reftag/input.json[]
 ----
 
-*Result:* The key using `reftag(\"thetag\")` is replaced by the value of `thetag` from an ancestor object (e.g. `"Hello, mytag"`).
+*Result:* The key using `reftag("thetag")` is replaced by the value of `thetag` from an ancestor object:
+
+[source,json]
+----
+{
+  "thetag": "Hello, mytag",
+  "k0": {
+    "k1": "Hello, mytag"
+  }
+}
+----
 
 == File
 
@@ -130,4 +198,11 @@ Resolves the filename relative to the current file’s directory and search path
 include::examples/builtins/readfile/input.json[]
 ----
 
-*Result:* The key using `readfile(\"other.json\")` is replaced by the JSON content of `other.json` (e.g. a string `"hello"` or an object).
+*Result:* The key using `readfile("other.json")` is replaced by the parsed content of `other.json` (here a string):
+
+[source,json]
+----
+{
+  "key": "hello"
+}
+----
