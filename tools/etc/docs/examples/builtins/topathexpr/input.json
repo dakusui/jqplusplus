@@ -1,0 +1,5 @@
+{
+  "nested": {
+    "pathExpr": "eval:string:topathexpr(parent)"
+  }
+}

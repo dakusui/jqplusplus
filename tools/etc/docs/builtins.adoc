@@ -1,0 +1,133 @@
+== Builtin variables
+
+== Builtin Functions
+
+jq++ provides builtin functions that are available inside `eval:` expressions. Each function is described below with example usage. Examples use the `eval:string:` or `eval:array:` prefix so the expression result is used as the value of the key.
+
+=== Path conversion
+
+==== topatharray
+
+*Signature:* `topatharray(path_expression_string)`
+
+Converts a path expression string (e.g. `".foo.bar[0]"`) into a path array: a JSON array of path segments (object keys as strings, array indices as integers). Useful for manipulating paths programmatically and passing them to `ref` or `parentof`.
+
+*Example:* `examples/builtins/topatharray/input.json`
+
+[source,json]
+----
+include::examples/builtins/topatharray/input.json[]
+----
+
+*Result:* The key `pathArray` becomes the array corresponding to the path expression (e.g. `["foo","bar",0]`).
+
+=== topathexpr
+
+*Signature:* `topathexpr(path_array)`
+
+Converts a path array (slice of keys and indices) into a path expression string (e.g. `".foo.bar[0]"`). Non-alphanumeric keys are quoted in bracket notation.
+
+*Example:* `examples/builtins/topathexpr/input.json`
+
+[source,json]
+----
+include::examples/builtins/topathexpr/input.json[]
+----
+
+*Result:* The key `pathExpr` becomes the path expression string for the current parent path (e.g. `".nested"` when evaluated at `nested.pathExpr`).
+
+== Parent path
+
+=== parent
+
+*Signature:* `parent` or `parent(level)`
+
+Returns the path array of the parent of the current node. With no arguments, goes up one level; with one integer argument, goes up that many levels. Used with the builtin variable `$cur` (current path array). Typically used as `parent` or `parent(2)` inside expressions.
+
+*Example:* `examples/builtins/parent/input.json`
+
+[source,json]
+----
+include::examples/builtins/parent/input.json[]
+----
+
+*Result:* A key like `parentPath` is replaced by the path expression of the parent of the current key (e.g. at `a.b.value`, `parent` gives the path to `b`).
+
+==== parentof
+
+*Signature:* `parentof(path_array)` or `parentof(path_array; level)`
+
+Returns the path array with the last segment(s) removed. First argument is a path array; optional second argument is the number of levels to remove (default 1). Often used with `$cur` to go up from the current path, e.g. `parentof($cur; 2)` then append a key and pass to `ref`.
+
+*Example:* `examples/builtins/parentof/input.json`
+
+[source,json]
+----
+include::examples/builtins/parentof/input.json[]
+----
+
+*Result:* e.g. `releaseVersion` at root is copied into `l1.l2.snapshotVersion` as `"2.0.0-SNAPSHOT"` (using `parentof($cur; 3)` to reach root).
+
+=== Reference and lookup
+
+==== ref
+
+*Signature:* `ref(path_array)`
+
+Returns the value in the current JSON root at the given path array. If that value is a string, it is evaluated as an expression (e.g. another reference or expression). Path array is built from strings (object keys) and integers (array indices). Circular references are detected and reported as errors.
+
+*Example:* `examples/builtins/ref/input.json`
+
+[source,json]
+----
+include::examples/builtins/ref/input.json[]
+----
+
+*Result:* The key that uses `ref([\"shared\"])` is replaced by the value at root `shared` (e.g. a string or nested structure).
+
+==== refexpr
+
+*Signature:* `refexpr(path_expression_string)`
+
+Like `ref`, but takes a path expression string (e.g. `".foo.bar"`) instead of a path array. Resolves the path from the root and returns the value; if it is a string, that string is evaluated as an expression.
+
+*Example:* `examples/builtins/refexpr/input.json`
+
+[source,json]
+----
+include::examples/builtins/refexpr/input.json[]
+----
+
+*Result:* e.g. `copy` takes the value of `source`, and chained refs resolve (e.g. `refexpr(\".copy\")` → value of `source`).
+
+==== reftag
+
+*Signature:* `reftag(tag_name)`
+
+Searches upward from the current path for an object that has a key equal to `tag_name`, then returns the value at that key. If that value is a string, it is evaluated as an expression. Used to implement “tagged” reference points in the tree.
+
+*Example:* `examples/builtins/reftag/input.json`
+
+[source,json]
+----
+include::examples/builtins/reftag/input.json[]
+----
+
+*Result:* The key using `reftag(\"thetag\")` is replaced by the value of `thetag` from an ancestor object (e.g. `"Hello, mytag"`).
+
+== File
+
+=== readfile
+
+*Signature:* `readfile(filename_string)`
+
+Resolves the filename relative to the current file’s directory and search paths, reads the file, and parses its contents as JSON. The result is the parsed JSON value (object, array, string, number, boolean, or null). Often used with `eval:string:` when the file contains a single string to use as a string value.
+
+*Example:* `examples/builtins/readfile/input.json` (and `other.json` in the same directory).
+
+[source,json]
+----
+include::examples/builtins/readfile/input.json[]
+----
+
+*Result:* The key using `readfile(\"other.json\")` is replaced by the JSON content of `other.json` (e.g. a string `"hello"` or an object).

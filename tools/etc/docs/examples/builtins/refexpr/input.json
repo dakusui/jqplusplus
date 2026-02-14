@@ -1,0 +1,5 @@
+{
+  "source": "original",
+  "copy": "eval:string:refexpr(\".source\")",
+  "chained": "eval:string:refexpr(\".copy\")"
+}

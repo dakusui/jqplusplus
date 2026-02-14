@@ -1,0 +1,3 @@
+{
+  "pathArray": "eval:array:topatharray(\".foo.bar[0]\")"
+}
