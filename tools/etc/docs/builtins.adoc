@@ -1,5 +1,18 @@
 == Builtin variables
 
+jq++ injects the following variables into every `eval:` expression. They are available as jq variables (e.g. `$cur`, `$curexpr`).
+
+*$cur*::
+  The current path as a path array (JSON array of path segments: object keys as strings, array indices as integers).
+  When evaluating a *value* (`eval:` in a value), `$cur` is the path to that value.
+  When evaluating a *key* (`eval:` in a key), `$cur` is the path to the parent object (the path of the object that contains the key being computed).
+  Use with `parent`, `parentof`, `ref`, or `topathexpr` to navigate or refer to locations.
+
+*$curexpr*::
+  The current path as a path expression string (e.g. `".foo.bar[0]"`).
+  Available only when evaluating a *value*; not set when evaluating a key.
+  Useful for debugging or when you need the path in string form.
+
 == Builtin Functions
 
 jq++ provides builtin functions that are available inside `eval:` expressions. Each function is described below with example usage. Examples use the `eval:string:` or `eval:array:` prefix so the expression result is used as the value of the key.
