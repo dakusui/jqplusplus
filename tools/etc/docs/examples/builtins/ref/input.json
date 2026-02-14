@@ -1,0 +1,6 @@
+{
+  "shared": "common value",
+  "node": {
+    "usesShared": "eval:string:ref([\"shared\"])"
+  }
+}

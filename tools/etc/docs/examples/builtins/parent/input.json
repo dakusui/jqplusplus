@@ -1,0 +1,7 @@
+{
+  "a": {
+    "b": {
+      "value": "eval:string:topathexpr(parent)"
+    }
+  }
+}
