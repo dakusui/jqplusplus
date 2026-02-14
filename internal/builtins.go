@@ -4,6 +4,10 @@ import (
 	"fmt"
 )
 
+// CreateToPathArrayFunc returns a builtin function descriptor for "topatharray".
+// The builtin takes one argument: a path expression string (e.g. "$.foo.bar[0]").
+// It returns the path as a slice of path segments (path array), or an error if
+// the expression is invalid. The returned tuple is (name, minArgs, maxArgs, impl).
 func CreateToPathArrayFunc() (string, int, int, func(any, []any) any) {
 	return "topatharray", 1, 1, func(input any, args []any) any {
 		ret, err := PathExpressionToPathArray(args[0].(string))
@@ -13,6 +17,11 @@ func CreateToPathArrayFunc() (string, int, int, func(any, []any) any) {
 		return ret
 	}
 }
+
+// CreateToPathExprFunc returns a builtin function descriptor for "topathexpr".
+// The builtin takes one argument: a path array (slice of path segments).
+// It returns the path as an expression string (e.g. "$.foo.bar[0]"), or an error
+// if the path is invalid. The returned tuple is (name, minArgs, maxArgs, impl).
 func CreateToPathExprFunc() (string, int, int, func(any, []any) any) {
 	return "topathexpr", 1, 1, func(input any, args []any) any {
 		ret, err := PathArrayToPathExpression(args[0].([]any))
@@ -23,18 +32,29 @@ func CreateToPathExprFunc() (string, int, int, func(any, []any) any) {
 	}
 }
 
+// CreateParentOfFunc returns a builtin function descriptor for "parentof".
+// The builtin takes a path array and an optional level count (default 1), and
+// returns the path with the last level(s) removed. currentPath and expression
+// are used for error reporting. The returned tuple is (name, minArgs, maxArgs, impl).
 func CreateParentOfFunc(currentPath []any, expression string) (string, int, int, func(any, []any) any) {
 	return "parentof", 1, 2, func(input any, args []any) any {
 		return resolveParent(args, expression, currentPath)
 	}
 }
 
+// CreateParentFunc returns a builtin function descriptor for "parent".
+// The builtin takes zero or one argument (parent level count; default 1) and
+// returns the parent of the current path. currentPath and expression are used
+// for error reporting. The returned tuple is (name, minArgs, maxArgs, impl).
 func CreateParentFunc(currentPath []any, expression string) (string, int, int, func(any, []any) any) {
 	return "parent", 0, 1, func(input any, args []any) any {
 		return resolveParent(append([]any{currentPath}, args...), expression, currentPath)
 	}
 }
 
+// resolveParent is the shared implementation for "parent" and "parentof".
+// args[0] must be a path array; args[1] if present must be the number of
+// levels to go up. Returns the path with the last levels segments removed, or an error.
 func resolveParent(args []any, expression string, currentPath []any) any {
 	levels := 1
 	if len(args) == 2 {
@@ -59,6 +79,11 @@ func resolveParent(args []any, expression string, currentPath []any) any {
 	return path[0 : len(path)-levels]
 }
 
+// CreateRefFunc returns a builtin function descriptor for "ref".
+// The builtin takes one argument: a path array. It returns the value at that
+// path in self; if the value is a string, it is evaluated as an expression.
+// baseDir and searchPaths are used when resolving file references in refs.
+// The returned tuple is (name, minArgs, maxArgs, impl).
 func CreateRefFunc(self any, currentPath []any, expression string, invocationSpec InvocationSpec, baseDir string, searchPaths []string) (string, int, int, func(any, []any) any) {
 	visited := map[string]bool{}
 	pathexpr, err := PathArrayToPathExpression(currentPath)
@@ -77,6 +102,10 @@ func CreateRefFunc(self any, currentPath []any, expression string, invocationSpe
 	}
 }
 
+// CreateRefExprFunc returns a builtin function descriptor for "refexpr".
+// The builtin takes one argument: a path expression string (e.g. "$.foo.bar").
+// It resolves the path and returns the value at that path; string values are
+// evaluated as expressions. The returned tuple is (name, minArgs, maxArgs, impl).
 func CreateRefExprFunc(self any, currentPath []any, expression string, invocationSpec InvocationSpec) (string, int, int, func(any, []any) any) {
 	visited := map[string]bool{}
 	pathexpr, err := PathArrayToPathExpression(currentPath)
@@ -99,6 +128,10 @@ func CreateRefExprFunc(self any, currentPath []any, expression string, invocatio
 	}
 }
 
+// CreateRefTagFunc returns a builtin function descriptor for "reftag".
+// The builtin takes one argument: a tag name (string). It searches upward from
+// the current path for an object with that tag and returns the value there;
+// string values are evaluated as expressions. The returned tuple is (name, minArgs, maxArgs, impl).
 func CreateRefTagFunc(self any, currentPath []any, expression string, invocationSpec InvocationSpec) (string, int, int, func(any, []any) any) {
 	visited := map[string]bool{}
 	pathexpr, err := PathArrayToPathExpression(currentPath)
@@ -126,6 +159,10 @@ func CreateRefTagFunc(self any, currentPath []any, expression string, invocation
 	}
 }
 
+// CreateReadFileFunc returns a builtin function descriptor for "readfile".
+// The builtin takes one argument: a filename (string). The file is resolved
+// relative to baseDir and searchPaths, read, and parsed as JSON. currentPath
+// and expression are used for error reporting. The returned tuple is (name, minArgs, maxArgs, impl).
 func CreateReadFileFunc(self any, currentPath []any, expression string, baseDir string, searchPaths []string) (string, int, int, func(any, []any) any) {
 	return "readfile", 1, 1, func(input any, args []any) any {
 		filenameArg := args[0]
@@ -145,6 +182,10 @@ func CreateReadFileFunc(self any, currentPath []any, expression string, baseDir 
 	}
 }
 
+// resolveRef looks up the value at path in self. If the value is a string, it
+// is evaluated as an expression (e.g. a reference). visited is used to detect
+// and reject circular references. Returns the value, or an error if the path
+// is missing, already visited, or evaluation fails.
 func resolveRef(self any, path []any, currentPath []any, invocationSpec InvocationSpec, expression string, args []any, baseDir string, searchPaths []string, visited map[string]bool) any {
 	pathexpr, err := PathArrayToPathExpression(path)
 	if err != nil {
