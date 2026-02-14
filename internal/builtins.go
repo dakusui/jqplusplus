@@ -1,6 +1,7 @@
 package internal
 
 import (
+	"encoding/json"
 	"fmt"
 )
 
@@ -57,12 +58,15 @@ func CreateParentFunc(currentPath []any, expression string) (string, int, int, f
 // levels to go up. Returns the path with the last levels segments removed, or an error.
 func resolveParent(args []any, expression string, currentPath []any) any {
 	levels := 1
+
+	expressionAndLocation := fmt.Sprintf("in expression: '%v'; at '%v'", expression, toPathExpression(currentPath))
+
 	if len(args) == 2 {
 		// Check if args[2] is an int
 		v := args[1]
 		levelArgs, ok := v.(int)
 		if !ok {
-			return fmt.Errorf("expression: %s at %v; parent(%v); %v must be an int", expression, currentPath, args, v)
+			return fmt.Errorf("an int expected but got '%v': %v", v, expressionAndLocation)
 		}
 		levels = levelArgs
 	}
@@ -70,11 +74,11 @@ func resolveParent(args []any, expression string, currentPath []any) any {
 	pathArg := args[0]
 	path, ok := pathArg.([]any)
 	if !ok {
-		return fmt.Errorf("expression: %s at %v; parent(%v); %v must be an array", expression, currentPath, args, pathArg)
+		return fmt.Errorf("an array expected but got '%v': %v", pathArg, expressionAndLocation)
 	}
 
 	if len(path) < levels {
-		return fmt.Errorf("expression: %s at %v parent(%v); %v must be smaller than %v", expression, currentPath, args, levels, len(path))
+		return fmt.Errorf("value less than or equal to %v expected but got '%v': %v", len(path), levels, expressionAndLocation)
 	}
 	return path[0 : len(path)-levels]
 }
@@ -84,13 +88,7 @@ func resolveParent(args []any, expression string, currentPath []any) any {
 // path in self; if the value is a string, it is evaluated as an expression.
 // baseDir and searchPaths are used when resolving file references in refs.
 // The returned tuple is (name, minArgs, maxArgs, impl).
-func CreateRefFunc(self any, currentPath []any, expression string, invocationSpec InvocationSpec, baseDir string, searchPaths []string) (string, int, int, func(any, []any) any) {
-	visited := map[string]bool{}
-	pathexpr, err := PathArrayToPathExpression(currentPath)
-	if err != nil {
-		panic(err)
-	}
-	visited[pathexpr] = true
+func CreateRefFunc(self any, currentPath []any, expression string, invocationSpec InvocationSpec, baseDir string, searchPaths []string, visited map[string]int) (string, int, int, func(any, []any) any) {
 	return "ref", 1, 1, func(input any, args []any) any {
 		pathArg := args[0]
 		path, ok := pathArg.([]any)
@@ -98,7 +96,7 @@ func CreateRefFunc(self any, currentPath []any, expression string, invocationSpe
 			return fmt.Errorf("expression: %s at %v; ret(%v); %v must be an array", expression, currentPath, args, pathArg)
 		}
 
-		return resolveRef(self, path, currentPath, invocationSpec, expression, args, baseDir, searchPaths, visited)
+		return resolveRef(self, path, currentPath, invocationSpec, expression, baseDir, searchPaths, visited)
 	}
 }
 
@@ -106,13 +104,7 @@ func CreateRefFunc(self any, currentPath []any, expression string, invocationSpe
 // The builtin takes one argument: a path expression string (e.g. "$.foo.bar").
 // It resolves the path and returns the value at that path; string values are
 // evaluated as expressions. The returned tuple is (name, minArgs, maxArgs, impl).
-func CreateRefExprFunc(self any, currentPath []any, expression string, invocationSpec InvocationSpec) (string, int, int, func(any, []any) any) {
-	visited := map[string]bool{}
-	pathexpr, err := PathArrayToPathExpression(currentPath)
-	if err != nil {
-		panic(err)
-	}
-	visited[pathexpr] = true
+func CreateRefExprFunc(self any, currentPath []any, expression string, invocationSpec InvocationSpec, visited map[string]int) (string, int, int, func(any, []any) any) {
 	return "refexpr", 1, 1, func(input any, args []any) any {
 		pathArg := args[0]
 		pathexp, ok := pathArg.(string)
@@ -124,7 +116,7 @@ func CreateRefExprFunc(self any, currentPath []any, expression string, invocatio
 			return err
 		}
 
-		return resolveRef(self, path, currentPath, invocationSpec, expression, args, "", nil, visited)
+		return resolveRef(self, path, currentPath, invocationSpec, expression, "", nil, visited)
 	}
 }
 
@@ -132,13 +124,7 @@ func CreateRefExprFunc(self any, currentPath []any, expression string, invocatio
 // The builtin takes one argument: a tag name (string). It searches upward from
 // the current path for an object with that tag and returns the value there;
 // string values are evaluated as expressions. The returned tuple is (name, minArgs, maxArgs, impl).
-func CreateRefTagFunc(self any, currentPath []any, expression string, invocationSpec InvocationSpec) (string, int, int, func(any, []any) any) {
-	visited := map[string]bool{}
-	pathexpr, err := PathArrayToPathExpression(currentPath)
-	if err != nil {
-		panic(err)
-	}
-	visited[pathexpr] = true
+func CreateRefTagFunc(self any, currentPath []any, expression string, invocationSpec InvocationSpec, visited map[string]int) (string, int, int, func(any, []any) any) {
 	return "reftag", 1, 1, func(input any, args []any) any {
 		tagArg := args[0]
 		tag, ok := tagArg.(string)
@@ -149,13 +135,13 @@ func CreateRefTagFunc(self any, currentPath []any, expression string, invocation
 		for i := pathLength; i >= 0; i-- {
 			p := append(DeepCopy(currentPath[0:i]).([]any), tag)
 
-			ret := resolveRef(self, p, currentPath, invocationSpec, expression, args, "", nil, visited)
+			ret := resolveRef(self, p, currentPath, invocationSpec, expression, "", nil, visited)
 			if _, ok := ret.(error); !ok {
 				return ret
 			}
 		}
 
-		return fmt.Errorf("tag: '%v' cannot be found from path: %v in obect: %v", tag, currentPath, self)
+		return fmt.Errorf("tag: '%v' cannot be found from path: %v in obect: %v", tag, currentPath, marshal(self))
 	}
 }
 
@@ -186,25 +172,36 @@ func CreateReadFileFunc(self any, currentPath []any, expression string, baseDir 
 // is evaluated as an expression (e.g. a reference). visited is used to detect
 // and reject circular references. Returns the value, or an error if the path
 // is missing, already visited, or evaluation fails.
-func resolveRef(self any, path []any, currentPath []any, invocationSpec InvocationSpec, expression string, args []any, baseDir string, searchPaths []string, visited map[string]bool) any {
+func resolveRef(self any, path []any, currentPath []any, invocationSpec InvocationSpec, expression string, baseDir string, searchPaths []string, visited map[string]int) any {
 	pathexpr, err := PathArrayToPathExpression(path)
 	if err != nil {
 		panic(err)
 	}
-	if visited[pathexpr] {
-		return fmt.Errorf("path expression: %v already visited: %v", pathexpr, currentPath)
+	if _, ok := visited[pathexpr]; ok {
+		return fmt.Errorf("circular reference detected: %v", formatCirculatingFileLoop(extractVisitedLoop(visited, pathexpr), ""))
 	}
-	visited[pathexpr] = true
+	visited[pathexpr] = len(visited)
 	if value, ok := GetAtPath(self, path); ok {
 		// Process only if value is a string
 		if str, ok := value.(string); ok {
-			ret, err := evaluateString(str, currentPath, self, invocationSpec, baseDir, searchPaths)
+			ret, err := evaluateString(str, currentPath, self, invocationSpec, baseDir, searchPaths, visited)
 			if err != nil {
-				return fmt.Errorf("expression: %s at %v; ref(%v) failed to eval for: %v", expression, path, args, err)
+				return composeExpressionError(err, expression, currentPath)
 			}
+			delete(visited, pathexpr)
 			return ret
 		}
+		delete(visited, pathexpr)
 		return value
 	}
-	return fmt.Errorf("path: %v in expression: %v not found in object: %v", path, expression, self)
+	delete(visited, pathexpr)
+	return fmt.Errorf("path: %v in expression: %v not found in object: %s", toPathExpression(path), expression, marshal(self))
+}
+
+func marshal(v any) any {
+	ret, err := json.Marshal(v)
+	if err != nil {
+		return v
+	}
+	return string(ret)
 }

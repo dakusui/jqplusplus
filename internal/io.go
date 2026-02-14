@@ -176,13 +176,9 @@ func ResolveFilePath(filename string, baseDir string, searchPaths []string) (str
 			if !os.IsNotExist(err) {
 				return fullPath, nil
 			}
-			// If it is a directory, return an error.
+			// If it is a directory, return an error.3
 			return "", fmt.Errorf("file is a directory: %s", fullPath)
 		}
 	}
-	return "", composeFileNotFoundError(filename, baseDir, searchPaths)
-}
-
-func composeFileNotFoundError(filename string, baseDir string, searchPaths []string) error {
-	return fmt.Errorf("file not found: '%q'\n  in %v: %w", filename, strings.Join(append(searchPaths, baseDir), "\n     "), fs.ErrNotExist)
+	return "", fs.ErrNotExist
 }

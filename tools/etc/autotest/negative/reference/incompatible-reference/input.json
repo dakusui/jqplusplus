@@ -1,4 +1,4 @@
 {
-  "a": "eval:object:$(ref .b)",
-  "b": "[]"
+  "a": "eval:object:ref([\"b\"])",
+  "b": "abc"
 }

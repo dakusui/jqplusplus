@@ -1,2 +1,10 @@
-ERROR: Error was detected during templating:
-ERROR: Failed to access '."ABSENT"' and default value for it was not given.
+ERROR
+[a C]
+eval:refexpr\\\(ref\\\(..expr..\\\)\\\)
+not found in object: 
+\"a\"
+\"b\":\"HELLO\"
+\"expr\"
+\".a.C\"
+\"value\"
+negative/missing-node-inheritance/textnodelevel-nested-command-substitution/input.json

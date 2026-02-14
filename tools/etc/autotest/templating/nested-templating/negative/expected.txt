@@ -1,2 +1,5 @@
-ERROR: Templating has been repeated 5 time
-but it did not finish.: Entries left untemplated are:
+ERROR:
+eval:object:ref...a...
+\.a\.key
+cyclic
+templating/nested-templating/negative/input.json

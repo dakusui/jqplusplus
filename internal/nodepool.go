@@ -8,6 +8,7 @@ import (
 type NodePool interface {
 	ReadNodeEntryValue(baseDir, filename string, compilerOptions []*JqModule) (*NodeEntryValue, error)
 	IsVisited(absPath string) bool
+	VisitedFiles(absPath string) []string
 	MarkVisited(absPath string)
 	SearchPaths() []string
 	SessionDirectory() string
@@ -47,7 +48,7 @@ type NodePoolImpl struct {
 	// ensures that previously resolved entries can be retrieved efficiently
 	// without redundant operations.
 	cache   map[NodeEntryKey]NodeEntryValue
-	visited map[string]bool
+	visited map[string]int
 }
 
 func NewNodePoolWithBaseSearchPaths(baseDir, sessionDirectory string, searchPaths []string) *NodePoolImpl {
@@ -57,7 +58,7 @@ func NewNodePoolWithBaseSearchPaths(baseDir, sessionDirectory string, searchPath
 		localNodeSearchPaths: []string{},
 		baseSearchPaths:      searchPaths,
 		cache:                map[NodeEntryKey]NodeEntryValue{},
-		visited:              map[string]bool{},
+		visited:              map[string]int{},
 	}
 }
 
@@ -86,11 +87,19 @@ func (p *NodePoolImpl) ReadNodeEntryValue(baseDir_, filename_ string, compilerOp
 }
 
 func (p *NodePoolImpl) IsVisited(absPath string) bool {
-	return p.visited[absPath]
+	if _, ok := p.visited[absPath]; ok {
+		return true
+	}
+	return false
+}
+
+func (p *NodePoolImpl) VisitedFiles(absPath string) []string {
+	visited := p.visited
+	return extractVisitedLoop(visited, absPath)
 }
 
 func (p *NodePoolImpl) MarkVisited(absPath string) {
-	p.visited[absPath] = true
+	p.visited[absPath] = len(p.visited)
 }
 
 func (p *NodePoolImpl) Enter(localNodeDirectory string) {

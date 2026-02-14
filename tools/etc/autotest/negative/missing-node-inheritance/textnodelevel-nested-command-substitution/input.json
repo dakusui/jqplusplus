@@ -1,3 +1,7 @@
 {
-  "a": "template:string:$(echo $(ref .ABSENT))"
+  "a": {
+    "b": "HELLO"
+  },
+  "expr": ".a.C",
+  "value": "eval:refexpr(ref([\"expr\"]))"
 }

@@ -109,3 +109,87 @@ func TestStringEntries_StartingWithPrefixes(t *testing.T) {
 
 	*/
 }
+
+func TestDeepCopy_NoCycle(t *testing.T) {
+	orig := map[string]any{
+		"a": 1,
+		"b": []any{
+			map[string]any{"k": "v"},
+		},
+	}
+
+	copied := DeepCopy(orig).(map[string]any)
+
+	if !reflect.DeepEqual(orig, copied) {
+		t.Fatalf("copied value mismatch: expected %v, got %v", orig, copied)
+	}
+
+	// Mutate original and ensure copy does not change.
+	orig["a"] = 2
+	orig["b"].([]any)[0].(map[string]any)["k"] = "changed"
+
+	if copied["a"].(int) != 1 {
+		t.Fatalf("copy was affected by mutation of original: copied[a]=%v", copied["a"])
+	}
+	if copied["b"].([]any)[0].(map[string]any)["k"] != "v" {
+		t.Fatalf("copy was affected by mutation of original nested value: copied[b][0][k]=%v", copied["b"].([]any)[0].(map[string]any)["k"])
+	}
+}
+
+func TestDeepCopy_PanicsOnCyclicMap(t *testing.T) {
+	m := map[string]any{}
+	m["self"] = m
+
+	defer func() {
+		if r := recover(); r == nil {
+			t.Fatalf("expected DeepCopy to panic on cyclic map, but it did not")
+		}
+	}()
+
+	_ = DeepCopy(m)
+}
+
+func TestDeepCopy_PanicsOnCyclicSlice(t *testing.T) {
+	var s []any
+	s = append(s, &s)
+
+	// Create a cycle: element 0 points to the slice itself through indirection.
+	s[0] = s
+
+	defer func() {
+		if r := recover(); r == nil {
+			t.Fatalf("expected DeepCopy to panic on cyclic slice, but it did not")
+		}
+	}()
+
+	_ = DeepCopy(s)
+}
+
+func TestContainsCyclicReference_NoCycle(t *testing.T) {
+	v := map[string]any{
+		"a": 1,
+		"b": []any{
+			map[string]any{"k": "v"},
+		},
+	}
+	if ContainsCyclicReference(v) {
+		t.Fatal("ContainsCyclicReference should be false for acyclic value")
+	}
+}
+
+func TestContainsCyclicReference_CyclicMap(t *testing.T) {
+	m := map[string]any{}
+	m["self"] = m
+	if !ContainsCyclicReference(m) {
+		t.Fatal("ContainsCyclicReference should be true for map that references itself")
+	}
+}
+
+func TestContainsCyclicReference_CyclicSlice(t *testing.T) {
+	var s []any
+	s = append(s, nil)
+	s[0] = s
+	if !ContainsCyclicReference(s) {
+		t.Fatal("ContainsCyclicReference should be true for slice that references itself")
+	}
+}

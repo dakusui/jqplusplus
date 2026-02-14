@@ -1,1 +1,6 @@
-ERROR: Cyclic reference was detected in
+ERROR:
+circular reference detected
+\.a
+\.b -> \.a
+eval:refexpr..\.a..
+negative/reference/cyclic_reference/input.json

@@ -1,1 +1,6 @@
-ERROR: Failed to access '."b"' and default value for it was not given.
+ERROR:
+path: \.b
+in expression:
+eval:ref...b...
+not found in
+autotest/negative/reference/missing-reference/input.json

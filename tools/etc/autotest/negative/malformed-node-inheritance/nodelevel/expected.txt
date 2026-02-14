@@ -1,3 +1,5 @@
-ERROR: Malformed JSON was given
-nodelevel\/M\.json
-// MALFORMED
+ERROR:
+invalid character '/'
+at '.a'
+failed to resolve node-level inheritances
+M\.json

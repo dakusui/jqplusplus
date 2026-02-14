@@ -110,6 +110,56 @@ func TestLoadAndResolveInheritances_CyclicRef_ThenError(t *testing.T) {
 	}
 }
 
+func TestLoadAndResolveInheritances_IncompatibleCallInExpresseion_ThenError(t *testing.T) {
+	dir := t.TempDir()
+	child := testutil.WriteTempJSON(t, dir, "child.json",
+		`{
+	"arr": "eval:array:refexpr()"
+  }
+`)
+	result, err := processNodeEntryKey((internal.NewNodeEntryKey(filepath.Dir(child), filepath.Base(child))))
+
+	if err == nil {
+		t.Fatalf("error expected but got: %v", result)
+	}
+}
+
+/*
+map[string]interface {} [
+
+	"key": map[string]interface {} [
+	  "key": *(*interface {})(0xc0000ee6d8), ], ]
+*/
+func TestLoadAndResolveInheritances_IndirectCyclicRef_ThenPanic(t *testing.T) {
+	dir := t.TempDir()
+	child := testutil.WriteTempJSON(t, dir, "child.json",
+		`{
+  "a": {
+    "key": "eval:object:ref([\"a\"])"
+  }
+}`)
+	result, err := processNodeEntryKey((internal.NewNodeEntryKey(filepath.Dir(child), filepath.Base(child))))
+	if err == nil {
+		t.Fatalf("error expected but got: %v", result)
+	}
+}
+
+func TestLoadAndResolveInheritances_MIssingReftAG_ThenError(t *testing.T) {
+	dir := t.TempDir()
+	child := testutil.WriteTempJSON(t, dir, "child.json",
+		`{
+  "thetag": "Hello, mytag",
+  "k0": {
+    "k1": "eval:string:reftag(\"missingTag\")"
+  }
+}`)
+	result, err := processNodeEntryKey((internal.NewNodeEntryKey(filepath.Dir(child), filepath.Base(child))))
+
+	if err == nil {
+		t.Fatalf("error expected but got: %v", result)
+	}
+}
+
 func TestLoadAndResolveInheritances_ReadfileAsStringOnPath(t *testing.T) {
 	dir := t.TempDir()
 	_ = testutil.WriteTempJSON(t, dir, "parent.json",
