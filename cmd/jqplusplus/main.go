@@ -70,7 +70,11 @@ If no files are provided, input is read from stdin.
 
 	if len(os.Args) > 1 && (os.Args[1] == "-v" || os.Args[1] == "--version") {
 		v, r := versionStrings()
-		_, _ = os.Stderr.WriteString(fmt.Sprintf("jq++ version %v, build %v\n", v, r))
+		if r == "unknown" {
+			_, _ = os.Stderr.WriteString(fmt.Sprintf("jq++ version %v\n", v))
+		} else {
+			_, _ = os.Stderr.WriteString(fmt.Sprintf("jq++ version %v, build %v\n", v, r))
+		}
 		os.Exit(0)
 	}
 
