@@ -483,6 +483,7 @@ body {font-family: Arial;}
 <button class="tablinks" onclick="openTab(event, 'top')" id="defaultOpen">top</button>
 <button class="tablinks" onclick="openTab(event, 'builtins')">builtins</button>
 <button class="tablinks" onclick="openTab(event, 'example')">example</button>
+<button class="tablinks" onclick="openTab(event, 'motivating-example')">motivating-example</button>
 </div>
 <div id="builtins" class="tabcontent">
 <div id="builtins_content">
@@ -836,6 +837,404 @@ Useful for debugging or when you need the path in string form.</p>
 </div>
 <div class="paragraph text-right"><p>
 <a href="example.html">open this page in a window</a>
+</p></div>
+</div>
+<div id="motivating-example" class="tabcontent">
+<div id="motivating-example_content">
+<div class="paragraph">
+<p>This example shows why <strong>jq++</strong> is useful when your configuration has repeated structure and cross-references.
+You keep small YAML fragments as source of truth, then let jq++ resolve inheritance and references.</p>
+</div>
+<div class="sect1">
+<h2 id="_problem">Problem</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Suppose a system has several components (<code>backend</code>, <code>admin</code>, <code>frontend</code>) that share common fields:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>each service needs <code>databaseUrl</code> and <code>databasePort</code></p>
+</li>
+<li>
+<p>each service has its own <code>url</code> and <code>port</code></p>
+</li>
+<li>
+<p><code>frontend</code> also needs <code>backendUrl</code></p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Without jq++, these values are copied around and can drift over time.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_if_you_dont_use_jq">If you don’t use jq++</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Without jq++, you typically maintain a fully expanded file by hand.
+That means the same values are repeated in multiple places:</p>
+</div>
+<div class="listingblock">
+<div class="title">Hand-written expanded configuration</div>
+<div class="content">
+<pre class="highlight"><code class="language-yaml" data-lang="yaml">components:
+  admin:
+    databasePort: 5432
+    databaseUrl: postgres
+    port: 8081
+    type: admin
+    url: admin
+  backend:
+    databasePort: 5432
+    databaseUrl: postgres
+    port: 8080
+    type: backend
+    url: backend
+  frontend:
+    backendUrl: backend
+    databasePort: 5432
+    databaseUrl: postgres
+    port: 3000
+    type: frontend
+    url: frontend
+ports:
+  admin: 8081
+  backend: 8080
+  database: 5432
+  frontend: 3000
+urls:
+  admin: admin
+  backend: backend
+  database: postgres
+  frontend: frontend</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This works, but has common maintenance risks:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Updating one value requires editing several places</p>
+</li>
+<li>
+<p>Copy/paste mistakes can leave inconsistent values between sections</p>
+</li>
+<li>
+<p>It is hard to tell what is "source of truth" vs derived data</p>
+</li>
+<li>
+<p>Reviewing diffs is noisy because one intent can touch many lines</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>With jq++, you edit compact source files and regenerate this expanded view deterministically.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_source_files_yaml">Source files (YAML)</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The main file defines reusable structure and computed values:</p>
+</div>
+<div class="listingblock">
+<div class="title"><code>system.yaml</code></div>
+<div class="content">
+<pre class="highlight"><code class="language-yaml" data-lang="yaml">$extends:
+  - funcs.jq
+ports:
+  $includes:
+    - ports.yaml
+urls:
+  $includes:
+    - urls.yaml
+$local:
+  baseService:
+    databaseUrl: 'eval:string:funcs::url_of("database")'
+    databasePort: 'eval:number:funcs::port_of("database")'
+    url: "eval:string:funcs::url_of(funcs::type)"
+    port: "eval:number:funcs::port_of(funcs::type)"
+components:
+  backend:
+    $extends:
+      - baseService
+    type: backend
+  admin:
+    $extends:
+      - baseService
+    type: admin
+  frontend:
+    $extends:
+      - baseService
+    type: frontend
+    backendUrl: 'eval:string:funcs::url_of("backend")'</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Lookup tables are kept in separate files:</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 50%;"/>
+<col style="width: 50%;"/>
+</colgroup>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><code>ports.yaml</code></p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><code>urls.yaml</code></p>
+</div></div></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-yaml" data-lang="yaml">backend: 8080
+admin: 8081
+frontend: 3000
+database: 5432</code></pre>
+</div>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-yaml" data-lang="yaml">backend: backend
+admin: admin
+frontend: frontend
+database: postgres</code></pre>
+</div>
+</div></div></td>
+</tr>
+</tbody>
+</table>
+<div class="paragraph">
+<p>Helper functions are defined once:</p>
+</div>
+<div class="listingblock">
+<div class="title"><code>funcs.jq</code></div>
+<div class="content">
+<pre class="highlight"><code class="language-jq" data-lang="jq">def port_of($service):
+  refexpr(".ports.\($service)");
+
+def url_of($service):
+  refexpr(".urls.\($service)");
+
+def type:
+  ref(parent + ["type"]);</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>In this version, <code>funcs::type</code> reads the component <code>type</code> from the current level.
+That allows <code>url</code> and <code>port</code> to live in <code>baseService</code> (one level up), so each component only declares its identity and unique fields.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_run_pipeline">Run pipeline</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Use <code>yq</code> to convert YAML to JSON before and after jq++:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-shell" data-lang="shell">yq . -j system.yaml &gt; system.json
+jq++ input.json &gt; expanded.json
+yq . -y expanded.json &gt; expanded.yaml</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Or as a one-liner:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-shell" data-lang="shell">yq . -j system.yaml | jq++ | yq . -y</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_result">Result</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>jq++ produces fully materialized configuration from compact source files:</p>
+</div>
+<div class="listingblock">
+<div class="title"><code>expected.yaml</code></div>
+<div class="content">
+<pre class="highlight"><code class="language-yaml" data-lang="yaml">components:
+  admin:
+    databasePort: 5432
+    databaseUrl: postgres
+    port: 8081
+    type: admin
+    url: admin
+  backend:
+    databasePort: 5432
+    databaseUrl: postgres
+    port: 8080
+    type: backend
+    url: backend
+  frontend:
+    backendUrl: backend
+    databasePort: 5432
+    databaseUrl: postgres
+    port: 3000
+    type: frontend
+    url: frontend
+ports:
+  admin: 8081
+  backend: 8080
+  database: 5432
+  frontend: 3000
+urls:
+  admin: admin
+  backend: backend
+  database: postgres
+  frontend: frontend</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_advanced_topic_split_into_four_independent_concerns">Advanced topic: split into four independent concerns</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Once the basic version is clear, you can modularize it further.
+In addition to <code>ports.yaml</code> and <code>urls.yaml</code>, you can externalize:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>service defaults (<code>base-service.yaml</code>)</p>
+</li>
+<li>
+<p>component definitions (<code>components.yaml</code>)</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>This keeps each concern in its own file and makes larger systems easier to evolve.</p>
+</div>
+<div class="paragraph">
+<p>Main wiring file:</p>
+</div>
+<div class="listingblock">
+<div class="title"><code>system.yaml</code> (advanced)</div>
+<div class="content">
+<pre class="highlight"><code class="language-yaml" data-lang="yaml">$extends:
+  - funcs.jq
+ports:
+  $includes:
+    - ports.yaml
+urls:
+  $includes:
+    - urls.yaml
+components:
+  $includes:
+    - components.yaml</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Service defaults:</p>
+</div>
+<div class="listingblock">
+<div class="title"><code>base-service.yaml</code></div>
+<div class="content">
+<pre class="highlight"><code class="language-yaml" data-lang="yaml">databaseUrl: 'eval:string:funcs::url_of("database")'
+databasePort: 'eval:number:funcs::port_of("database")'
+url: "eval:string:funcs::url_of(funcs::type)"
+port: "eval:number:funcs::port_of(funcs::type)"</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Component declarations:</p>
+</div>
+<div class="listingblock">
+<div class="title"><code>components.yaml</code></div>
+<div class="content">
+<pre class="highlight"><code class="language-yaml" data-lang="yaml">backend:
+  $extends:
+    - base-service.yaml
+  type: backend
+admin:
+  $extends:
+    - base-service.yaml
+  type: admin
+frontend:
+  $extends:
+    - base-service.yaml
+  type: frontend
+  backendUrl: 'eval:string:funcs::url_of("backend")'</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The generated result is the same as the basic example:</p>
+</div>
+<div class="listingblock">
+<div class="title"><code>expected.yaml</code> (advanced)</div>
+<div class="content">
+<pre class="highlight"><code class="language-yaml" data-lang="yaml">components:
+  admin:
+    databasePort: 5432
+    databaseUrl: postgres
+    port: 8081
+    type: admin
+    url: admin
+  backend:
+    databasePort: 5432
+    databaseUrl: postgres
+    port: 8080
+    type: backend
+    url: backend
+  frontend:
+    backendUrl: backend
+    databasePort: 5432
+    databaseUrl: postgres
+    port: 3000
+    type: frontend
+    url: frontend
+ports:
+  admin: 8081
+  backend: 8080
+  database: 5432
+  frontend: 3000
+urls:
+  admin: admin
+  backend: backend
+  database: postgres
+  frontend: frontend</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_why_this_is_useful">Why this is useful</h2>
+<div class="sectionbody">
+<div class="ulist">
+<ul>
+<li>
+<p>Reduce duplication: shared fields live in one place (<code>$local.baseService</code>)</p>
+</li>
+<li>
+<p>Separate concerns: lookup data (<code>ports.yaml</code>, <code>urls.yaml</code>) is independent from composition (<code>system.yaml</code>)</p>
+</li>
+<li>
+<p>Keep YAML editing workflow while gaining inheritance and reference evaluation</p>
+</li>
+<li>
+<p>Generate deterministic expanded config for CI/CD and deployment</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph text-right"><p>
+<a href="motivating-example.html">open this page in a window</a>
 </p></div>
 </div>
 <div id="top" class="tabcontent">
