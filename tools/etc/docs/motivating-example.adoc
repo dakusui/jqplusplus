@@ -127,6 +127,48 @@ jq++ produces fully materialized configuration from compact source files:
 include::../autotest/examples/motivating-example-yaml/expected.yaml[]
 ----
 
+== Advanced topic: split into four independent concerns
+
+Once the basic version is clear, you can modularize it further.
+In addition to `ports.yaml` and `urls.yaml`, you can externalize:
+
+- service defaults (`base-service.yaml`)
+- component definitions (`components.yaml`)
+
+This keeps each concern in its own file and makes larger systems easier to evolve.
+
+Main wiring file:
+
+[source,yaml]
+.`system.yaml` (advanced)
+----
+include::../autotest/examples/motivating-example-yaml-4concerns/system.yaml[]
+----
+
+Service defaults:
+
+[source,yaml]
+.`base-service.yaml`
+----
+include::../autotest/examples/motivating-example-yaml-4concerns/base-service.yaml[]
+----
+
+Component declarations:
+
+[source,yaml]
+.`components.yaml`
+----
+include::../autotest/examples/motivating-example-yaml-4concerns/components.yaml[]
+----
+
+The generated result is the same as the basic example:
+
+[source,yaml]
+.`expected.yaml` (advanced)
+----
+include::../autotest/examples/motivating-example-yaml-4concerns/expected.yaml[]
+----
+
 == Why this is useful
 
 - Reduce duplication: shared fields live in one place (`$local.baseService`)
