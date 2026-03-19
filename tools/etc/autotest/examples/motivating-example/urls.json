@@ -1,0 +1,6 @@
+{
+  "backend": "backend",
+  "admin": "admin",
+  "frontend": "frontend",
+  "database": "postgres"
+}

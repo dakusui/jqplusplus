@@ -1,0 +1,38 @@
+{
+  "components": {
+    "admin": {
+      "databasePort": 5432,
+      "databaseUrl": "postgres",
+      "port": 8081,
+      "type": "admin",
+      "url": "admin"
+    },
+    "backend": {
+      "databasePort": 5432,
+      "databaseUrl": "postgres",
+      "port": 8080,
+      "type": "backend",
+      "url": "backend"
+    },
+    "frontend": {
+      "backendUrl": "backend",
+      "databasePort": 5432,
+      "databaseUrl": "postgres",
+      "port": 3000,
+      "type": "frontend",
+      "url": "frontend"
+    }
+  },
+  "ports": {
+    "admin": 8081,
+    "backend": 8080,
+    "database": 5432,
+    "frontend": 3000
+  },
+  "urls": {
+    "admin": "admin",
+    "backend": "backend",
+    "database": "postgres",
+    "frontend": "frontend"
+  }
+}
