@@ -1,0 +1,13 @@
+backend:
+  $extends:
+    - base-service.yaml
+  type: backend
+admin:
+  $extends:
+    - base-service.yaml
+  type: admin
+frontend:
+  $extends:
+    - base-service.yaml
+  type: frontend
+  backendUrl: 'eval:string:funcs::url_of("backend")'

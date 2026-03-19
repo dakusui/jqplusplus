@@ -1,0 +1,11 @@
+$extends:
+  - funcs.jq
+ports:
+  $includes:
+    - ports.yaml
+urls:
+  $includes:
+    - urls.yaml
+components:
+  $includes:
+    - components.yaml
