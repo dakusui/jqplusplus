@@ -10,23 +10,19 @@ $local:
   baseService:
     databaseUrl: 'eval:string:funcs::url_of("database")'
     databasePort: 'eval:number:funcs::port_of("database")'
+    url: "eval:string:funcs::url_of(funcs::type)"
+    port: "eval:number:funcs::port_of(funcs::type)"
 components:
   backend:
     $extends:
       - baseService
     type: backend
-    url: 'eval:string:funcs::url_of("backend")'
-    port: 'eval:number:funcs::port_of("backend")'
   admin:
     $extends:
       - baseService
     type: admin
-    url: 'eval:string:funcs::url_of("admin")'
-    port: 'eval:number:funcs::port_of("admin")'
   frontend:
     $extends:
       - baseService
     type: frontend
     backendUrl: 'eval:string:funcs::url_of("backend")'
-    url: 'eval:string:funcs::url_of("frontend")'
-    port: 'eval:number:funcs::port_of("frontend")'

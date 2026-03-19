@@ -11,6 +11,55 @@ Suppose a system has several components (`backend`, `admin`, `frontend`) that sh
 
 Without jq++, these values are copied around and can drift over time.
 
+== If you don't use jq++
+
+Without jq++, you typically maintain a fully expanded file by hand.
+That means the same values are repeated in multiple places:
+
+[source,yaml]
+.Hand-written expanded configuration
+----
+components:
+  admin:
+    databasePort: 5432
+    databaseUrl: postgres
+    port: 8081
+    type: admin
+    url: admin
+  backend:
+    databasePort: 5432
+    databaseUrl: postgres
+    port: 8080
+    type: backend
+    url: backend
+  frontend:
+    backendUrl: backend
+    databasePort: 5432
+    databaseUrl: postgres
+    port: 3000
+    type: frontend
+    url: frontend
+ports:
+  admin: 8081
+  backend: 8080
+  database: 5432
+  frontend: 3000
+urls:
+  admin: admin
+  backend: backend
+  database: postgres
+  frontend: frontend
+----
+
+This works, but has common maintenance risks:
+
+- Updating one value requires editing several places
+- Copy/paste mistakes can leave inconsistent values between sections
+- It is hard to tell what is "source of truth" vs derived data
+- Reviewing diffs is noisy because one intent can touch many lines
+
+With jq++, you edit compact source files and regenerate this expanded view deterministically.
+
 == Source files (YAML)
 
 The main file defines reusable structure and computed values:
@@ -47,13 +96,8 @@ Helper functions are defined once:
 include::../autotest/examples/motivating-example-yaml/funcs.jq[]
 ----
 
-Entry point:
-
-[source,json]
-.`input.json`
-----
-include::../autotest/examples/motivating-example-yaml/input.json[]
-----
+In this version, `funcs::type` reads the component `type` from the current level.
+That allows `url` and `port` to live in `baseService` (one level up), so each component only declares its identity and unique fields.
 
 == Run pipeline
 
