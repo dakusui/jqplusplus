@@ -1,0 +1,15 @@
+= Example Document
+:stem: latexmath
+
+== Introduction
+
+This is an example AsciiDoc page demonstrating a simple math formula.
+
+== Math Formula
+
+The quadratic formula solves for latexmath:[x] in any equation of the form latexmath:[ax^2 + bx + c = 0]:
+
+[stem]
+++++
+x = \frac{-b \pm \sqrt{b^2 - 4ac}}{2a}
+++++
