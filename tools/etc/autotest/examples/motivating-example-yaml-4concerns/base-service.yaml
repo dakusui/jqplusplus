@@ -1,0 +1,4 @@
+databaseUrl: 'eval:string:funcs::url_of("database")'
+databasePort: 'eval:number:funcs::port_of("database")'
+url: "eval:string:funcs::url_of(funcs::type)"
+port: "eval:number:funcs::port_of(funcs::type)"

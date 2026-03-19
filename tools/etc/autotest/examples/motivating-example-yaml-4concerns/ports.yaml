@@ -1,0 +1,4 @@
+backend: 8080
+admin: 8081
+frontend: 3000
+database: 5432

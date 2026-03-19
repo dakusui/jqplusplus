@@ -1,0 +1,177 @@
+This example shows why *jq{plus}{plus}* is useful when your configuration has repeated structure and cross-references.
+You keep small YAML fragments as source of truth, then let jq++ resolve inheritance and references.
+
+== Problem
+
+Suppose a system has several components (`backend`, `admin`, `frontend`) that share common fields:
+
+- each service needs `databaseUrl` and `databasePort`
+- each service has its own `url` and `port`
+- `frontend` also needs `backendUrl`
+
+Without jq++, these values are copied around and can drift over time.
+
+== If you don't use jq++
+
+Without jq++, you typically maintain a fully expanded file by hand.
+That means the same values are repeated in multiple places:
+
+[source,yaml]
+.Hand-written expanded configuration
+----
+components:
+  admin:
+    databasePort: 5432
+    databaseUrl: postgres
+    port: 8081
+    type: admin
+    url: admin
+  backend:
+    databasePort: 5432
+    databaseUrl: postgres
+    port: 8080
+    type: backend
+    url: backend
+  frontend:
+    backendUrl: backend
+    databasePort: 5432
+    databaseUrl: postgres
+    port: 3000
+    type: frontend
+    url: frontend
+ports:
+  admin: 8081
+  backend: 8080
+  database: 5432
+  frontend: 3000
+urls:
+  admin: admin
+  backend: backend
+  database: postgres
+  frontend: frontend
+----
+
+This works, but has common maintenance risks:
+
+- Updating one value requires editing several places
+- Copy/paste mistakes can leave inconsistent values between sections
+- It is hard to tell what is "source of truth" vs derived data
+- Reviewing diffs is noisy because one intent can touch many lines
+
+With jq++, you edit compact source files and regenerate this expanded view deterministically.
+
+== Source files (YAML)
+
+The main file defines reusable structure and computed values:
+
+[source,yaml]
+.`system.yaml`
+----
+include::../autotest/examples/motivating-example-yaml/system.yaml[]
+----
+
+Lookup tables are kept in separate files:
+
+[cols="1a,1a"]
+|===
+|`ports.yaml`
+|`urls.yaml`
+
+|[source,yaml]
+----
+include::../autotest/examples/motivating-example-yaml/ports.yaml[]
+----
+
+|[source,yaml]
+----
+include::../autotest/examples/motivating-example-yaml/urls.yaml[]
+----
+|===
+
+Helper functions are defined once:
+
+[source,jq]
+.`funcs.jq`
+----
+include::../autotest/examples/motivating-example-yaml/funcs.jq[]
+----
+
+In this version, `funcs::type` reads the component `type` from the current level.
+That allows `url` and `port` to live in `baseService` (one level up), so each component only declares its identity and unique fields.
+
+== Run pipeline
+
+Use `yq` to convert YAML to JSON before and after jq++:
+
+[source,shell]
+----
+yq . -j system.yaml > system.json
+jq++ input.json > expanded.json
+yq . -y expanded.json > expanded.yaml
+----
+
+Or as a one-liner:
+
+[source,shell]
+----
+yq . -j system.yaml | jq++ | yq . -y
+----
+
+== Result
+
+jq++ produces fully materialized configuration from compact source files:
+
+[source,yaml]
+.`expected.yaml`
+----
+include::../autotest/examples/motivating-example-yaml/expected.yaml[]
+----
+
+== Advanced topic: split into four independent concerns
+
+Once the basic version is clear, you can modularize it further.
+In addition to `ports.yaml` and `urls.yaml`, you can externalize:
+
+- service defaults (`base-service.yaml`)
+- component definitions (`components.yaml`)
+
+This keeps each concern in its own file and makes larger systems easier to evolve.
+
+Main wiring file:
+
+[source,yaml]
+.`system.yaml` (advanced)
+----
+include::../autotest/examples/motivating-example-yaml-4concerns/system.yaml[]
+----
+
+Service defaults:
+
+[source,yaml]
+.`base-service.yaml`
+----
+include::../autotest/examples/motivating-example-yaml-4concerns/base-service.yaml[]
+----
+
+Component declarations:
+
+[source,yaml]
+.`components.yaml`
+----
+include::../autotest/examples/motivating-example-yaml-4concerns/components.yaml[]
+----
+
+The generated result is the same as the basic example:
+
+[source,yaml]
+.`expected.yaml` (advanced)
+----
+include::../autotest/examples/motivating-example-yaml-4concerns/expected.yaml[]
+----
+
+== Why this is useful
+
+- Reduce duplication: shared fields live in one place (`$local.baseService`)
+- Separate concerns: lookup data (`ports.yaml`, `urls.yaml`) is independent from composition (`system.yaml`)
+- Keep YAML editing workflow while gaining inheritance and reference evaluation
+- Generate deterministic expanded config for CI/CD and deployment

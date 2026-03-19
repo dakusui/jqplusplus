@@ -1,0 +1,28 @@
+$extends:
+  - funcs.jq
+ports:
+  $includes:
+    - ports.yaml
+urls:
+  $includes:
+    - urls.yaml
+$local:
+  baseService:
+    databaseUrl: 'eval:string:funcs::url_of("database")'
+    databasePort: 'eval:number:funcs::port_of("database")'
+    url: "eval:string:funcs::url_of(funcs::type)"
+    port: "eval:number:funcs::port_of(funcs::type)"
+components:
+  backend:
+    $extends:
+      - baseService
+    type: backend
+  admin:
+    $extends:
+      - baseService
+    type: admin
+  frontend:
+    $extends:
+      - baseService
+    type: frontend
+    backendUrl: 'eval:string:funcs::url_of("backend")'
