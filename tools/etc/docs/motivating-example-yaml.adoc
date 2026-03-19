@@ -1,0 +1,91 @@
+This example shows why *jq{plus}{plus}* is useful when your configuration has repeated structure and cross-references.
+You keep small YAML fragments as source of truth, then let jq++ resolve inheritance and references.
+
+== Problem
+
+Suppose a system has several components (`backend`, `admin`, `frontend`) that share common fields:
+
+- each service needs `databaseUrl` and `databasePort`
+- each service has its own `url` and `port`
+- `frontend` also needs `backendUrl`
+
+Without jq++, these values are copied around and can drift over time.
+
+== Source files (YAML)
+
+The main file defines reusable structure and computed values:
+
+[source,yaml]
+.`system.yaml`
+----
+include::../autotest/examples/motivating-example-yaml/system.yaml[]
+----
+
+Lookup tables are kept in separate files:
+
+[cols="1a,1a"]
+|===
+|`ports.yaml`
+|`urls.yaml`
+
+|[source,yaml]
+----
+include::../autotest/examples/motivating-example-yaml/ports.yaml[]
+----
+
+|[source,yaml]
+----
+include::../autotest/examples/motivating-example-yaml/urls.yaml[]
+----
+|===
+
+Helper functions are defined once:
+
+[source,jq]
+.`funcs.jq`
+----
+include::../autotest/examples/motivating-example-yaml/funcs.jq[]
+----
+
+Entry point:
+
+[source,json]
+.`input.json`
+----
+include::../autotest/examples/motivating-example-yaml/input.json[]
+----
+
+== Run pipeline
+
+Use `yq` to convert YAML to JSON before and after jq++:
+
+[source,shell]
+----
+yq . -j system.yaml > system.json
+jq++ input.json > expanded.json
+yq . -y expanded.json > expanded.yaml
+----
+
+Or as a one-liner:
+
+[source,shell]
+----
+yq . -j system.yaml | jq++ | yq . -y
+----
+
+== Result
+
+jq++ produces fully materialized configuration from compact source files:
+
+[source,yaml]
+.`expected.yaml`
+----
+include::../autotest/examples/motivating-example-yaml/expected.yaml[]
+----
+
+== Why this is useful
+
+- Reduce duplication: shared fields live in one place (`$local.baseService`)
+- Separate concerns: lookup data (`ports.yaml`, `urls.yaml`) is independent from composition (`system.yaml`)
+- Keep YAML editing workflow while gaining inheritance and reference evaluation
+- Generate deterministic expanded config for CI/CD and deployment
