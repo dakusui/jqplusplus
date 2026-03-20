@@ -29,8 +29,8 @@ Each filename is resolved relative to the current file's directory and the `JF_P
 
 *Merge order*
 
-Given `$extends: [A, B]`, the result is equivalent to merging A, then B on top, then the current object on top of that.
-Later entries in the array take precedence over earlier ones; the extending file takes precedence over all parents.
+Given `$extends: [A, B]`, earlier entries in the array take precedence over later ones, and the current object's own fields take precedence over all parents.
+In other words, the priority from highest to lowest is: current object → A → B.
 
 *Node-level inheritance*
 
@@ -75,17 +75,24 @@ Unlike `$extends`, which models inheritance (the current object is a specialisat
 
 *Merge order*
 
-Given `$includes: [A, B]`, the current object's fields take precedence over the included fragments.
-The fragments fill in keys that the current object does not define.
+Given `$includes: [A, B]`, the merge order is the **opposite** of `$extends`: later entries in the array take precedence over earlier ones, and the included fragments take precedence over the current object's own fields.
+In other words, the priority from highest to lowest is: B → A → current object.
 
 *Coexistence with $extends*
 
 `$extends` and `$includes` can appear in the same object.
-`$extends` is resolved first; `$includes` is resolved second against the already-merged result.
+A useful way to remember their relationship is:
+
+  $includes overrides the current object, and the current object overrides $extends.
+
+`$extends` is resolved first, then `$includes` is applied on top.
+The full priority order from highest to lowest is:
+
+  $includes (later entries) → $includes (earlier entries) → current object's own fields → $extends (earlier entries) → $extends (later entries)
 
 *Tip — building a custom DSL with $includes and JF_PATH*
 
-Because `$includes` injects fragments that the current object can selectively override, and because files are resolved via `JF_PATH`, you can use the two features together to build a lightweight domain-specific configuration language.
+Because `$includes` fragments override the current object's own fields, and because files are resolved via `JF_PATH`, you can use the two features together to build a lightweight domain-specific configuration language where platform-level fragments inject mandatory values.
 
 Define a library of reusable fragments and place them in a directory on `JF_PATH`.
 Any configuration file can then pull in exactly the behaviour it needs with a single `$includes` line, without knowing the absolute location of the library:
@@ -133,8 +140,6 @@ Local nodes are materialized as temporary files during evaluation and removed fr
 
 Local names are referenced in `$extends` or `$includes` by their bare name (without a file extension).
 The `$local` key itself is removed from the output.
-
----
 
 === Expression Evaluation
 
@@ -196,7 +201,7 @@ If the expression evaluates to an array of strings, multiple keys are created—
 [source,json]
 ----
 {
-  "eval:<expression>": <value>
+  "eval:<expression>": "<value>"
 }
 ----
 
@@ -291,8 +296,6 @@ Output:
 }
 ----
 
----
-
 === Builtin Variables
 
 The following variables are injected automatically into every `eval:` expression context.
@@ -310,7 +313,6 @@ The following variables are injected automatically into every `eval:` expression
   The path to the current node as a path expression string (e.g. `".foo.bar[0]"`).
   Available only when evaluating a *value*; not available when evaluating a key.
 
----
 
 === Builtin Functions
 
@@ -471,8 +473,6 @@ The result is the parsed JSON value (object, array, string, number, boolean, or 
 }
 ----
 
----
-
 === Supported Input Formats
 
 `jq++` accepts files in any of the following formats.
@@ -492,8 +492,6 @@ The format is determined from the file extension.
 
 YAML, TOML, JSON5, and HOCON files are converted to the JSON data model before processing; the same JSON++ directives work in all formats.
 
----
-
 === Search Paths
 
 When resolving filenames in `$extends`, `$includes`, and `readfile()`, `jq++` searches directories in the following order:
@@ -508,8 +506,6 @@ This mirrors the behavior of environment variables such as `PATH` or `PYTHONPATH
 $ JF_PATH=/shared/configs:/team/defaults jq++ myconfig.json
 ----
 
----
-
 === Processing Pipeline
 
 Understanding the evaluation order helps predict the output.
@@ -521,6 +517,3 @@ Understanding the evaluation order helps predict the output.
 . *Evaluate key expressions* — keys starting with `eval:` or `raw:` are processed.
 . *Evaluate value expressions* — string values starting with `eval:` or `raw:` are processed (repeated until stable or the iteration limit is reached).
 . *Output* — the resulting plain JSON is written to standard output.
-
-[.text-right]
-link:index.html[top]
