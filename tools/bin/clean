@@ -8,6 +8,9 @@ function main() {
   for i in 'test-output.*' 'test-error.txt'; do
     find tools/etc/autotest -name "$i" -exec rm -f {} \;;
   done
+  for i in 'diag-ditaa-*'; do
+    find tools/etc/docs -name "$i" -exec rm -f {} \;;
+  done
   rm -fr "${_project_root}/docs"
   )
  }
