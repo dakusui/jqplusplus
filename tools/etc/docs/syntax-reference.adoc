@@ -506,14 +506,4 @@ This mirrors the behavior of environment variables such as `PATH` or `PYTHONPATH
 $ JF_PATH=/shared/configs:/team/defaults jq++ myconfig.json
 ----
 
-=== Processing Pipeline
-
-Understanding the evaluation order helps predict the output.
-
-. *Parse* — the input file is parsed into the JSON data model.
-. *Materialize local nodes* — objects defined under `$local` are written to temporary files.
-. *Resolve file-level inheritance* — `$extends` and `$includes` at the object's top level are resolved and parents are merged.
-. *Resolve node-level inheritance* — `$extends` and `$includes` within nested objects are resolved recursively (outermost nodes first).
-. *Evaluate key expressions* — keys starting with `eval:` or `raw:` are processed.
-. *Evaluate value expressions* — string values starting with `eval:` or `raw:` are processed (repeated until stable or the iteration limit is reached).
-. *Output* — the resulting plain JSON is written to standard output.
+See the link:design.html[Design] page for a detailed description of the evaluation pipeline.
