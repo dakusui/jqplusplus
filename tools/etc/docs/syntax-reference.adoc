@@ -83,6 +83,27 @@ The fragments fill in keys that the current object does not define.
 `$extends` and `$includes` can appear in the same object.
 `$extends` is resolved first; `$includes` is resolved second against the already-merged result.
 
+*Tip — building a custom DSL with $includes and JF_PATH*
+
+Because `$includes` injects fragments that the current object can selectively override, and because files are resolved via `JF_PATH`, you can use the two features together to build a lightweight domain-specific configuration language.
+
+Define a library of reusable fragments and place them in a directory on `JF_PATH`.
+Any configuration file can then pull in exactly the behaviour it needs with a single `$includes` line, without knowing the absolute location of the library:
+
+[source,json]
+----
+{
+  "$includes": ["defaults/runtime.json", "defaults/logging.json"],
+  "log_level": "warn"
+}
+----
+
+Running `JF_PATH=/opt/myapp/lib jq++ service.json` resolves `defaults/runtime.json` and `defaults/logging.json` from the library directory.
+Switching environments is a matter of changing `JF_PATH`—the configuration files themselves are untouched.
+
+This pattern lets teams publish versioned "standard" fragments that any project can `$includes` without copying content.
+The result is a small but coherent DSL: every configuration file speaks the same vocabulary of shared fragments, and individual files only spell out what makes them different.
+
 ==== $local
 
 Defines named template objects that can be referenced within the same file.
@@ -246,6 +267,30 @@ Output:
 }
 ----
 
+*Tip — escaping reserved keys*
+
+`raw:` is the only way to produce a literal key (or value) that starts with a JSON++ reserved prefix such as `$extends`, `$includes`, or `$local`.
+Because these strings are consumed by jq++ before output, a bare `"$extends"` key cannot survive into the final JSON.
+Prefix it with `raw:` to pass it through unchanged.
+
+[source,json]
+----
+{
+  "raw:$extends": "this key appears verbatim in the output",
+  "raw:$local":   "so does this one"
+}
+----
+
+Output:
+
+[source,json]
+----
+{
+  "$extends": "this key appears verbatim in the output",
+  "$local":   "so does this one"
+}
+----
+
 ---
 
 === Builtin Variables
@@ -272,6 +317,22 @@ The following variables are injected automatically into every `eval:` expression
 The following functions are available inside `eval:` expressions.
 
 ==== Path Conversion
+
+[NOTE]
+====
+*A note on path expressions in jq*
+
+In standard jq, a _path expression_ (e.g. `.foo.bar[0]`) is a syntactic construct, not a value.
+It exists only at the language level—as a fragment of source code—and cannot be stored in a variable, passed as an argument, or returned from a function.
+Functions such as `path/1`, `getpath/1`, and `setpath/1` accept _path arrays_ (plain JSON arrays of strings and integers) precisely because path expressions are not first-class data.
+
+JSON++ intentionally departs from this principle.
+`$cur` and `$curexpr` expose the current location as runtime values, and `topatharray`/`topathexpr` let you convert between the two representations freely.
+This is a deliberate usability trade-off: configuration authors need to navigate and reference locations in the document, and string-based path expressions are considerably more readable than raw path arrays when written inside a JSON string.
+
+Treating path expressions as strings is therefore a JSON++-specific convention.
+It has no meaning to jq itself; the conversion functions bridge the gap when you need to pass a location to a jq built-in such as `getpath` or `setpath`.
+====
 
 ===== topatharray(path_expression_string)
 
