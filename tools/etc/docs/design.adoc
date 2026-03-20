@@ -18,52 +18,76 @@ The structure of the configuration and the relationships between its parts can b
 JSON++ operates on the JSON data model, not on JSON syntax.
 Any format that can be faithfully converted to the JSON data model—YAML, TOML, HOCON, JSON5—benefits from the same reuse mechanisms without any modification to downstream tooling.
 
----
-
 === Evaluation Pipeline
 
 `jq++` transforms a JSON++ configuration file into plain JSON through a deterministic sequence of stages.
 Each stage reads from the result of the previous one; no stage revisits earlier work.
 
+[ditaa]
 ----
-  JSON++ file(s)
-       │
-       ▼
-  ┌─────────────┐
-  │    Parse    │  detect format, read file, convert to JSON data model
-  └──────┬──────┘
-         │
-         ▼
-  ┌──────────────────┐
-  │ Materialize      │  write $local node definitions to a temporary
-  │ local nodes      │  session directory as real files
-  └──────┬───────────┘
-         │
-         ▼
-  ┌──────────────────────────┐
-  │ File-level inheritance   │  resolve $extends and $includes at the
-  │                          │  top level of the current object
-  └──────┬───────────────────┘
-         │
-         ▼
-  ┌──────────────────────────┐
-  │ Node-level inheritance   │  resolve $extends and $includes within
-  │                          │  nested objects, outermost first
-  └──────┬───────────────────┘
-         │
-         ▼
-  ┌──────────────────────────┐
-  │ Key-side evaluation      │  evaluate eval:/raw: prefixes on keys
-  └──────┬───────────────────┘
-         │
-         ▼
-  ┌──────────────────────────┐
-  │ Value-side evaluation    │  evaluate eval:/raw: prefixes on values;
-  │                          │  repeat until stable
-  └──────┬───────────────────┘
-         │
-         ▼
-    Plain JSON output
+ +----------------+
+ | Input Files{d} | detect format, read file, convert to JSON data model
+ +-------+--------+
+         ^
+         |           +- resolve $extends and $includes at the
+    +----+----+      |  top level of the current object
+    | Parse{o}|      |
+    +----+----+      |                                    +- write $local node definitions to a temporary
+         |           |                                    |  session directory as real files
+         :           |                                    |
+         V           |                                    |       Inheritance mechanism
++--------------------|------------------------------------|----------------------------+
+|                    |                                    |                            |
+|          file-level inheritance             local node materialization               |
+|                 +----+                               +-----+                         |
+|   +-------------+ {o}+-=----------+     +------------+ {o} +-=-----------+           |
+|   |             +----+            |     |            +-----+             | 0...n     |
+|   V                               V     V                                V           |
+| +------+                         +-------+                         +------------+    |
+| |Source|                         |Work(1)|                         |LocalNodes  |    |
+| |{d}   |                         |{d}    |                         |{d}         |    |
+| +------+                         +-------+                         +------------+    |
+|                                      ^                                   ^           |
+|                                      |              +-----+              |           |
+|                                      +--------------+ {o} +--------------+           |
+|                                                     +--+--+                          |
+|                                                        | node-level inheritance      |
++--------------------------------------------------------|-----------|-----------------+
+                                                         :           |
+                                                         V           +- resolve $extends and $includes
+                                                    +----+----+         within nested objects, outermost first
+                                                    |Work(2 a)|
+                                                    |{d}      |
+                                                    +----+----+
+                                                         ^
+                                                         |
+                                              +----------|---------+
+                                              |          |         |
+                                              |       +--+--+      |
+                                              |       | {o} |      |key side evaluation:
+                                              |       +--+--+      |  evaluate eval/raw prefixes on keys
+                                              |          |         |
+                                              |          :         |
+                                              |          V         |
+                                              |+---------+--------+|
+                                              ||    Work(2 b)     ||
+                                              ||internal variable ||
+                                              |+---------+--------+|
+                                              |          ^         |
+                                              |          |         |
+                                              |          |         |
+                                              |       +--+--+      |
+                                              |       | {o} |      |value side evaluation:
+                                              |       +--+--+      |  evaluate eval/raw prefixes on values; repeat until stable
+                                              |          :         |
+                                              +----------|---------+
+  +----+       +----+                                    |
+  |A{o}+-=---->+B{o}| (A writes to B)                    :
+  +----+       +----+                                    V
+                                                     +---+---+
+  +----+       +----+                                |Output |
+  |A{o}+------>+B{o}| (A reads from B)               |{d}    |
+  +----+       +----+                                +---+---+
 ----
 
 Each stage is described in detail below.
@@ -80,19 +104,7 @@ Any `eval:` expression in a file that includes such a `.jq` file via `$extends` 
 
 Files with no extension or with `.json++`, `.yaml++`, `.toml++`, `.json5++`, `.conf++`, or `.hocon++` are treated the same as their base format.
 
-==== Stage 2 — Materialize local nodes
-
-Objects defined under the `$local` key are extracted and written as individual files in a temporary _session directory_ that is created fresh for each top-level `jq++` invocation.
-Each local node name becomes its own file (e.g. `BaseThing` becomes a file `BaseThing` with no extension, treated as JSON).
-
-The session directory is placed on the front of the search path for the duration of processing.
-This is what allows local node names to be used in `$extends` and `$includes` by bare name: they resolve against the session directory first.
-Local node scope is tied to the file that defined them—specifically to the object tree rooted at that file—so local nodes from a parent are visible inside nodes that extend that parent, but not from unrelated sibling nodes.
-
-The `$local` key is removed from the object before further processing.
-At the end of the invocation, the session directory is deleted.
-
-==== Stage 3 — File-level inheritance
+==== Stage 2 — File-level inheritance
 
 `$extends` and `$includes` at the root of the current object are resolved.
 Both directives are handled by the same underlying merge engine; the difference is in merge direction.
@@ -119,6 +131,18 @@ In other words, `$includes` fragments override everything that `$extends` and th
 *Processing order*
 
 `$extends` is always resolved before `$includes`, so that `$includes` can override the combined result.
+
+==== Stage 3 — Materialize local nodes
+
+Objects defined under the `$local` key are extracted and written as individual files in a temporary _session directory_ that is created fresh for each top-level `jq++` invocation.
+Each local node name becomes its own file (e.g. `BaseThing` becomes a file `BaseThing` with no extension, treated as JSON).
+
+The session directory is placed on the front of the search path for the duration of processing.
+This is what allows local node names to be used in `$extends` and `$includes` by bare name: they resolve against the session directory first.
+Local node scope is tied to the file that defined them—specifically to the object tree rooted at that file—so local nodes from a parent are visible inside nodes that extend that parent, but not from unrelated sibling nodes.
+
+The `$local` key is removed from the object before further processing.
+At the end of the invocation, the session directory is deleted.
 
 ==== Stage 4 — Node-level inheritance
 
@@ -177,8 +201,6 @@ When a file is entered for processing, its session-local node directory is pushe
 When processing returns from that file, the directory is popped.
 The full search path at any point is: current file's base directory + local node directory stack + `JF_PATH` entries.
 
----
-
 === Merge Object Semantics
 
 `mergeObjects(parent, child)` performs a deep merge:
@@ -189,6 +211,3 @@ The full search path at any point is: current file's base directory + local node
 
 This means arrays are **not** merged—a child array replaces the parent array completely.
 Only nested objects receive the recursive treatment.
-
-[.text-right]
-link:index.html[top]

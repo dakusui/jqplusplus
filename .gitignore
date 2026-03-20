@@ -8,6 +8,7 @@ jq++
 *.dll
 *.so
 *.dylib
+diag-ditaa-*
 
 # Test binary, built with `go test -c`
 *.test
@@ -39,3 +40,6 @@ go.work.sum
 # generated documentation
 /docs
 /tools/tmp
+
+# OS specific metadata files
+.DS_Store
