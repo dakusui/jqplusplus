@@ -1,0 +1,465 @@
+== JSON++ Syntax Reference
+
+JSON++ is a lightweight extension of JSON that adds three mechanisms to standard JSON: **structural inheritance** for reusing configuration structures, **expression evaluation** for computing values dynamically, and **local node definitions** for in-file reuse.
+All JSON++ annotations are valid JSON, so existing JSON tooling continues to work on JSON++ files.
+The `jq++` tool evaluates a JSON++ file and emits ordinary JSON.
+
+=== Special Keys
+
+JSON++ uses a small set of reserved keys—all prefixed with `$`—to express structural relationships.
+These keys are consumed during evaluation and do not appear in the output.
+
+==== $extends
+
+Declares that the current object inherits from one or more parent objects.
+Parents are merged in the order listed, and the current object's own fields override any inherited fields.
+
+*Syntax*
+
+[source,json]
+----
+{
+  "$extends": ["parent1.json", "parent2.json"],
+  "key": "override-value"
+}
+----
+
+The value of `$extends` must be an array of filename strings.
+Each filename is resolved relative to the current file's directory and the `JF_PATH` search path.
+
+*Merge order*
+
+Given `$extends: [A, B]`, the result is equivalent to merging A, then B on top, then the current object on top of that.
+Later entries in the array take precedence over earlier ones; the extending file takes precedence over all parents.
+
+*Node-level inheritance*
+
+`$extends` can appear at any depth inside an object, not just at the file's top level.
+
+[source,json]
+----
+{
+  "database": {
+    "$extends": ["db-defaults.json"],
+    "db_name": "production"
+  }
+}
+----
+
+*Optional parent files*
+
+Append `?` to a filename to make it optional.
+If the file does not exist, it is silently skipped.
+
+[source,json]
+----
+{
+  "$extends": ["base.json", "overrides.json?"]
+}
+----
+
+==== $includes
+
+Declares that the current object is augmented by one or more external fragments.
+Unlike `$extends`, which models inheritance (the current object is a specialisation of its parents), `$includes` models composition: external fragments are injected into the current object.
+
+*Syntax*
+
+[source,json]
+----
+{
+  "$includes": ["fragment1.json", "fragment2.json"],
+  "key": "value"
+}
+----
+
+*Merge order*
+
+Given `$includes: [A, B]`, the current object's fields take precedence over the included fragments.
+The fragments fill in keys that the current object does not define.
+
+*Coexistence with $extends*
+
+`$extends` and `$includes` can appear in the same object.
+`$extends` is resolved first; `$includes` is resolved second against the already-merged result.
+
+==== $local
+
+Defines named template objects that can be referenced within the same file.
+Local nodes are materialized as temporary files during evaluation and removed from the output.
+
+*Syntax*
+
+[source,json]
+----
+{
+  "$local": {
+    "BaseThing": {
+      "color": "blue",
+      "size": 10
+    }
+  },
+  "thing1": {
+    "$extends": ["BaseThing"],
+    "size": 20
+  },
+  "thing2": {
+    "$extends": ["BaseThing"],
+    "color": "red"
+  }
+}
+----
+
+Local names are referenced in `$extends` or `$includes` by their bare name (without a file extension).
+The `$local` key itself is removed from the output.
+
+---
+
+=== Expression Evaluation
+
+String values (and string keys) that begin with `eval:` or `raw:` receive special treatment.
+
+==== eval: prefix (values)
+
+A string value starting with `eval:` is interpreted as a jq expression.
+The expression is evaluated against the current JSON root, and the result replaces the string.
+
+*Syntax*
+
+[source]
+----
+"key": "eval:<expression>"
+"key": "eval:<type>:<expression>"
+----
+
+The optional `<type>` annotation constrains the expected result type.
+If the result does not match the declared type, evaluation fails with an error.
+
+*Supported type annotations*
+
+[cols="1,2"]
+|===
+|Annotation |Expected result type
+
+|`eval:string:<expr>`  |String
+|`eval:number:<expr>`  |Number (integer or float)
+|`eval:bool:<expr>`    |Boolean
+|`eval:null:<expr>`    |Null
+|`eval:object:<expr>`  |JSON object
+|`eval:array:<expr>`   |JSON array
+|`eval:<expr>` (no type) |String (default)
+|===
+
+*Examples*
+
+[source,json]
+----
+{
+  "version": "eval:string:\"v\" + (.major | tostring)",
+  "count":   "eval:number:.items | length",
+  "enabled": "eval:bool:.flags.debug",
+  "tags":    "eval:array:[\"a\", \"b\"]"
+}
+----
+
+If an `eval:` result is itself a string starting with `eval:`, it is re-evaluated (up to a fixed iteration limit).
+Circular references are detected and reported as errors.
+
+==== eval: prefix (keys)
+
+A key starting with `eval:` is evaluated and the result is used as the actual key name.
+If the expression evaluates to an array of strings, multiple keys are created—one per element—each with a copy of the value.
+
+*Syntax*
+
+[source,json]
+----
+{
+  "eval:<expression>": <value>
+}
+----
+
+The expression must evaluate to a string or an array of strings.
+
+*Example*
+
+[source,json]
+----
+{
+  "languages": ["en", "ja", "fr"],
+  "eval:.languages": {"supported": true}
+}
+----
+
+Output:
+
+[source,json]
+----
+{
+  "languages": ["en", "ja", "fr"],
+  "en": {"supported": true},
+  "ja": {"supported": true},
+  "fr": {"supported": true}
+}
+----
+
+When evaluating a key expression, the builtin variable `$cur` holds the path to the parent object (not to the key itself).
+
+==== raw: prefix
+
+A string value or key starting with `raw:` is passed through with the prefix stripped, without any evaluation.
+This is an escape mechanism for strings that would otherwise be mistaken for `eval:` expressions.
+
+*Syntax (value)*
+
+[source,json]
+----
+{
+  "key": "raw:eval:this is not an expression"
+}
+----
+
+Output:
+
+[source,json]
+----
+{
+  "key": "eval:this is not an expression"
+}
+----
+
+*Syntax (key)*
+
+[source,json]
+----
+{
+  "raw:eval:literal-key": "value"
+}
+----
+
+Output:
+
+[source,json]
+----
+{
+  "eval:literal-key": "value"
+}
+----
+
+---
+
+=== Builtin Variables
+
+The following variables are injected automatically into every `eval:` expression context.
+
+*$cur*::
+  The path to the current node, represented as a path array.
+  Each element is a string (object key) or integer (array index).
+  +
+  When evaluating a *value*, `$cur` is the path to that value.
+  When evaluating a *key*, `$cur` is the path to the parent object.
+  +
+  Example: for a value at `.foo.bar[0]`, `$cur` is `["foo", "bar", 0]`.
+
+*$curexpr*::
+  The path to the current node as a path expression string (e.g. `".foo.bar[0]"`).
+  Available only when evaluating a *value*; not available when evaluating a key.
+
+---
+
+=== Builtin Functions
+
+The following functions are available inside `eval:` expressions.
+
+==== Path Conversion
+
+===== topatharray(path_expression_string)
+
+Converts a path expression string such as `".foo.bar[0]"` into a path array `["foo", "bar", 0]`.
+
+[source,json]
+----
+{
+  "result": "eval:array:topatharray(\".foo.bar[0]\")"
+}
+----
+
+Output: `{"result": ["foo", "bar", 0]}`
+
+===== topathexpr(path_array)
+
+Converts a path array into a path expression string.
+
+[source,json]
+----
+{
+  "nested": {
+    "value": "eval:string:topathexpr(parent)"
+  }
+}
+----
+
+Output: `{"nested": {"value": ".nested"}}`
+
+==== Parent Navigation
+
+===== parent  /  parent(level)
+
+Returns the path array of the parent of the current node.
+Without arguments, goes up one level.
+With one integer argument `n`, goes up `n` levels.
+Uses the implicit `$cur` variable.
+
+[source,json]
+----
+{
+  "a": {
+    "b": {
+      "c": "eval:string:topathexpr(parent)"
+    }
+  }
+}
+----
+
+Output: `{"a": {"b": {"c": ".a.b"}}}`
+
+===== parentof(path_array)  /  parentof(path_array; level)
+
+Removes the last segment(s) from the given path array.
+The first argument is any path array; the optional second argument is how many segments to remove (default 1).
+
+[source,json]
+----
+{
+  "version": "1.0",
+  "meta": {
+    "deep": {
+      "v": "eval:string:ref(parentof($cur; 3) + [\"version\"])"
+    }
+  }
+}
+----
+
+Output: `{"version": "1.0", "meta": {"deep": {"v": "1.0"}}}`
+
+==== Reference and Lookup
+
+===== ref(path_array)
+
+Returns the value in the current JSON root at the given path array.
+If the value is a string, it is evaluated as an expression (allowing chained references).
+Circular references are detected and cause an error.
+
+[source,json]
+----
+{
+  "shared": "common value",
+  "node": {
+    "copy": "eval:ref([\"shared\"])"
+  }
+}
+----
+
+Output: `{"shared": "common value", "node": {"copy": "common value"}}`
+
+===== refexpr(path_expression_string)
+
+Like `ref`, but takes a path expression string rather than a path array.
+
+[source,json]
+----
+{
+  "source": "original",
+  "copy": "eval:refexpr(\".source\")"
+}
+----
+
+Output: `{"source": "original", "copy": "original"}`
+
+===== reftag(tag_name)
+
+Searches upward from the current path for an ancestor object that has a key equal to `tag_name`, then returns the value at that key.
+If that value is a string it is evaluated as an expression.
+Useful for implementing "tagged" reference points in deeply nested trees.
+
+[source,json]
+----
+{
+  "label": "root-label",
+  "section": {
+    "item": {
+      "inherited": "eval:reftag(\"label\")"
+    }
+  }
+}
+----
+
+Output: `{"label": "root-label", "section": {"item": {"inherited": "root-label"}}}`
+
+==== File Operations
+
+===== readfile(filename_string)
+
+Resolves `filename_string` relative to the current file's directory and `JF_PATH`, reads the file, and parses it as JSON.
+The result is the parsed JSON value (object, array, string, number, boolean, or null).
+
+[source,json]
+----
+{
+  "config": "eval:object:readfile(\"defaults.json\")"
+}
+----
+
+---
+
+=== Supported Input Formats
+
+`jq++` accepts files in any of the following formats.
+The format is determined from the file extension.
+
+[cols="1,2"]
+|===
+|Extension |Format
+
+|`.json`  |JSON
+|`.yaml`, `.yml` |YAML
+|`.toml`  |TOML
+|`.json5` |JSON5
+|`.hocon` |HOCON
+|`.jq`    |jq module (custom functions available in eval expressions)
+|===
+
+YAML, TOML, JSON5, and HOCON files are converted to the JSON data model before processing; the same JSON++ directives work in all formats.
+
+---
+
+=== Search Paths
+
+When resolving filenames in `$extends`, `$includes`, and `readfile()`, `jq++` searches directories in the following order:
+
+1. The directory of the file that contains the reference.
+2. Directories listed in the `JF_PATH` environment variable, separated by `:` (colon).
+
+This mirrors the behavior of environment variables such as `PATH` or `PYTHONPATH`.
+
+[source,shell script]
+----
+$ JF_PATH=/shared/configs:/team/defaults jq++ myconfig.json
+----
+
+---
+
+=== Processing Pipeline
+
+Understanding the evaluation order helps predict the output.
+
+. *Parse* — the input file is parsed into the JSON data model.
+. *Materialize local nodes* — objects defined under `$local` are written to temporary files.
+. *Resolve file-level inheritance* — `$extends` and `$includes` at the object's top level are resolved and parents are merged.
+. *Resolve node-level inheritance* — `$extends` and `$includes` within nested objects are resolved recursively (outermost nodes first).
+. *Evaluate key expressions* — keys starting with `eval:` or `raw:` are processed.
+. *Evaluate value expressions* — string values starting with `eval:` or `raw:` are processed (repeated until stable or the iteration limit is reached).
+. *Output* — the resulting plain JSON is written to standard output.
+
+[.text-right]
+link:index.html[top]
