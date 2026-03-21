@@ -1,0 +1,37 @@
+== Design Principles
+
+JSON++ was designed around three principles that emphasise compatibility and simplicity.
+
+=== Extend, Do Not Replace
+
+JSON++ is a strict extension of JSON: every valid JSON document is already a valid JSON++ document.
+`jq++` is also surjective onto JSON—for every possible JSON output document, there exists a JSON++ input that produces it.
+Adopting JSON++ therefore never forces downstream tools to change their expectations about the resulting configuration structure.
+
+In practice this means JSON++ can be introduced as a pre-processing step without modifying either upstream generators or downstream consumers.
+Editors, validators, and deployment systems continue to operate on standard JSON unchanged.
+
+=== Declarative Structural Reuse
+
+Rather than relying on external templating engines or environment overlays, JSON++ embeds reuse relationships directly in the data structure through inheritance directives (`$extends`, `$includes`, `$local`).
+The structure of the configuration and the relationships between its parts can be read from the file itself, without consulting a separate template or overlay definition.
+
+This declarativeness has two practical consequences.
+First, the effective configuration is reproducible from the source files alone.
+Second, the reuse topology—which files extend which—is visible to humans and tools inspecting the source, rather than being implicit in a build process.
+
+=== Language Transparency
+
+JSON++ operates on the JSON _data model_, not on JSON _syntax_.
+Any format that can be faithfully converted to the JSON data model—YAML, TOML, HOCON, JSON5—benefits from the same reuse mechanisms without any modification to downstream tooling.
+
+For example, Kubernetes manifests written in YAML can be converted to JSON, processed with `jq++`, and supplied to the Kubernetes API server in their standard form:
+
+----
+YAML → JSON → jq++ → JSON → Kubernetes
+----
+
+Because the output remains ordinary JSON, the language in which the configuration was originally written is transparent to everything after `jq++` in the pipeline.
+
+[.text-right]
+link:index.html[top]
