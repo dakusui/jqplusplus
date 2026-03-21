@@ -1,22 +1,7 @@
 == jq++ Design
 
-This page describes the design principles behind JSON++ and the internal architecture of `jq++`, the tool that evaluates JSON++ configurations.
-
-=== Design Principles
-
-JSON++ was designed around three principles.
-
-*Extend, do not replace.*
-JSON++ is a strict extension of JSON: every valid JSON document is already a valid JSON++ document, and `jq++` is surjective onto JSON—for every possible JSON output, there exists a JSON++ input that produces it.
-Adopting JSON++ therefore never forces downstream tools to change their expectations.
-
-*Declarative structural reuse.*
-Rather than relying on external templating engines or overlays, JSON++ embeds reuse relationships directly in the data structure through inheritance directives.
-The structure of the configuration and the relationships between its parts can be read from the file itself.
-
-*Language transparency.*
-JSON++ operates on the JSON data model, not on JSON syntax.
-Any format that can be faithfully converted to the JSON data model—YAML, TOML, HOCON, JSON5—benefits from the same reuse mechanisms without any modification to downstream tooling.
+This page describes the internal architecture of `jq++`, the tool that evaluates JSON++ configurations.
+For the design principles behind JSON++, see the link:principles.html[Design Principles] page.
 
 === Evaluation Pipeline
 

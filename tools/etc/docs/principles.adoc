@@ -1,0 +1,32 @@
+== Design Principles
+
+JSON{plus}{plus} was designed around three principles.
+
+=== Principle 1 — Completeness and Compatibility
+
+**Any JSON can be represented as JSON{plus}{plus}:**
+An important property of JSON{plus}{plus} is that it does not restrict the space of configurations that can be produced.
+The `jq{plus}{plus}` evaluation function maps JSON{plus}{plus} documents to ordinary JSON documents.
+For any valid JSON document _J_, there exists a JSON{plus}{plus} document _X_ such that jq{plus}{plus}(_X_) = _J_.
+In other words, the evaluation function is surjective onto JSON.
+This property ensures that JSON{plus}{plus} can generate any configuration expected by downstream systems, allowing `jq{plus}{plus}` to be introduced as a pre-processing step without reducing expressiveness.
+
+In practice, this means that adopting JSON{plus}{plus} never forces downstream tools to change their expectations about the resulting configuration structure.footnote:[All JSON{plus}{plus} meta-keywords are escapable.]
+
+**All JSON{plus}{plus} documents are valid JSON:**
+Moreover, JSON{plus}{plus} documents remain valid JSON, which allows existing parsers and tooling to process them without modification.
+
+=== Principle 2 — JSON Data-Model Compatibility
+
+JSON{plus}{plus} operates at the level of the JSON data model rather than a specific surface syntax.
+Because many configuration languages such as YAML, HCL, and TOML are routinely translated into JSON during processing, the same reuse mechanisms can be applied to configurations written in those formats.
+In practice this means that JSON{plus}{plus} concepts naturally extend to JSON-compatible representations such as YAML without requiring changes to the authoring language.
+
+This also implies that the same extension concept naturally applies to other JSON-compatible formats such as YAML.
+
+=== Principle 3 — Declarative Structural Reuse
+
+JSON{plus}{plus} introduces explicit constructs for expressing structural reuse.
+Configurations can extend other configurations and override selected fields.
+This inheritance-like mechanism enables developers to describe relationships between configurations directly in the data structure rather than through external templating logic.
+
