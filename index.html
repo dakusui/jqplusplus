@@ -484,6 +484,7 @@ body {font-family: Arial;}
 <button class="tablinks" onclick="openTab(event, 'builtins')">builtins</button>
 <button class="tablinks" onclick="openTab(event, 'design')">design</button>
 <button class="tablinks" onclick="openTab(event, 'motivating-example')">motivating-example</button>
+<button class="tablinks" onclick="openTab(event, 'principles')">principles</button>
 <button class="tablinks" onclick="openTab(event, 'syntax-reference')">syntax-reference</button>
 </div>
 <div id="builtins" class="tabcontent">
@@ -818,28 +819,8 @@ Useful for debugging or when you need the path in string form.</p>
 <h2 id="_jq_design">jq++ Design</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>This page describes the design principles behind JSON and the internal architecture of `jq`, the tool that evaluates JSON++ configurations.</p>
-</div>
-<div class="sect2">
-<h3 id="_design_principles">Design Principles</h3>
-<div class="paragraph">
-<p>JSON++ was designed around three principles.</p>
-</div>
-<div class="paragraph">
-<p><strong>Extend, do not replace.</strong>
-JSON is a strict extension of JSON: every valid JSON document is already a valid JSON document, and `jq` is surjective onto JSON—for every possible JSON output, there exists a JSON input that produces it.
-Adopting JSON++ therefore never forces downstream tools to change their expectations.</p>
-</div>
-<div class="paragraph">
-<p><strong>Declarative structural reuse.</strong>
-Rather than relying on external templating engines or overlays, JSON++ embeds reuse relationships directly in the data structure through inheritance directives.
-The structure of the configuration and the relationships between its parts can be read from the file itself.</p>
-</div>
-<div class="paragraph">
-<p><strong>Language transparency.</strong>
-JSON++ operates on the JSON data model, not on JSON syntax.
-Any format that can be faithfully converted to the JSON data model—YAML, TOML, HOCON, JSON5—benefits from the same reuse mechanisms without any modification to downstream tooling.</p>
-</div>
+<p>This page describes the internal architecture of `jq`, the tool that evaluates JSON configurations.
+For the design principles behind JSON++, see the <a href="principles.html">Design Principles</a> page.</p>
 </div>
 <div class="sect2">
 <h3 id="_evaluation_pipeline">Evaluation Pipeline</h3>
@@ -1439,6 +1420,58 @@ urls:
 </div>
 <div class="paragraph text-right"><p>
 <a href="motivating-example.html">open this page in a window</a>
+</p></div>
+</div>
+<div id="principles" class="tabcontent">
+<div id="principles_content">
+<div class="sect1">
+<h2 id="_design_principles">Design Principles</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>JSON++ was designed around three principles.</p>
+</div>
+<div class="sect2">
+<h3 id="_principle_1_completeness_and_compatibility">Principle 1 — Completeness and Compatibility</h3>
+<div class="paragraph">
+<p><strong>Any JSON can be represented as JSON++:</strong>
+An important property of JSON++ is that it does not restrict the space of configurations that can be produced.
+The <code>jq++</code> evaluation function maps JSON++ documents to ordinary JSON documents.
+For any valid JSON document <em>J</em>, there exists a JSON++ document <em>X</em> such that jq++(<em>X</em>) = <em>J</em>.
+In other words, the evaluation function is surjective onto JSON.
+This property ensures that JSON++ can generate any configuration expected by downstream systems, allowing <code>jq++</code> to be introduced as a pre-processing step without reducing expressiveness.</p>
+</div>
+<div class="paragraph">
+<p>In practice, this means that adopting JSON++ never forces downstream tools to change their expectations about the resulting configuration structure.<sup class="footnote">[<a id="_footnoteref_1" class="footnote" href="#_footnotedef_1" title="View footnote.">1</a>]</sup></p>
+</div>
+<div class="paragraph">
+<p><strong>All JSON++ documents are valid JSON:</strong>
+Moreover, JSON++ documents remain valid JSON, which allows existing parsers and tooling to process them without modification.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_principle_2_json_data_model_compatibility">Principle 2 — JSON Data-Model Compatibility</h3>
+<div class="paragraph">
+<p>JSON++ operates at the level of the JSON data model rather than a specific surface syntax.
+Because many configuration languages such as YAML, HCL, and TOML are routinely translated into JSON during processing, the same reuse mechanisms can be applied to configurations written in those formats.
+In practice this means that JSON++ concepts naturally extend to JSON-compatible representations such as YAML without requiring changes to the authoring language.</p>
+</div>
+<div class="paragraph">
+<p>This also implies that the same extension concept naturally applies to other JSON-compatible formats such as YAML.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_principle_3_declarative_structural_reuse">Principle 3 — Declarative Structural Reuse</h3>
+<div class="paragraph">
+<p>JSON++ introduces explicit constructs for expressing structural reuse.
+Configurations can extend other configurations and override selected fields.
+This inheritance-like mechanism enables developers to describe relationships between configurations directly in the data structure rather than through external templating logic.</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph text-right"><p>
+<a href="principles.html">open this page in a window</a>
 </p></div>
 </div>
 <div id="syntax-reference" class="tabcontent">
