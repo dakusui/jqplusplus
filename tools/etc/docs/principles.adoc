@@ -1,38 +1,34 @@
 == Design Principles
 
-JSON++ was designed around three principles that emphasise compatibility and simplicity.
+JSON++ was designed around three principles.
 
-=== Principle 1 — Extend, Do Not Replace
+=== Principle 1 — Expressive Completeness
 
-*Expressive completeness.*
+*Expressive completeness: Any JSON can be represented as JSON++.*
 An important property of JSON++ is that it does not restrict the space of configurations that can be produced.
 The `jq++` evaluation function maps JSON++ documents to ordinary JSON documents.
 For any valid JSON document _J_, there exists a JSON++ document _X_ such that jq++(_X_) = _J_.
 In other words, the evaluation function is surjective onto JSON.
-This property ensures that JSON++ can generate any configuration expected by downstream systems, allowing it to be introduced as a pre-processing step without reducing expressiveness.
+This property ensures that JSON++ can generate any configuration expected by downstream systems, allowing `jq++` to be introduced as a pre-processing step without reducing expressiveness.
 
-In practice, this means that adopting JSON++ never forces downstream tools to change their expectations about the resulting configuration structure.
+In practice, this means that adopting JSON++ never forces downstream tools to change their expectations about the resulting configuration structure.footnote:[All JSON++ meta-keywords are escapable.]
 
-=== Principle 2 — Declarative Structural Reuse
+*Syntax compatibility: All JSON++ documents are valid JSON.*
+Moreover, JSON++ documents remain valid JSON, which allows existing parsers and tooling to process them without modification.
+
+=== Principle 2 — JSON Data-Model Compatibility
+
+JSON++ operates at the level of the JSON data model rather than a specific surface syntax.
+Because many configuration languages such as YAML, HCL, and TOML are routinely translated into JSON during processing, the same reuse mechanisms can be applied to configurations written in those formats.
+In practice this means that JSON++ concepts naturally extend to JSON-compatible representations such as YAML without requiring changes to the authoring language.
+
+This also implies that the same extension concept naturally applies to other JSON-compatible formats such as YAML.
+
+=== Principle 3 — Declarative Structural Reuse
 
 JSON++ introduces explicit constructs for expressing structural reuse.
 Configurations can extend other configurations and override selected fields.
 This inheritance-like mechanism enables developers to describe relationships between configurations directly in the data structure rather than through external templating logic.
-
-=== Principle 3 — Language Transparency
-
-JSON++ is designed to integrate naturally with configuration formats that are commonly translated into JSON.
-Languages such as YAML or HCL can be converted into JSON and therefore benefit from the same reuse mechanisms.
-This property allows JSON++ to enhance existing configuration ecosystems without requiring them to change their syntax.
-
-For example, Kubernetes manifests written in YAML can be converted to JSON, processed with `jq++`, and supplied to the Kubernetes API server in their standard form:
-
-----
-YAML → JSON → jq++ → JSON → Kubernetes
-----
-
-Because the output remains ordinary JSON, editors, validators, and deployment systems continue to operate unchanged.
-`jq++` acts purely as a pre-processing stage that resolves inheritance relationships and evaluates expressions before the configuration is consumed by downstream tools.
 
 [.text-right]
 link:index.html[top]
