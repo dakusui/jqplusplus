@@ -77,7 +77,7 @@ Then create a file that extends them.
 ```shell script
 $ echo '{
     "$extends": ["greeting.json", "name.json"],
-    "sayHello": "eval:$(ref .greeting), $(ref .yourname). Toady is $(date). How are you doing?"
+    "sayHello": "eval:string:refexpr(\".greeting\") + \", \" + refexpr(\".yourname\") + \". Today is \" + (now|todate) + \". How are you doing?\""
   }' > sayHello.json
 ```
 
@@ -87,7 +87,7 @@ $ jq++ sayHello.json
 {
   "yourname": "Mark",
   "greeting": "Hello",
-  "sayHello": "Hello, Mark. Toady is Fri Aug 30 22:04:40 UTC 2019. How are you doing?"
+  "sayHello": "Hello, Mark. Today is 2026-03-21T17:57:25Z. How are you doing?"
 }
 $
 ```
