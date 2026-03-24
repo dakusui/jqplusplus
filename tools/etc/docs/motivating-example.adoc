@@ -173,5 +173,5 @@ include::../autotest/examples/motivating-example-yaml-4concerns/expected.yaml[]
 
 - Reduce duplication: shared fields live in one place (`$local.baseService`)
 - Separate concerns: lookup data (`ports.yaml`, `urls.yaml`) is independent from composition (`system.yaml`)
-- Keep YAML editing workflow while gaining inheritance and reference evaluation
+- Keep YAML editing workflow while gaining inheritance and expression evaluation
 - Generate deterministic expanded config for CI/CD and deployment
