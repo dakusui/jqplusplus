@@ -5,7 +5,7 @@ When describing JSON++ behaviour, always prefer these terms over informal altern
 
 === Structural Reuse
 
-_Structural reuse_ is the umbrella concept covering all mechanisms by which a JSON++ object incorporates structure or values from another object.
+_Structural reuse_ is the umbrella concept covering all mechanisms by which a JSON++ object incorporates structure from other objects.
 JSON++ provides two structural-reuse constructs: *inheritance* (`$extends`) and *inclusion with defaults* (`$includes`).
 
 === Inheritance (`$extends`)
