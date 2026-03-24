@@ -457,7 +457,7 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 <h2 id="_json_syntax_reference">JSON++ Syntax Reference</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>JSON is a lightweight extension of JSON that adds three mechanisms to standard JSON: **structural inheritance** for reusing configuration structures, **expression evaluation** for computing values dynamically, and **local node definitions** for in-file reuse.
+<p>JSON is a lightweight extension of JSON that adds three mechanisms to standard JSON: **structural reuse** for reusing configuration structures (via inheritance and inclusion with defaults), **expression evaluation** for computing values dynamically, and **local node definitions** for in-file reuse.
 All JSON annotations are valid JSON, so existing JSON tooling continues to work on JSON files.
 The `jq` tool evaluates a JSON++ file and emits ordinary JSON.</p>
 </div>
@@ -529,8 +529,8 @@ If the file does not exist, it is silently skipped.</p>
 <div class="sect3">
 <h4 id="_includes">$includes</h4>
 <div class="paragraph">
-<p>Declares that the current object is augmented by one or more external fragments.
-Unlike <code>$extends</code>, which models inheritance (the current object is a specialisation of its parents), <code>$includes</code> models composition: external fragments are injected into the current object.</p>
+<p>Declares that the current object includes one or more external fragments as authoritative defaults.
+Unlike <code>$extends</code>, where the derived object overrides its parents, <code>$includes</code> inverts the relationship: the current object&#8217;s own fields serve as defaults that the included fragments can override.</p>
 </div>
 <div class="paragraph">
 <p><strong>Syntax</strong></p>
@@ -601,7 +601,7 @@ The result is a small but coherent DSL: every configuration file speaks the same
 <div class="sect3">
 <h4 id="_local">$local</h4>
 <div class="paragraph">
-<p>Defines named template objects that can be referenced within the same file.
+<p>Defines named local objects that can be referenced within the same file.
 Local nodes are materialized as temporary files during evaluation and removed from the output.</p>
 </div>
 <div class="paragraph">
@@ -1147,7 +1147,7 @@ The format is determined from the file extension.</p>
 </div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2026-03-24 18:54:18 UTC
+Last updated 2026-03-24 19:05:25 UTC
 </div>
 </div>
 </body>
