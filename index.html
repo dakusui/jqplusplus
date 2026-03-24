@@ -486,6 +486,7 @@ body {font-family: Arial;}
 <button class="tablinks" onclick="openTab(event, 'motivating-example')">motivating-example</button>
 <button class="tablinks" onclick="openTab(event, 'principles')">principles</button>
 <button class="tablinks" onclick="openTab(event, 'syntax-reference')">syntax-reference</button>
+<button class="tablinks" onclick="openTab(event, 'terminology')">terminology</button>
 </div>
 <div id="builtins" class="tabcontent">
 <div id="builtins_content">
@@ -2170,6 +2171,119 @@ The format is determined from the file extension.</p>
 </div>
 <div class="paragraph text-right"><p>
 <a href="syntax-reference.html">open this page in a window</a>
+</p></div>
+</div>
+<div id="terminology" class="tabcontent">
+<div id="terminology_content">
+<div class="sect1">
+<h2 id="_json_terminology">JSON++ Terminology</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>This document defines the canonical terms used throughout the JSON documentation.
+When describing JSON behaviour, always prefer these terms over informal alternatives such as <em>templating</em> or <em>rendering</em>.</p>
+</div>
+<div class="sect2">
+<h3 id="_structural_reuse">Structural Reuse</h3>
+<div class="paragraph">
+<p><em>Structural reuse</em> is the umbrella concept covering all mechanisms by which a JSON object incorporates structure or values from another object.
+JSON provides two structural-reuse constructs: <strong>inheritance</strong> (<code>$extends</code>) and <strong>inclusion with defaults</strong> (<code>$includes</code>).</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_inheritance_extends">Inheritance (<code>$extends</code>)</h3>
+<div class="paragraph">
+<p><strong>Inheritance</strong> is the mechanism by which an object declares that it is a specialisation of one or more parent objects.
+The current object inherits every field from its parents and may override any of them with its own values.</p>
+</div>
+<div class="paragraph">
+<p><strong>Precedence direction: base → derived.</strong>
+Parent (base) objects supply defaults; the derived object’s own fields take precedence over all inherited fields.
+When multiple parents are listed, earlier entries in the <code>$extends</code> array take precedence over later ones.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-json" data-lang="json">{
+  "$extends": ["base.json", "fallback.json"],
+  "key": "this value overrides whatever base.json or fallback.json define"
+}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Priority from highest to lowest: current object → first parent → … → last parent.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_inclusion_with_defaults_includes">Inclusion with Defaults (<code>$includes</code>)</h3>
+<div class="paragraph">
+<p><strong>Inclusion with defaults</strong> is the mechanism by which an object pulls in one or more external fragments that act as authoritative defaults.
+Unlike inheritance, where the derived object overrides its parents, the included fragments override the including object’s own fields.</p>
+</div>
+<div class="paragraph">
+<p><strong>Precedence direction: included fragments override the including object.</strong>
+The including object provides initial values; the included fragments are applied on top, overriding those values.
+When multiple fragments are listed, later entries in the <code>$includes</code> array take precedence over earlier ones.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-json" data-lang="json">{
+  "$includes": ["platform-defaults.json", "security-policy.json"],
+  "log_level": "warn"
+}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Priority from highest to lowest: last fragment → … → first fragment → current object’s own fields.</p>
+</div>
+<div class="paragraph">
+<p><strong>Coexistence with <code>$extends</code>.</strong>
+When both keys are present in the same object, <code>$extends</code> is resolved first and <code>$includes</code> is applied on top.
+The full priority order from highest to lowest is:</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>$includes (later entries) → $includes (earlier entries) → current object → $extends (earlier entries) → $extends (later entries)</pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_expression_evaluation_eval">Expression Evaluation (<code>eval:</code>)</h3>
+<div class="paragraph">
+<p><strong>Expression evaluation</strong> is the mechanism by which string values or keys prefixed with <code>eval:</code> are replaced by the result of evaluating the suffix as a jq expression.
+The expression is evaluated against the current JSON root after all structural reuse has been resolved.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-json" data-lang="json">{
+  "version": "eval:string:\"v\" + (.major | tostring)",
+  "count":   "eval:number:.items | length"
+}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Expression evaluation applies to both values and keys.
+When a key expression evaluates to an array of strings, one key–value pair is emitted per element.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_escaping_meta_keys_raw">Escaping Meta Keys (<code>raw:</code>)</h3>
+<div class="paragraph">
+<p><strong>Escaping</strong> is the mechanism by which a string value or key prefixed with <code>raw:</code> is passed through to the output with the prefix stripped, without any evaluation.
+This is necessary when a value or key would otherwise be interpreted as an <code>eval:</code> expression or when a key matches a JSON++ reserved word such as <code>$extends</code>, <code>$includes</code>, or <code>$local</code>.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-json" data-lang="json">{
+  "message":      "raw:eval:this is not an expression",
+  "raw:$extends": "this key appears verbatim in the output"
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph text-right"><p>
+<a href="terminology.html">open this page in a window</a>
 </p></div>
 </div>
 <div id="top" class="tabcontent">
