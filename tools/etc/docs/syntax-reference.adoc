@@ -1,6 +1,6 @@
 == JSON++ Syntax Reference
 
-JSON++ is a lightweight extension of JSON that adds three mechanisms to standard JSON: **structural inheritance** for reusing configuration structures, **expression evaluation** for computing values dynamically, and **local node definitions** for in-file reuse.
+JSON++ is a lightweight extension of JSON that adds three mechanisms to standard JSON: **structural reuse** for reusing configuration structures (via inheritance and inclusion with defaults), **expression evaluation** for computing values dynamically, and **local node definitions** for in-file reuse.
 All JSON++ annotations are valid JSON, so existing JSON tooling continues to work on JSON++ files.
 The `jq++` tool evaluates a JSON++ file and emits ordinary JSON.
 
@@ -60,8 +60,8 @@ If the file does not exist, it is silently skipped.
 
 ==== $includes
 
-Declares that the current object is augmented by one or more external fragments.
-Unlike `$extends`, which models inheritance (the current object is a specialisation of its parents), `$includes` models composition: external fragments are injected into the current object.
+Declares that the current object includes one or more external fragments as authoritative defaults.
+Unlike `$extends`, where the derived object overrides its parents, `$includes` inverts the relationship: the current object's own fields serve as defaults that the included fragments can override.
 
 *Syntax*
 
@@ -113,7 +113,7 @@ The result is a small but coherent DSL: every configuration file speaks the same
 
 ==== $local
 
-Defines named template objects that can be referenced within the same file.
+Defines named local objects that can be referenced within the same file.
 Local nodes are materialized as temporary files during evaluation and removed from the output.
 
 *Syntax*
