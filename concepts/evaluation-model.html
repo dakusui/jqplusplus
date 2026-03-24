@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="generator" content="Asciidoctor 2.0.26">
-<title>A doc for style</title>
+<title>jq++ Design</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Open+Sans:300,300italic,400,400italic,600,600italic%7CNoto+Serif:400,400italic,700,700italic%7CDroid+Sans+Mono:400,700">
 <style>
 /*! Asciidoctor default stylesheet | MIT License | https://asciidoctor.org */
@@ -434,13 +434,225 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 @media amzn-kf8{#header,#content,#footnotes,#footer{padding:0}}
 </style>
 </head>
-<body class="article">
+<body class="article toc2 toc-left">
 <div id="header">
-<h1>A doc for style</h1>
+<div id="toc" class="toc2">
+<div id="toctitle">Table of Contents</div>
+<ul class="sectlevel1">
+<li><a href="#_jq_design">jq++ Design</a>
+<ul class="sectlevel2">
+<li><a href="#_evaluation_pipeline">Evaluation Pipeline</a></li>
+<li><a href="#_node_pool_and_caching">Node Pool and Caching</a></li>
+<li><a href="#_merge_object_semantics">Merge Object Semantics</a></li>
+</ul>
+</li>
+</ul>
+</div>
 </div>
 <div id="content">
+<div class="sect1">
+<h2 id="_jq_design">jq++ Design</h2>
+<div class="sectionbody">
 <div class="paragraph">
-<p>This file is used to generate style element for <code>index.sh</code>.</p>
+<p>This page describes the internal architecture of `jq`, the tool that evaluates JSON configurations.
+For the design principles behind JSON++, see the <a href="design-principles.html">Design Principles</a> page.</p>
+</div>
+<div class="sect2">
+<h3 id="_evaluation_pipeline">Evaluation Pipeline</h3>
+<div class="paragraph">
+<p>`jq` transforms a JSON configuration file into plain JSON through a deterministic sequence of stages.
+Each stage reads from the result of the previous one; no stage revisits earlier work.</p>
+</div>
+<div class="imageblock">
+<div class="content">
+<img src="diag-ditaa-md5-5d11b87b4618575248dffe728712b686.png" alt="Diagram" width="1310" height="938">
+</div>
+</div>
+<div class="paragraph">
+<p>Each stage is described in detail below.</p>
+</div>
+<div class="sect3">
+<h4 id="_stage_1_parse">Stage 1 — Parse</h4>
+<div class="paragraph">
+<p>The input file is read and converted to the JSON data model.
+The file format is determined from the file extension.
+YAML, TOML, JSON5, and HOCON files are decoded by their respective parsers and then normalised into the same <code>map[string]any</code> / <code>[]any</code> representation used for JSON internally.</p>
+</div>
+<div class="paragraph">
+<p><code>.jq</code> files are a special case: they are parsed as jq source code and registered as a named jq module rather than as a data object.
+The module name is the base filename without the extension.
+Any <code>eval:</code> expression in a file that includes such a <code>.jq</code> file via <code>$extends</code> or <code>$includes</code> can call functions defined in that module.</p>
+</div>
+<div class="paragraph">
+<p>Files with no extension or with <code>.json`, `.yaml</code>, <code>.toml`, `.json5</code>, <code>.conf`, or `.hocon</code> are treated the same as their base format.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_stage_2_file_level_inheritance">Stage 2 — File-level inheritance</h4>
+<div class="paragraph">
+<p><code>$extends</code> and <code>$includes</code> at the root of the current object are resolved.
+Both directives are handled by the same underlying merge engine; the difference is in merge direction.</p>
+</div>
+<div class="paragraph">
+<p><strong>Resolving parents</strong></p>
+</div>
+<div class="paragraph">
+<p>For each filename listed in <code>$extends</code> or <code>$includes</code>, <code>jq` resolves the file against the search path (current file's directory → local node search paths → `JF_PATH`), then recursively applies the full pipeline (stages 1–4) to that parent file.
+The result is cached in a _node pool_ so that each file is evaluated at most once per `jq</code> invocation, even when it is referenced from multiple places.</p>
+</div>
+<div class="paragraph">
+<p>Circular inheritance chains are detected by tracking visited absolute paths.
+If a file that is already being resolved appears again in the chain, an error is reported immediately.</p>
+</div>
+<div class="paragraph">
+<p><strong>Merge semantics</strong></p>
+</div>
+<div class="paragraph">
+<p><code>mergeObjects(parent, child)</code> combines two objects, with the child&#8217;s values taking precedence.
+The merge is recursive for nested objects: if both parent and child have a key whose value is an object, those objects are merged recursively rather than the child object replacing the parent object wholesale.
+For any other value type (string, number, boolean, array, null), the child value simply replaces the parent value.</p>
+</div>
+<div class="paragraph">
+<p>Given <code>$extends: [A, B]</code>, A is merged over B first, then the current object is merged over that result, giving the priority order: current object → A → B.</p>
+</div>
+<div class="paragraph">
+<p>Given <code>$includes: [A, B]</code>, B is merged over the current-plus-extends result, then A is merged over that, giving the opposite priority order: B → A → current object.
+In other words, <code>$includes</code> fragments override everything that <code>$extends</code> and the current object establish.</p>
+</div>
+<div class="paragraph">
+<p><strong>Processing order</strong></p>
+</div>
+<div class="paragraph">
+<p><code>$extends</code> is always resolved before <code>$includes</code>, so that <code>$includes</code> can override the combined result.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_stage_3_materialize_local_nodes">Stage 3 — Materialize local nodes</h4>
+<div class="paragraph">
+<p>Objects defined under the <code>$local</code> key are extracted and written as individual files in a temporary <em>session directory</em> that is created fresh for each top-level <code>jq++</code> invocation.
+Each local node name becomes its own file (e.g. <code>BaseThing</code> becomes a file <code>BaseThing</code> with no extension, treated as JSON).</p>
+</div>
+<div class="paragraph">
+<p>The session directory is placed on the front of the search path for the duration of processing.
+This is what allows local node names to be used in <code>$extends</code> and <code>$includes</code> by bare name: they resolve against the session directory first.
+Local node scope is tied to the file that defined them—specifically to the object tree rooted at that file—so local nodes from a parent are visible inside nodes that extend that parent, but not from unrelated sibling nodes.</p>
+</div>
+<div class="paragraph">
+<p>The <code>$local</code> key is removed from the object before further processing.
+At the end of the invocation, the session directory is deleted.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_stage_4_node_level_inheritance">Stage 4 — Node-level inheritance</h4>
+<div class="paragraph">
+<p>After file-level inheritance is settled, the entire object is scanned for nested objects that themselves contain <code>$extends</code> or <code>$includes</code> keys.
+These are resolved in <em>outermost-first</em> order: a node at depth 1 is processed before a node at depth 2 that might be contained within it.</p>
+</div>
+<div class="paragraph">
+<p>The same merge engine, search path, caching, and circular-reference detection used in stage 3 apply here too.
+Node-level inheritance therefore has exactly the same semantics as file-level inheritance; only the scope differs.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_stage_5_key_side_evaluation">Stage 5 — Key-side evaluation</h4>
+<div class="paragraph">
+<p>All keys in the resolved object that start with <code>eval:</code> or <code>raw:</code> are processed.</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>A <code>raw:</code> key has its prefix stripped and is renamed to the remainder.</p>
+</li>
+<li>
+<p>An <code>eval:</code> key is evaluated as a jq expression.
+If the result is a string, the key is renamed to that string.
+If the result is an array of strings, the key is replicated once per element, with each copy of the value placed under its respective new key.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Key evaluation may produce new <code>eval:</code> or <code>raw:</code> keys.
+The stage therefore runs in a loop, decrementing a time-to-live counter (starting at 7) on each pass, until no more such keys remain or the counter reaches zero (which causes a panic indicating a likely infinite loop in the configuration).</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_stage_6_value_side_evaluation">Stage 6 — Value-side evaluation</h4>
+<div class="paragraph">
+<p>All string values in the object that start with <code>eval:</code> or <code>raw:</code> are evaluated.</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>A <code>raw:</code> value has its prefix stripped; the remaining string is the final value.</p>
+</li>
+<li>
+<p>An <code>eval:</code> value is compiled and executed as a jq expression against the current full object as input.
+The expression has access to the builtin variables <code>$cur</code> and <code>$curexpr</code>, and to the JSON++ builtin functions (<code>ref</code>, <code>refexpr</code>, <code>reftag</code>, <code>parent</code>, <code>parentof</code>, <code>topatharray</code>, <code>topathexpr</code>, <code>readfile</code>).</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>An <code>eval:</code> result may itself be a string starting with <code>eval:</code> (for example, when a value is resolved via <code>ref</code> and the referenced value is also an expression).
+The stage therefore loops, decrementing its own time-to-live counter (starting at 7) on each pass, re-evaluating until no <code>eval:</code> strings remain.</p>
+</div>
+<div class="paragraph">
+<p>Circular references within expressions—where evaluating value A leads back to value A—are detected via a visited-path map that is threaded through the evaluation call chain, and reported as errors immediately.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_stage_7_output">Stage 7 — Output</h4>
+<div class="paragraph">
+<p>The fully resolved <code>map[string]any</code> object is serialised to JSON with two-space indentation and written to standard output.
+When multiple input files are provided on the command line, each is processed independently and its output is written in order.
+When no file arguments are given, <code>jq++</code> reads from standard input, writing the input to a temporary file first (since the inheritance resolution needs a filesystem path to anchor relative file references).</p>
+</div>
+<hr>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_node_pool_and_caching">Node Pool and Caching</h3>
+<div class="paragraph">
+<p>The node pool is the shared state that persists across all recursive inheritance resolutions within a single <code>jq++</code> invocation.
+Its two main responsibilities are:</p>
+</div>
+<div class="paragraph">
+<p><strong>Caching.</strong>
+A <code>NodeEntryKey</code> (base directory + filename) maps to a <code>NodeEntryValue</code> (resolved object + accumulated jq modules).
+The first time a file is requested, it is fully resolved through stages 1–4 and the result is stored.
+Subsequent requests for the same file return the cached result directly, avoiding redundant work and ensuring consistent results when the same file is extended from multiple places.</p>
+</div>
+<div class="paragraph">
+<p><strong>Search path management.</strong>
+The node pool maintains a stack of local node directories.
+When a file is entered for processing, its session-local node directory is pushed onto the stack.
+When processing returns from that file, the directory is popped.
+The full search path at any point is: current file&#8217;s base directory + local node directory stack + <code>JF_PATH</code> entries.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_merge_object_semantics">Merge Object Semantics</h3>
+<div class="paragraph">
+<p><code>mergeObjects(parent, child)</code> performs a deep merge:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Keys present only in the parent appear in the result with their parent values.</p>
+</li>
+<li>
+<p>Keys present only in the child appear in the result with their child values.</p>
+</li>
+<li>
+<p>Keys present in both: if both values are objects, they are merged recursively using the same rule; otherwise the child value replaces the parent value entirely.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>This means arrays are <strong>not</strong> merged—a child array replaces the parent array completely.
+Only nested objects receive the recursive treatment.</p>
+</div>
+</div>
+</div>
 </div>
 </div>
 <div id="footer">

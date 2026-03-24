@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="generator" content="Asciidoctor 2.0.26">
-<title>A doc for style</title>
+<title>JSON++ Terminology</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Open+Sans:300,300italic,400,400italic,600,600italic%7CNoto+Serif:400,400italic,700,700italic%7CDroid+Sans+Mono:400,700">
 <style>
 /*! Asciidoctor default stylesheet | MIT License | https://asciidoctor.org */
@@ -434,13 +434,129 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 @media amzn-kf8{#header,#content,#footnotes,#footer{padding:0}}
 </style>
 </head>
-<body class="article">
+<body class="article toc2 toc-left">
 <div id="header">
-<h1>A doc for style</h1>
+<div id="toc" class="toc2">
+<div id="toctitle">Table of Contents</div>
+<ul class="sectlevel1">
+<li><a href="#_json_terminology">JSON++ Terminology</a>
+<ul class="sectlevel2">
+<li><a href="#_structural_reuse">Structural Reuse</a></li>
+<li><a href="#_inheritance_extends">Inheritance (<code>$extends</code>)</a></li>
+<li><a href="#_inclusion_with_defaults_includes">Inclusion with Defaults (<code>$includes</code>)</a></li>
+<li><a href="#_expression_evaluation_eval">Expression Evaluation (<code>eval:</code>)</a></li>
+<li><a href="#_escaping_meta_keys_raw">Escaping Meta Keys (<code>raw:</code>)</a></li>
+</ul>
+</li>
+</ul>
+</div>
 </div>
 <div id="content">
+<div class="sect1">
+<h2 id="_json_terminology">JSON++ Terminology</h2>
+<div class="sectionbody">
 <div class="paragraph">
-<p>This file is used to generate style element for <code>index.sh</code>.</p>
+<p>This document defines the canonical terms used throughout the JSON documentation.
+When describing JSON behaviour, always prefer these terms over informal alternatives such as <em>templating</em> or <em>rendering</em>.</p>
+</div>
+<div class="sect2">
+<h3 id="_structural_reuse">Structural Reuse</h3>
+<div class="paragraph">
+<p><em>Structural reuse</em> is the umbrella concept covering all mechanisms by which a JSON object incorporates structure or values from another object.
+JSON provides two structural-reuse constructs: <strong>inheritance</strong> (<code>$extends</code>) and <strong>inclusion with defaults</strong> (<code>$includes</code>).</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_inheritance_extends">Inheritance (<code>$extends</code>)</h3>
+<div class="paragraph">
+<p><strong>Inheritance</strong> is the mechanism by which an object declares that it is a specialisation of one or more parent objects.
+The current object inherits every field from its parents and may override any of them with its own values.</p>
+</div>
+<div class="paragraph">
+<p><strong>Precedence direction: base → derived.</strong>
+Parent (base) objects supply defaults; the derived object&#8217;s own fields take precedence over all inherited fields.
+When multiple parents are listed, earlier entries in the <code>$extends</code> array take precedence over later ones.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-json" data-lang="json">{
+  "$extends": ["base.json", "fallback.json"],
+  "key": "this value overrides whatever base.json or fallback.json define"
+}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Priority from highest to lowest: current object → first parent → … → last parent.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_inclusion_with_defaults_includes">Inclusion with Defaults (<code>$includes</code>)</h3>
+<div class="paragraph">
+<p><strong>Inclusion with defaults</strong> is the mechanism by which an object pulls in one or more external fragments that act as authoritative defaults.
+Unlike inheritance, where the derived object overrides its parents, the included fragments override the including object&#8217;s own fields.</p>
+</div>
+<div class="paragraph">
+<p><strong>Precedence direction: included fragments override the including object.</strong>
+The including object provides initial values; the included fragments are applied on top, overriding those values.
+When multiple fragments are listed, later entries in the <code>$includes</code> array take precedence over earlier ones.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-json" data-lang="json">{
+  "$includes": ["platform-defaults.json", "security-policy.json"],
+  "log_level": "warn"
+}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Priority from highest to lowest: last fragment → … → first fragment → current object&#8217;s own fields.</p>
+</div>
+<div class="paragraph">
+<p><strong>Coexistence with <code>$extends</code>.</strong>
+When both keys are present in the same object, <code>$extends</code> is resolved first and <code>$includes</code> is applied on top.
+The full priority order from highest to lowest is:</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>$includes (later entries) → $includes (earlier entries) → current object → $extends (earlier entries) → $extends (later entries)</pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_expression_evaluation_eval">Expression Evaluation (<code>eval:</code>)</h3>
+<div class="paragraph">
+<p><strong>Expression evaluation</strong> is the mechanism by which string values or keys prefixed with <code>eval:</code> are replaced by the result of evaluating the suffix as a jq expression.
+The expression is evaluated against the current JSON root after all structural reuse has been resolved.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-json" data-lang="json">{
+  "version": "eval:string:\"v\" + (.major | tostring)",
+  "count":   "eval:number:.items | length"
+}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Expression evaluation applies to both values and keys.
+When a key expression evaluates to an array of strings, one key–value pair is emitted per element.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_escaping_meta_keys_raw">Escaping Meta Keys (<code>raw:</code>)</h3>
+<div class="paragraph">
+<p><strong>Escaping</strong> is the mechanism by which a string value or key prefixed with <code>raw:</code> is passed through to the output with the prefix stripped, without any evaluation.
+This is necessary when a value or key would otherwise be interpreted as an <code>eval:</code> expression or when a key matches a JSON++ reserved word such as <code>$extends</code>, <code>$includes</code>, or <code>$local</code>.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-json" data-lang="json">{
+  "message":      "raw:eval:this is not an expression",
+  "raw:$extends": "this key appears verbatim in the output"
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
 </div>
 </div>
 <div id="footer">

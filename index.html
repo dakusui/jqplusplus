@@ -480,348 +480,76 @@ body {font-family: Arial;}
 <button class="tablinks" onclick="location.href='https://github.com/dakusui/jqplusplus';">
   <img src="images/github.png" width="60px;20px" onclick="location.href = 'https://github.com/dakusui/jqplusplus';" align="middle"/>
 </button>
-<button class="tablinks" onclick="openTab(event, 'top')" id="defaultOpen">top</button>
-<button class="tablinks" onclick="openTab(event, 'builtins')">builtins</button>
-<button class="tablinks" onclick="openTab(event, 'design')">design</button>
-<button class="tablinks" onclick="openTab(event, 'motivating-example')">motivating-example</button>
-<button class="tablinks" onclick="openTab(event, 'principles')">principles</button>
-<button class="tablinks" onclick="openTab(event, 'syntax-reference')">syntax-reference</button>
-<button class="tablinks" onclick="openTab(event, 'terminology')">terminology</button>
+<button class="tablinks" onclick="openTab(event, 'concepts-overview')" id="defaultOpen">overview</button>
+<button class="tablinks" onclick="openTab(event, 'concepts-design-principles')">design-principles</button>
+<button class="tablinks" onclick="openTab(event, 'concepts-evaluation-model')">evaluation-model</button>
+<button class="tablinks" onclick="openTab(event, 'concepts-terminology')">terminology</button>
+<button class="tablinks" onclick="openTab(event, 'manual-expressions')">expressions</button>
+<button class="tablinks" onclick="openTab(event, 'manual-getting-started')">getting-started</button>
+<button class="tablinks" onclick="openTab(event, 'manual-structural-reuse')">structural-reuse</button>
+<button class="tablinks" onclick="openTab(event, 'reference-builtins')">builtins</button>
+<button class="tablinks" onclick="openTab(event, 'reference-syntax-reference')">syntax-reference</button>
 </div>
-<div id="builtins" class="tabcontent">
-<div id="builtins_content">
+<div id="concepts-design-principles" class="tabcontent">
+<div id="concepts-design-principles_content">
 <div class="sect1">
-<h2 id="_builtin_variables">Builtin variables</h2>
+<h2 id="_design_principles">Design Principles</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>jq++ injects the following variables into every <code>eval:</code> expression. They are available as jq variables (e.g. <code>$cur</code>, <code>$curexpr</code>).</p>
-</div>
-<div class="dlist">
-<dl>
-<dt class="hdlist1"><strong>$cur</strong></dt>
-<dd>
-<p>The current path as a path array (JSON array of path segments: object keys as strings, array indices as integers).
-When evaluating a <strong>value</strong> (<code>eval:</code> in a value), <code>$cur</code> is the path to that value.
-When evaluating a <strong>key</strong> (<code>eval:</code> in a key), <code>$cur</code> is the path to the parent object (the path of the object that contains the key being computed).
-Use with <code>parent</code>, <code>parentof</code>, <code>ref</code>, or <code>topathexpr</code> to navigate or refer to locations.</p>
-</dd>
-<dt class="hdlist1"><strong>$curexpr</strong></dt>
-<dd>
-<p>The current path as a path expression string (e.g. <code>".foo.bar[0]"</code>).
-Available only when evaluating a <strong>value</strong>; not set when evaluating a key.
-Useful for debugging or when you need the path in string form.</p>
-</dd>
-</dl>
-</div>
-</div>
-</div>
-<div class="sect1">
-<h2 id="_builtin_functions">Builtin Functions</h2>
-<div class="sectionbody">
-<div class="paragraph">
-<p>jq++ provides builtin functions that are available inside <code>eval:</code> expressions. Each function is described below with example usage. Examples use the <code>eval:string:</code> or <code>eval:array:</code> prefix so the expression result is used as the value of the key.</p>
+<p>JSON++ was designed around three principles.</p>
 </div>
 <div class="sect2">
-<h3 id="_path_conversion">Path conversion</h3>
-<div class="sect3">
-<h4 id="_topatharray">topatharray</h4>
+<h3 id="_principle_1_completeness_and_compatibility">Principle 1 — Completeness and Compatibility</h3>
 <div class="paragraph">
-<p><strong>Signature:</strong> <code>topatharray(path_expression_string)</code></p>
-</div>
-<div class="paragraph">
-<p>Converts a path expression string (e.g. <code>".foo.bar[0]"</code>) into a path array: a JSON array of path segments (object keys as strings, array indices as integers). Useful for manipulating paths programmatically and passing them to <code>ref</code> or <code>parentof</code>.</p>
-</div>
-<div class="paragraph">
-<p><strong>Example:</strong> <code>examples/builtins/topatharray/input.json</code></p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="highlight"><code class="language-json" data-lang="json">{
-  "pathArray": "eval:array:topatharray(\".foo.bar[0]\")"
-}</code></pre>
-</div>
+<p><strong>Any JSON can be represented as JSON++:</strong>
+An important property of JSON++ is that it does not restrict the space of configurations that can be produced.
+The <code>jq++</code> evaluation function maps JSON++ documents to ordinary JSON documents.
+For any valid JSON document <em>J</em>, there exists a JSON++ document <em>X</em> such that jq++(<em>X</em>) = <em>J</em>.
+In other words, the evaluation function is surjective onto JSON.
+This property ensures that JSON++ can generate any configuration expected by downstream systems, allowing <code>jq++</code> to be introduced as a pre-processing step without reducing expressiveness.</p>
 </div>
 <div class="paragraph">
-<p><strong>Result:</strong> The key <code>pathArray</code> becomes the array corresponding to the path expression:</p>
+<p>In practice, this means that adopting JSON++ never forces downstream tools to change their expectations about the resulting configuration structure.<sup class="footnote">[<a id="_footnoteref_1" class="footnote" href="#_footnotedef_1" title="View footnote.">1</a>]</sup></p>
 </div>
-<div class="listingblock">
-<div class="content">
-<pre class="highlight"><code class="language-json" data-lang="json">{
-  "pathArray": ["foo", "bar", 0]
-}</code></pre>
-</div>
-</div>
+<div class="paragraph">
+<p><strong>All JSON++ documents are valid JSON:</strong>
+Moreover, JSON++ documents remain valid JSON, which allows existing parsers and tooling to process them without modification.</p>
 </div>
 </div>
 <div class="sect2">
-<h3 id="_topathexpr">topathexpr</h3>
+<h3 id="_principle_2_json_data_model_compatibility">Principle 2 — JSON Data-Model Compatibility</h3>
 <div class="paragraph">
-<p><strong>Signature:</strong> <code>topathexpr(path_array)</code></p>
-</div>
-<div class="paragraph">
-<p>Converts a path array (slice of keys and indices) into a path expression string (e.g. <code>".foo.bar[0]"</code>). Non-alphanumeric keys are quoted in bracket notation.</p>
-</div>
-<div class="paragraph">
-<p><strong>Example:</strong> <code>examples/builtins/topathexpr/input.json</code></p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="highlight"><code class="language-json" data-lang="json">{
-  "nested": {
-    "pathExpr": "eval:string:topathexpr(parent)"
-  }
-}</code></pre>
-</div>
+<p>JSON++ operates at the level of the JSON data model rather than a specific surface syntax.
+Because many configuration languages such as YAML, HCL, and TOML are routinely translated into JSON during processing, the same reuse mechanisms can be applied to configurations written in those formats.
+In practice this means that JSON++ concepts naturally extend to JSON-compatible representations such as YAML without requiring changes to the authoring language.</p>
 </div>
 <div class="paragraph">
-<p><strong>Result:</strong> The key <code>pathExpr</code> becomes the path expression string for the current parent path:</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="highlight"><code class="language-json" data-lang="json">{
-  "nested": {
-    "pathExpr": ".nested"
-  }
-}</code></pre>
-</div>
-</div>
-</div>
-</div>
-</div>
-<div class="sect1">
-<h2 id="_parent_path">Parent path</h2>
-<div class="sectionbody">
-<div class="sect2">
-<h3 id="_parent">parent</h3>
-<div class="paragraph">
-<p><strong>Signature:</strong> <code>parent</code> or <code>parent(level)</code></p>
-</div>
-<div class="paragraph">
-<p>Returns the path array of the parent of the current node. With no arguments, goes up one level; with one integer argument, goes up that many levels. Used with the builtin variable <code>$cur</code> (current path array). Typically used as <code>parent</code> or <code>parent(2)</code> inside expressions.</p>
-</div>
-<div class="paragraph">
-<p><strong>Example:</strong> <code>examples/builtins/parent/input.json</code></p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="highlight"><code class="language-json" data-lang="json">{
-  "a": {
-    "b": {
-      "value": "eval:string:topathexpr(parent)"
-    }
-  }
-}</code></pre>
-</div>
-</div>
-<div class="paragraph">
-<p><strong>Result:</strong> At <code>a.b.value</code>, <code>topathexpr(parent)</code> yields the path to the parent key <code>b</code>:</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="highlight"><code class="language-json" data-lang="json">{
-  "a": {
-    "b": {
-      "value": ".a.b"
-    }
-  }
-}</code></pre>
-</div>
-</div>
-<div class="sect3">
-<h4 id="_parentof">parentof</h4>
-<div class="paragraph">
-<p><strong>Signature:</strong> <code>parentof(path_array)</code> or <code>parentof(path_array; level)</code></p>
-</div>
-<div class="paragraph">
-<p>Returns the path array with the last segment(s) removed. First argument is a path array; optional second argument is the number of levels to remove (default 1). Often used with <code>$cur</code> to go up from the current path, e.g. <code>parentof($cur; 2)</code> then append a key and pass to <code>ref</code>.</p>
-</div>
-<div class="paragraph">
-<p><strong>Example:</strong> <code>examples/builtins/parentof/input.json</code></p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="highlight"><code class="language-json" data-lang="json">{
-  "releaseVersion": "2.0.0",
-  "l1": {
-    "l2": {
-      "snapshotVersion": "eval:string:ref(parentof($cur; 3) + [\"releaseVersion\"]) + \"-SNAPSHOT\""
-    }
-  }
-}</code></pre>
-</div>
-</div>
-<div class="paragraph">
-<p><strong>Result:</strong> <code>releaseVersion</code> at root is copied into <code>l1.l2.snapshotVersion</code> using <code>parentof($cur; 3)</code> to reach root:</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="highlight"><code class="language-json" data-lang="json">{
-  "releaseVersion": "2.0.0",
-  "l1": {
-    "l2": {
-      "snapshotVersion": "2.0.0-SNAPSHOT"
-    }
-  }
-}</code></pre>
-</div>
-</div>
+<p>This also implies that the same extension concept naturally applies to other JSON-compatible formats such as YAML.</p>
 </div>
 </div>
 <div class="sect2">
-<h3 id="_reference_and_lookup">Reference and lookup</h3>
-<div class="sect3">
-<h4 id="_ref">ref</h4>
+<h3 id="_principle_3_declarative_structural_reuse">Principle 3 — Declarative Structural Reuse</h3>
 <div class="paragraph">
-<p><strong>Signature:</strong> <code>ref(path_array)</code></p>
-</div>
-<div class="paragraph">
-<p>Returns the value in the current JSON root at the given path array. If that value is a string, it is evaluated as an expression (e.g. another reference or expression). Path array is built from strings (object keys) and integers (array indices). Circular references are detected and reported as errors.</p>
-</div>
-<div class="paragraph">
-<p><strong>Example:</strong> <code>examples/builtins/ref/input.json</code></p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="highlight"><code class="language-json" data-lang="json">{
-  "shared": "common value",
-  "node": {
-    "usesShared": "eval:string:ref([\"shared\"])"
-  }
-}</code></pre>
-</div>
-</div>
-<div class="paragraph">
-<p><strong>Result:</strong> The key that uses <code>ref(["shared"])</code> is replaced by the value at root <code>shared</code>:</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="highlight"><code class="language-json" data-lang="json">{
-  "shared": "common value",
-  "node": {
-    "usesShared": "common value"
-  }
-}</code></pre>
-</div>
-</div>
-</div>
-<div class="sect3">
-<h4 id="_refexpr">refexpr</h4>
-<div class="paragraph">
-<p><strong>Signature:</strong> <code>refexpr(path_expression_string)</code></p>
-</div>
-<div class="paragraph">
-<p>Like <code>ref</code>, but takes a path expression string (e.g. <code>".foo.bar"</code>) instead of a path array. Resolves the path from the root and returns the value; if it is a string, that string is evaluated as an expression.</p>
-</div>
-<div class="paragraph">
-<p><strong>Example:</strong> <code>examples/builtins/refexpr/input.json</code></p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="highlight"><code class="language-json" data-lang="json">{
-  "source": "original",
-  "copy": "eval:string:refexpr(\".source\")",
-  "chained": "eval:string:refexpr(\".copy\")"
-}</code></pre>
-</div>
-</div>
-<div class="paragraph">
-<p><strong>Result:</strong> <code>copy</code> and <code>chained</code> resolve to the value of <code>source</code>:</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="highlight"><code class="language-json" data-lang="json">{
-  "source": "original",
-  "copy": "original",
-  "chained": "original"
-}</code></pre>
-</div>
-</div>
-</div>
-<div class="sect3">
-<h4 id="_reftag">reftag</h4>
-<div class="paragraph">
-<p><strong>Signature:</strong> <code>reftag(tag_name)</code></p>
-</div>
-<div class="paragraph">
-<p>Searches upward from the current path for an object that has a key equal to <code>tag_name</code>, then returns the value at that key. If that value is a string, it is evaluated as an expression. Used to implement “tagged” reference points in the tree.</p>
-</div>
-<div class="paragraph">
-<p><strong>Example:</strong> <code>examples/builtins/reftag/input.json</code></p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="highlight"><code class="language-json" data-lang="json">{
-  "thetag": "Hello, mytag",
-  "k0": {
-    "k1": "eval:string:reftag(\"thetag\")"
-  }
-}</code></pre>
-</div>
-</div>
-<div class="paragraph">
-<p><strong>Result:</strong> The key using <code>reftag("thetag")</code> is replaced by the value of <code>thetag</code> from an ancestor object:</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="highlight"><code class="language-json" data-lang="json">{
-  "thetag": "Hello, mytag",
-  "k0": {
-    "k1": "Hello, mytag"
-  }
-}</code></pre>
-</div>
-</div>
-</div>
-</div>
-</div>
-</div>
-<div class="sect1">
-<h2 id="_file">File</h2>
-<div class="sectionbody">
-<div class="sect2">
-<h3 id="_readfile">readfile</h3>
-<div class="paragraph">
-<p><strong>Signature:</strong> <code>readfile(filename_string)</code></p>
-</div>
-<div class="paragraph">
-<p>Resolves the filename relative to the current file’s directory and search paths, reads the file, and parses its contents as JSON. The result is the parsed JSON value (object, array, string, number, boolean, or null). Often used with <code>eval:string:</code> when the file contains a single string to use as a string value.</p>
-</div>
-<div class="paragraph">
-<p><strong>Example:</strong> <code>examples/builtins/readfile/input.json</code> (and <code>other.json</code> in the same directory).</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="highlight"><code class="language-json" data-lang="json">{
-  "key": "eval:string:readfile(\"other.json\")"
-}</code></pre>
-</div>
-</div>
-<div class="paragraph">
-<p><strong>Result:</strong> The key using <code>readfile("other.json")</code> is replaced by the parsed content of <code>other.json</code> (here a string):</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="highlight"><code class="language-json" data-lang="json">{
-  "key": "hello"
-}</code></pre>
-</div>
+<p>JSON++ introduces explicit constructs for expressing structural reuse.
+Configurations can extend other configurations and override selected fields.
+This mechanism enables developers to describe relationships between configurations directly in the data structure rather than through external tooling.</p>
 </div>
 </div>
 </div>
 </div>
 </div>
 <div class="paragraph text-right"><p>
-<a href="builtins.html">open this page in a window</a>
+<a href="concepts/design-principles.html">open this page in a window</a>
 </p></div>
 </div>
-<div id="design" class="tabcontent">
-<div id="design_content">
+<div id="concepts-evaluation-model" class="tabcontent">
+<div id="concepts-evaluation-model_content">
 <div class="sect1">
 <h2 id="_jq_design">jq++ Design</h2>
 <div class="sectionbody">
 <div class="paragraph">
 <p>This page describes the internal architecture of `jq`, the tool that evaluates JSON configurations.
-For the design principles behind JSON++, see the <a href="principles.html">Design Principles</a> page.</p>
+For the design principles behind JSON++, see the <a href="design-principles.html">Design Principles</a> page.</p>
 </div>
 <div class="sect2">
 <h3 id="_evaluation_pipeline">Evaluation Pipeline</h3>
@@ -1022,11 +750,452 @@ Only nested objects receive the recursive treatment.</p>
 </div>
 </div>
 <div class="paragraph text-right"><p>
-<a href="design.html">open this page in a window</a>
+<a href="concepts/evaluation-model.html">open this page in a window</a>
 </p></div>
 </div>
-<div id="motivating-example" class="tabcontent">
-<div id="motivating-example_content">
+<div id="concepts-overview" class="tabcontent">
+<div id="concepts-overview_content">
+<div class="sect1">
+<h2 id="_jq_json_with_structural_reuse_and_expression_evaluation">jq++: JSON with structural reuse and expression evaluation</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p><a href="https://github.com/dakusui/jqplusplus">jq++</a> is a tool that extends your JSON with file- and node-level structural reuse (via <code>$extends</code> and <code>$includes</code>) and expression evaluation (via <code>eval:</code>).
+It productizes the ideas of <a href="https://github.com/dakusui/jq-front"> jq-front</a>, which was named after <strong>Cfront</strong><a href="#Cfront">[3]</a>—the classic C++-to-C translator—and gives JSON a similar “front-end” power.</p>
+</div>
+<div class="paragraph">
+<p>Despite criticism of JSON<a href="#json">[6]</a> as a format for configuration<a href="#cr">[4]</a>, JSON has clear strengths: broad tool support, a good balance between machine and human readability, and simple, unambiguous syntax.</p>
+</div>
+<div class="paragraph">
+<p>Where JSON falls short is in <strong>structure</strong>.
+When you need many similar but slightly different configurations, redundancy is hard to remove because JSON does not define relationships between files or between nodes inside a file.<sup class="footnote">[<a id="_footnoteref_1" class="footnote" href="#_footnotedef_1" title="View footnote.">1</a>]</sup></p>
+</div>
+<div class="sect2">
+<h3 id="_what_is_it_good_for">What is it good for?</h3>
+<div class="paragraph">
+<p>Have you ever had to maintain configuration files that are almost the same, but not quite?</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 50%;"/>
+<col style="width: 50%;"/>
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">config for foo</th>
+<th class="tableblock halign-left valign-top">config for bar</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-json" data-lang="json">{
+  "foo_database": {
+    "server": {
+      "ip": "192.168.1.5",
+      "port": 2001
+    },
+    "db_name": "foo",
+    "user": {
+      "name": "root",
+      "password": "foo_root"
+    }
+  }
+}</code></pre>
+</div>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-json" data-lang="json">{
+  "bar_database": {
+    "server": {
+      "ip": "192.168.1.5",
+      "port": 2001
+    },
+    "db_name": "bar",
+    "user": {
+      "name": "root",
+      "password": "bar_root"
+    }
+  }
+}</code></pre>
+</div>
+</div></div></td>
+</tr>
+</tbody>
+</table>
+<div class="paragraph">
+<p>With jq++, you can define a single base JSON for the common parts:</p>
+</div>
+<div class="listingblock">
+<div class="title">database_default</div>
+<div class="content">
+<pre class="highlight"><code class="language-json" data-lang="json">{
+    "server": {
+      "ip": "192.168.1.5",
+      "port": 2001
+    },
+    "user": {
+      "name": "root"
+    }
+}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Then reuse it from other files via <code>$extends</code>:</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 50%;"/>
+<col style="width: 50%;"/>
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">foo.json</th>
+<th class="tableblock halign-left valign-top">bar.json</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-json" data-lang="json">{
+  "foo_database": {
+    "$extends": [ "database_default.json" ],
+    "db_name": "foo",
+    "user": {
+      "password": "foo_root"
+    }
+  }
+}</code></pre>
+</div>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-json" data-lang="json">{
+  "bar_database": {
+    "$extends": [ "database_default.json" ],
+    "db_name": "bar",
+    "user": {
+      "password": "bar_root"
+    }
+  }
+}</code></pre>
+</div>
+</div></div></td>
+</tr>
+</tbody>
+</table>
+<div class="paragraph">
+<p>Run <code>jq foo.json` and you get the expanded “config for foo” from the first table; `jq bar.json</code> gives you the “config for bar”.
+You keep one source of truth and generate each variant by extending it.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_expression_evaluation">Expression evaluation</h3>
+<div class="paragraph">
+<p>jq++ also supports expression evaluation so you can compute values dynamically using jq expressions in string fields.</p>
+</div>
+<div class="paragraph">
+<p>Example: extend two files and build a greeting string from their fields and the current date:</p>
+</div>
+<div class="listingblock">
+<div class="title">sayHello.json</div>
+<div class="content">
+<pre class="highlight"><code class="language-json" data-lang="json">{
+  "$extends": ["greeting.json", "name.json"],
+  "sayHello": "eval:refexpr(\".greeting\") + \", \" + refexpr(\".yourname\") + \". Today is \" + (now|todate)"
+}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>With <code>greeting.json</code> as <code>{"greeting":"Hello"}</code> and <code>name.json</code> as <code>{"yourname":"Mark"}</code>, running <code>jq++ sayHello.json</code> produces:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-json" data-lang="json">{
+  "greeting": "Hello",
+  "sayHello": "Hello, Mark. Today is 2026-02-14T13:07:57Z",
+  "yourname": "Mark"
+}</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_yaml">YAML?</h3>
+<div class="paragraph">
+<p>JSON is often criticized as a configuration language<a href="#cr">[4]</a>.
+Whether or not you agree, jq can still improve a YAML-based workflow: you keep YAML for editing, then convert to JSON, run jq for structural reuse and expression evaluation, and optionally convert back to YAML.</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 50%;"/>
+<col style="width: 50%;"/>
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">INPUT</th>
+<th class="tableblock halign-left valign-top">OUTPUT</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-yaml" data-lang="yaml">$local:
+  database_default:
+    server:
+      ip: 192.168.1.5
+      port: 2000
+    db_name: test
+    user:
+      name: root
+      password: root
+
+foo_database:
+  $extends: [ database_default ]
+  server:
+    port: 2001
+  db_name: foo
+  user:
+    password: foo_root</code></pre>
+</div>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-yaml" data-lang="yaml">foo_database:
+  server:
+    ip: 192.168.1.5
+    port: 2001
+  db_name: foo
+  user:
+    name: root
+    password: foo_root</code></pre>
+</div>
+</div></div></td>
+</tr>
+</tbody>
+</table>
+<div class="paragraph">
+<p>Example pipeline (using <code>yq</code> for YAML↔JSON):<a href="#stackoverflow">[8]</a></p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-shell script" data-lang="shell script">$ yq . -j in.yaml | jq++ | yq . -y</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_hocon">HOCON?</h3>
+<div class="paragraph">
+<p>HOCON<a href="#hocon">[hocon]</a> is another human-friendly format with inheritance and references.
+You might still prefer jq++:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Standard JSON in and out.</strong> jq++ reads and writes JSON, which fits into almost any toolchain.</p>
+</li>
+<li>
+<p><strong>Custom behavior via expression evaluation.</strong> You can define how values are computed using <code>eval:</code> expressions without leaving JSON.</p>
+</li>
+<li>
+<p><strong>Separation of concerns.</strong> Data structure (inheritance, references) and human-friendly syntax are different problems; jq++ focuses on structure so you can choose the syntax (JSON, YAML, etc.) separately.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>That separation matters in automation and CI/CD.
+Configs often need to be generated by programs; JSON is easy to generate and parse.
+HOCON, as a superset of JSON, is less straightforward to emit: a program might produce valid HOCON that looks different from hand-written style after a round trip.
+If you use jq++ for the “structure and value resolution” step and keep JSON (or YAML) as the interchange format, you avoid mixing style and semantics in one layer.</p>
+</div>
+<div class="paragraph">
+<p>You can combine jq++ with any JSON-oriented tools—including <a href="https://stedolan.github.io/jq/manual/">jq</a><a href="#jq">[7]</a> for querying and transformation—and still improve readability by editing in YAML or another format upstream.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_references">References</h2>
+<div class="sectionbody">
+<div class="ulist bibliography">
+<ul class="bibliography">
+<li>
+<p><a id="jqpp"/>[1] jq (jqplusplus) on GitHub. https://github.com/dakusui/jqplusplus[jq]: 2025</p>
+</li>
+<li>
+<p><a id="jq-front"/>[2] jq-front (original concept). <a href="https://github.com/dakusui/jq-front">jq-front</a>: 2019</p>
+</li>
+<li>
+<p><a id="Cfront"/>[3] Cfront. <a href="https://en.wikipedia.org/wiki/Cfront">Wikipedia</a>: 2019</p>
+</li>
+<li>
+<p><a id="cr"/>[4] Thayne McCombs. <a href="https://www.lucidchart.com/techblog/2018/07/16/why-json-isnt-a-good-configuration-language/">Why JSON isn’t a Good Configuration Language</a>: 2018</p>
+</li>
+<li>
+<p><a id="yaml"/>[5] YAML. <a href="https://en.wikipedia.org/wiki/YAML">Wikipedia</a>: 2019</p>
+</li>
+<li>
+<p><a id="json"/>[6] JSON. <a href="http://www.json.org">json.org</a>: 2019</p>
+</li>
+<li>
+<p><a id="jq"/>[7] jq manual. <a href="https://stedolan.github.io/jq/manual/">jq</a>: 2019</p>
+</li>
+<li>
+<p><a id="stackoverflow"/>[8] More complex inheritance in YAML? <a href="https://stackoverflow.com/questions/14184971/more-complex-inheritance-in-yaml">Stack Overflow</a>: 2019</p>
+</li>
+<li>
+<p><a id="hocon"/> HOCON. <a href="https://github.com/lightbend/config">HOCON</a>: 2020</p>
+</li>
+</ul>
+</div>
+<div class="paragraph text-right">
+<p><a href="../index.html">top</a></p>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph text-right"><p>
+<a href="concepts/overview.html">open this page in a window</a>
+</p></div>
+</div>
+<div id="concepts-terminology" class="tabcontent">
+<div id="concepts-terminology_content">
+<div class="sect1">
+<h2 id="_json_terminology">JSON++ Terminology</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>This document defines the canonical terms used throughout the JSON documentation.
+When describing JSON behaviour, always prefer these terms over informal alternatives such as <em>templating</em> or <em>rendering</em>.</p>
+</div>
+<div class="sect2">
+<h3 id="_structural_reuse">Structural Reuse</h3>
+<div class="paragraph">
+<p><em>Structural reuse</em> is the umbrella concept covering all mechanisms by which a JSON object incorporates structure or values from another object.
+JSON provides two structural-reuse constructs: <strong>inheritance</strong> (<code>$extends</code>) and <strong>inclusion with defaults</strong> (<code>$includes</code>).</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_inheritance_extends">Inheritance (<code>$extends</code>)</h3>
+<div class="paragraph">
+<p><strong>Inheritance</strong> is the mechanism by which an object declares that it is a specialisation of one or more parent objects.
+The current object inherits every field from its parents and may override any of them with its own values.</p>
+</div>
+<div class="paragraph">
+<p><strong>Precedence direction: base → derived.</strong>
+Parent (base) objects supply defaults; the derived object’s own fields take precedence over all inherited fields.
+When multiple parents are listed, earlier entries in the <code>$extends</code> array take precedence over later ones.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-json" data-lang="json">{
+  "$extends": ["base.json", "fallback.json"],
+  "key": "this value overrides whatever base.json or fallback.json define"
+}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Priority from highest to lowest: current object → first parent → … → last parent.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_inclusion_with_defaults_includes">Inclusion with Defaults (<code>$includes</code>)</h3>
+<div class="paragraph">
+<p><strong>Inclusion with defaults</strong> is the mechanism by which an object pulls in one or more external fragments that act as authoritative defaults.
+Unlike inheritance, where the derived object overrides its parents, the included fragments override the including object’s own fields.</p>
+</div>
+<div class="paragraph">
+<p><strong>Precedence direction: included fragments override the including object.</strong>
+The including object provides initial values; the included fragments are applied on top, overriding those values.
+When multiple fragments are listed, later entries in the <code>$includes</code> array take precedence over earlier ones.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-json" data-lang="json">{
+  "$includes": ["platform-defaults.json", "security-policy.json"],
+  "log_level": "warn"
+}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Priority from highest to lowest: last fragment → … → first fragment → current object’s own fields.</p>
+</div>
+<div class="paragraph">
+<p><strong>Coexistence with <code>$extends</code>.</strong>
+When both keys are present in the same object, <code>$extends</code> is resolved first and <code>$includes</code> is applied on top.
+The full priority order from highest to lowest is:</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>$includes (later entries) → $includes (earlier entries) → current object → $extends (earlier entries) → $extends (later entries)</pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_expression_evaluation_eval">Expression Evaluation (<code>eval:</code>)</h3>
+<div class="paragraph">
+<p><strong>Expression evaluation</strong> is the mechanism by which string values or keys prefixed with <code>eval:</code> are replaced by the result of evaluating the suffix as a jq expression.
+The expression is evaluated against the current JSON root after all structural reuse has been resolved.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-json" data-lang="json">{
+  "version": "eval:string:\"v\" + (.major | tostring)",
+  "count":   "eval:number:.items | length"
+}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Expression evaluation applies to both values and keys.
+When a key expression evaluates to an array of strings, one key–value pair is emitted per element.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_escaping_meta_keys_raw">Escaping Meta Keys (<code>raw:</code>)</h3>
+<div class="paragraph">
+<p><strong>Escaping</strong> is the mechanism by which a string value or key prefixed with <code>raw:</code> is passed through to the output with the prefix stripped, without any evaluation.
+This is necessary when a value or key would otherwise be interpreted as an <code>eval:</code> expression or when a key matches a JSON++ reserved word such as <code>$extends</code>, <code>$includes</code>, or <code>$local</code>.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-json" data-lang="json">{
+  "message":      "raw:eval:this is not an expression",
+  "raw:$extends": "this key appears verbatim in the output"
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph text-right"><p>
+<a href="concepts/terminology.html">open this page in a window</a>
+</p></div>
+</div>
+<div id="manual-expressions" class="tabcontent">
+<div id="manual-expressions_content">
+<div class="sect1">
+<h2 id="_expression_evaluation">Expression Evaluation</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>JSON++ string values and keys that begin with <code>eval:</code> are evaluated as jq expressions.
+The result replaces the original string in the output.</p>
+</div>
+<div class="paragraph">
+<p>For precise definitions see the <a href="../concepts/terminology.html">Terminology</a> page.
+For the full syntax and type annotations see the <a href="../reference/syntax-reference.html">Syntax Reference</a>.
+For available builtin variables and functions see the <a href="../reference/builtins.html">Builtins</a> page.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph text-right"><p>
+<a href="manual/expressions.html">open this page in a window</a>
+</p></div>
+</div>
+<div id="manual-getting-started" class="tabcontent">
+<div id="manual-getting-started_content">
 <div class="paragraph">
 <p>This example shows why <strong>jq++</strong> is useful when your configuration has repeated structure and cross-references.
 You keep small YAML fragments as source of truth, then let jq++ resolve inheritance and references.</p>
@@ -1420,63 +1589,357 @@ urls:
 </div>
 </div>
 <div class="paragraph text-right"><p>
-<a href="motivating-example.html">open this page in a window</a>
+<a href="manual/getting-started.html">open this page in a window</a>
 </p></div>
 </div>
-<div id="principles" class="tabcontent">
-<div id="principles_content">
+<div id="manual-structural-reuse" class="tabcontent">
+<div id="manual-structural-reuse_content">
 <div class="sect1">
-<h2 id="_design_principles">Design Principles</h2>
+<h2 id="_structural_reuse">Structural Reuse</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>JSON++ was designed around three principles.</p>
+<p>JSON++ provides two constructs for reusing structure across configurations: <strong>inheritance</strong> (<code>$extends</code>) and <strong>inclusion with defaults</strong> (<code>$includes</code>).
+Together they are referred to as <em>structural reuse</em>.</p>
+</div>
+<div class="paragraph">
+<p>For precise definitions and precedence rules see the <a href="../concepts/terminology.html">Terminology</a> page.
+For the full syntax of each construct see the <a href="../reference/syntax-reference.html">Syntax Reference</a>.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph text-right"><p>
+<a href="manual/structural-reuse.html">open this page in a window</a>
+</p></div>
+</div>
+<div id="reference-builtins" class="tabcontent">
+<div id="reference-builtins_content">
+<div class="sect1">
+<h2 id="_builtin_variables">Builtin variables</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>jq++ injects the following variables into every <code>eval:</code> expression. They are available as jq variables (e.g. <code>$cur</code>, <code>$curexpr</code>).</p>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1"><strong>$cur</strong></dt>
+<dd>
+<p>The current path as a path array (JSON array of path segments: object keys as strings, array indices as integers).
+When evaluating a <strong>value</strong> (<code>eval:</code> in a value), <code>$cur</code> is the path to that value.
+When evaluating a <strong>key</strong> (<code>eval:</code> in a key), <code>$cur</code> is the path to the parent object (the path of the object that contains the key being computed).
+Use with <code>parent</code>, <code>parentof</code>, <code>ref</code>, or <code>topathexpr</code> to navigate or refer to locations.</p>
+</dd>
+<dt class="hdlist1"><strong>$curexpr</strong></dt>
+<dd>
+<p>The current path as a path expression string (e.g. <code>".foo.bar[0]"</code>).
+Available only when evaluating a <strong>value</strong>; not set when evaluating a key.
+Useful for debugging or when you need the path in string form.</p>
+</dd>
+</dl>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_builtin_functions">Builtin Functions</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>jq++ provides builtin functions that are available inside <code>eval:</code> expressions. Each function is described below with example usage. Examples use the <code>eval:string:</code> or <code>eval:array:</code> prefix so the expression result is used as the value of the key.</p>
 </div>
 <div class="sect2">
-<h3 id="_principle_1_completeness_and_compatibility">Principle 1 — Completeness and Compatibility</h3>
+<h3 id="_path_conversion">Path conversion</h3>
+<div class="sect3">
+<h4 id="_topatharray">topatharray</h4>
 <div class="paragraph">
-<p><strong>Any JSON can be represented as JSON++:</strong>
-An important property of JSON++ is that it does not restrict the space of configurations that can be produced.
-The <code>jq++</code> evaluation function maps JSON++ documents to ordinary JSON documents.
-For any valid JSON document <em>J</em>, there exists a JSON++ document <em>X</em> such that jq++(<em>X</em>) = <em>J</em>.
-In other words, the evaluation function is surjective onto JSON.
-This property ensures that JSON++ can generate any configuration expected by downstream systems, allowing <code>jq++</code> to be introduced as a pre-processing step without reducing expressiveness.</p>
+<p><strong>Signature:</strong> <code>topatharray(path_expression_string)</code></p>
 </div>
 <div class="paragraph">
-<p>In practice, this means that adopting JSON++ never forces downstream tools to change their expectations about the resulting configuration structure.<sup class="footnote">[<a id="_footnoteref_1" class="footnote" href="#_footnotedef_1" title="View footnote.">1</a>]</sup></p>
+<p>Converts a path expression string (e.g. <code>".foo.bar[0]"</code>) into a path array: a JSON array of path segments (object keys as strings, array indices as integers). Useful for manipulating paths programmatically and passing them to <code>ref</code> or <code>parentof</code>.</p>
 </div>
 <div class="paragraph">
-<p><strong>All JSON++ documents are valid JSON:</strong>
-Moreover, JSON++ documents remain valid JSON, which allows existing parsers and tooling to process them without modification.</p>
+<p><strong>Example:</strong> <code>examples/builtins/topatharray/input.json</code></p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-json" data-lang="json">{
+  "pathArray": "eval:array:topatharray(\".foo.bar[0]\")"
+}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p><strong>Result:</strong> The key <code>pathArray</code> becomes the array corresponding to the path expression:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-json" data-lang="json">{
+  "pathArray": ["foo", "bar", 0]
+}</code></pre>
+</div>
+</div>
 </div>
 </div>
 <div class="sect2">
-<h3 id="_principle_2_json_data_model_compatibility">Principle 2 — JSON Data-Model Compatibility</h3>
+<h3 id="_topathexpr">topathexpr</h3>
 <div class="paragraph">
-<p>JSON++ operates at the level of the JSON data model rather than a specific surface syntax.
-Because many configuration languages such as YAML, HCL, and TOML are routinely translated into JSON during processing, the same reuse mechanisms can be applied to configurations written in those formats.
-In practice this means that JSON++ concepts naturally extend to JSON-compatible representations such as YAML without requiring changes to the authoring language.</p>
+<p><strong>Signature:</strong> <code>topathexpr(path_array)</code></p>
 </div>
 <div class="paragraph">
-<p>This also implies that the same extension concept naturally applies to other JSON-compatible formats such as YAML.</p>
+<p>Converts a path array (slice of keys and indices) into a path expression string (e.g. <code>".foo.bar[0]"</code>). Non-alphanumeric keys are quoted in bracket notation.</p>
+</div>
+<div class="paragraph">
+<p><strong>Example:</strong> <code>examples/builtins/topathexpr/input.json</code></p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-json" data-lang="json">{
+  "nested": {
+    "pathExpr": "eval:string:topathexpr(parent)"
+  }
+}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p><strong>Result:</strong> The key <code>pathExpr</code> becomes the path expression string for the current parent path:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-json" data-lang="json">{
+  "nested": {
+    "pathExpr": ".nested"
+  }
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_parent_path">Parent path</h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="_parent">parent</h3>
+<div class="paragraph">
+<p><strong>Signature:</strong> <code>parent</code> or <code>parent(level)</code></p>
+</div>
+<div class="paragraph">
+<p>Returns the path array of the parent of the current node. With no arguments, goes up one level; with one integer argument, goes up that many levels. Used with the builtin variable <code>$cur</code> (current path array). Typically used as <code>parent</code> or <code>parent(2)</code> inside expressions.</p>
+</div>
+<div class="paragraph">
+<p><strong>Example:</strong> <code>examples/builtins/parent/input.json</code></p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-json" data-lang="json">{
+  "a": {
+    "b": {
+      "value": "eval:string:topathexpr(parent)"
+    }
+  }
+}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p><strong>Result:</strong> At <code>a.b.value</code>, <code>topathexpr(parent)</code> yields the path to the parent key <code>b</code>:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-json" data-lang="json">{
+  "a": {
+    "b": {
+      "value": ".a.b"
+    }
+  }
+}</code></pre>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_parentof">parentof</h4>
+<div class="paragraph">
+<p><strong>Signature:</strong> <code>parentof(path_array)</code> or <code>parentof(path_array; level)</code></p>
+</div>
+<div class="paragraph">
+<p>Returns the path array with the last segment(s) removed. First argument is a path array; optional second argument is the number of levels to remove (default 1). Often used with <code>$cur</code> to go up from the current path, e.g. <code>parentof($cur; 2)</code> then append a key and pass to <code>ref</code>.</p>
+</div>
+<div class="paragraph">
+<p><strong>Example:</strong> <code>examples/builtins/parentof/input.json</code></p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-json" data-lang="json">{
+  "releaseVersion": "2.0.0",
+  "l1": {
+    "l2": {
+      "snapshotVersion": "eval:string:ref(parentof($cur; 3) + [\"releaseVersion\"]) + \"-SNAPSHOT\""
+    }
+  }
+}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p><strong>Result:</strong> <code>releaseVersion</code> at root is copied into <code>l1.l2.snapshotVersion</code> using <code>parentof($cur; 3)</code> to reach root:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-json" data-lang="json">{
+  "releaseVersion": "2.0.0",
+  "l1": {
+    "l2": {
+      "snapshotVersion": "2.0.0-SNAPSHOT"
+    }
+  }
+}</code></pre>
+</div>
+</div>
 </div>
 </div>
 <div class="sect2">
-<h3 id="_principle_3_declarative_structural_reuse">Principle 3 — Declarative Structural Reuse</h3>
+<h3 id="_reference_and_lookup">Reference and lookup</h3>
+<div class="sect3">
+<h4 id="_ref">ref</h4>
 <div class="paragraph">
-<p>JSON++ introduces explicit constructs for expressing structural reuse.
-Configurations can extend other configurations and override selected fields.
-This mechanism enables developers to describe relationships between configurations directly in the data structure rather than through external tooling.</p>
+<p><strong>Signature:</strong> <code>ref(path_array)</code></p>
+</div>
+<div class="paragraph">
+<p>Returns the value in the current JSON root at the given path array. If that value is a string, it is evaluated as an expression (e.g. another reference or expression). Path array is built from strings (object keys) and integers (array indices). Circular references are detected and reported as errors.</p>
+</div>
+<div class="paragraph">
+<p><strong>Example:</strong> <code>examples/builtins/ref/input.json</code></p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-json" data-lang="json">{
+  "shared": "common value",
+  "node": {
+    "usesShared": "eval:string:ref([\"shared\"])"
+  }
+}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p><strong>Result:</strong> The key that uses <code>ref(["shared"])</code> is replaced by the value at root <code>shared</code>:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-json" data-lang="json">{
+  "shared": "common value",
+  "node": {
+    "usesShared": "common value"
+  }
+}</code></pre>
+</div>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_refexpr">refexpr</h4>
+<div class="paragraph">
+<p><strong>Signature:</strong> <code>refexpr(path_expression_string)</code></p>
+</div>
+<div class="paragraph">
+<p>Like <code>ref</code>, but takes a path expression string (e.g. <code>".foo.bar"</code>) instead of a path array. Resolves the path from the root and returns the value; if it is a string, that string is evaluated as an expression.</p>
+</div>
+<div class="paragraph">
+<p><strong>Example:</strong> <code>examples/builtins/refexpr/input.json</code></p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-json" data-lang="json">{
+  "source": "original",
+  "copy": "eval:string:refexpr(\".source\")",
+  "chained": "eval:string:refexpr(\".copy\")"
+}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p><strong>Result:</strong> <code>copy</code> and <code>chained</code> resolve to the value of <code>source</code>:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-json" data-lang="json">{
+  "source": "original",
+  "copy": "original",
+  "chained": "original"
+}</code></pre>
+</div>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_reftag">reftag</h4>
+<div class="paragraph">
+<p><strong>Signature:</strong> <code>reftag(tag_name)</code></p>
+</div>
+<div class="paragraph">
+<p>Searches upward from the current path for an object that has a key equal to <code>tag_name</code>, then returns the value at that key. If that value is a string, it is evaluated as an expression. Used to implement “tagged” reference points in the tree.</p>
+</div>
+<div class="paragraph">
+<p><strong>Example:</strong> <code>examples/builtins/reftag/input.json</code></p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-json" data-lang="json">{
+  "thetag": "Hello, mytag",
+  "k0": {
+    "k1": "eval:string:reftag(\"thetag\")"
+  }
+}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p><strong>Result:</strong> The key using <code>reftag("thetag")</code> is replaced by the value of <code>thetag</code> from an ancestor object:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-json" data-lang="json">{
+  "thetag": "Hello, mytag",
+  "k0": {
+    "k1": "Hello, mytag"
+  }
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_file">File</h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="_readfile">readfile</h3>
+<div class="paragraph">
+<p><strong>Signature:</strong> <code>readfile(filename_string)</code></p>
+</div>
+<div class="paragraph">
+<p>Resolves the filename relative to the current file’s directory and search paths, reads the file, and parses its contents as JSON. The result is the parsed JSON value (object, array, string, number, boolean, or null). Often used with <code>eval:string:</code> when the file contains a single string to use as a string value.</p>
+</div>
+<div class="paragraph">
+<p><strong>Example:</strong> <code>examples/builtins/readfile/input.json</code> (and <code>other.json</code> in the same directory).</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-json" data-lang="json">{
+  "key": "eval:string:readfile(\"other.json\")"
+}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p><strong>Result:</strong> The key using <code>readfile("other.json")</code> is replaced by the parsed content of <code>other.json</code> (here a string):</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-json" data-lang="json">{
+  "key": "hello"
+}</code></pre>
+</div>
 </div>
 </div>
 </div>
 </div>
 </div>
 <div class="paragraph text-right"><p>
-<a href="principles.html">open this page in a window</a>
+<a href="reference/builtins.html">open this page in a window</a>
 </p></div>
 </div>
-<div id="syntax-reference" class="tabcontent">
-<div id="syntax-reference_content">
+<div id="reference-syntax-reference" class="tabcontent">
+<div id="reference-syntax-reference_content">
 <div class="sect1">
 <h2 id="_json_syntax_reference">JSON++ Syntax Reference</h2>
 <div class="sectionbody">
@@ -2163,434 +2626,14 @@ The format is determined from the file extension.</p>
 </div>
 </div>
 <div class="paragraph">
-<p>See the <a href="design.html">Design</a> page for a detailed description of the evaluation pipeline.</p>
+<p>See the <a href="../concepts/evaluation-model.html">Design</a> page for a detailed description of the evaluation pipeline.</p>
 </div>
 </div>
 </div>
 </div>
 </div>
 <div class="paragraph text-right"><p>
-<a href="syntax-reference.html">open this page in a window</a>
-</p></div>
-</div>
-<div id="terminology" class="tabcontent">
-<div id="terminology_content">
-<div class="sect1">
-<h2 id="_json_terminology">JSON++ Terminology</h2>
-<div class="sectionbody">
-<div class="paragraph">
-<p>This document defines the canonical terms used throughout the JSON documentation.
-When describing JSON behaviour, always prefer these terms over informal alternatives such as <em>templating</em> or <em>rendering</em>.</p>
-</div>
-<div class="sect2">
-<h3 id="_structural_reuse">Structural Reuse</h3>
-<div class="paragraph">
-<p><em>Structural reuse</em> is the umbrella concept covering all mechanisms by which a JSON object incorporates structure or values from another object.
-JSON provides two structural-reuse constructs: <strong>inheritance</strong> (<code>$extends</code>) and <strong>inclusion with defaults</strong> (<code>$includes</code>).</p>
-</div>
-</div>
-<div class="sect2">
-<h3 id="_inheritance_extends">Inheritance (<code>$extends</code>)</h3>
-<div class="paragraph">
-<p><strong>Inheritance</strong> is the mechanism by which an object declares that it is a specialisation of one or more parent objects.
-The current object inherits every field from its parents and may override any of them with its own values.</p>
-</div>
-<div class="paragraph">
-<p><strong>Precedence direction: base → derived.</strong>
-Parent (base) objects supply defaults; the derived object’s own fields take precedence over all inherited fields.
-When multiple parents are listed, earlier entries in the <code>$extends</code> array take precedence over later ones.</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="highlight"><code class="language-json" data-lang="json">{
-  "$extends": ["base.json", "fallback.json"],
-  "key": "this value overrides whatever base.json or fallback.json define"
-}</code></pre>
-</div>
-</div>
-<div class="paragraph">
-<p>Priority from highest to lowest: current object → first parent → … → last parent.</p>
-</div>
-</div>
-<div class="sect2">
-<h3 id="_inclusion_with_defaults_includes">Inclusion with Defaults (<code>$includes</code>)</h3>
-<div class="paragraph">
-<p><strong>Inclusion with defaults</strong> is the mechanism by which an object pulls in one or more external fragments that act as authoritative defaults.
-Unlike inheritance, where the derived object overrides its parents, the included fragments override the including object’s own fields.</p>
-</div>
-<div class="paragraph">
-<p><strong>Precedence direction: included fragments override the including object.</strong>
-The including object provides initial values; the included fragments are applied on top, overriding those values.
-When multiple fragments are listed, later entries in the <code>$includes</code> array take precedence over earlier ones.</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="highlight"><code class="language-json" data-lang="json">{
-  "$includes": ["platform-defaults.json", "security-policy.json"],
-  "log_level": "warn"
-}</code></pre>
-</div>
-</div>
-<div class="paragraph">
-<p>Priority from highest to lowest: last fragment → … → first fragment → current object’s own fields.</p>
-</div>
-<div class="paragraph">
-<p><strong>Coexistence with <code>$extends</code>.</strong>
-When both keys are present in the same object, <code>$extends</code> is resolved first and <code>$includes</code> is applied on top.
-The full priority order from highest to lowest is:</p>
-</div>
-<div class="literalblock">
-<div class="content">
-<pre>$includes (later entries) → $includes (earlier entries) → current object → $extends (earlier entries) → $extends (later entries)</pre>
-</div>
-</div>
-</div>
-<div class="sect2">
-<h3 id="_expression_evaluation_eval">Expression Evaluation (<code>eval:</code>)</h3>
-<div class="paragraph">
-<p><strong>Expression evaluation</strong> is the mechanism by which string values or keys prefixed with <code>eval:</code> are replaced by the result of evaluating the suffix as a jq expression.
-The expression is evaluated against the current JSON root after all structural reuse has been resolved.</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="highlight"><code class="language-json" data-lang="json">{
-  "version": "eval:string:\"v\" + (.major | tostring)",
-  "count":   "eval:number:.items | length"
-}</code></pre>
-</div>
-</div>
-<div class="paragraph">
-<p>Expression evaluation applies to both values and keys.
-When a key expression evaluates to an array of strings, one key–value pair is emitted per element.</p>
-</div>
-</div>
-<div class="sect2">
-<h3 id="_escaping_meta_keys_raw">Escaping Meta Keys (<code>raw:</code>)</h3>
-<div class="paragraph">
-<p><strong>Escaping</strong> is the mechanism by which a string value or key prefixed with <code>raw:</code> is passed through to the output with the prefix stripped, without any evaluation.
-This is necessary when a value or key would otherwise be interpreted as an <code>eval:</code> expression or when a key matches a JSON++ reserved word such as <code>$extends</code>, <code>$includes</code>, or <code>$local</code>.</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="highlight"><code class="language-json" data-lang="json">{
-  "message":      "raw:eval:this is not an expression",
-  "raw:$extends": "this key appears verbatim in the output"
-}</code></pre>
-</div>
-</div>
-</div>
-</div>
-</div>
-</div>
-<div class="paragraph text-right"><p>
-<a href="terminology.html">open this page in a window</a>
-</p></div>
-</div>
-<div id="top" class="tabcontent">
-<div id="top_content">
-<div class="sect1">
-<h2 id="_jq_json_with_structural_reuse_and_expression_evaluation">jq++: JSON with structural reuse and expression evaluation</h2>
-<div class="sectionbody">
-<div class="paragraph">
-<p><a href="https://github.com/dakusui/jqplusplus">jq++</a> is a tool that extends your JSON with file- and node-level structural reuse (via <code>$extends</code> and <code>$includes</code>) and expression evaluation (via <code>eval:</code>).
-It productizes the ideas of <a href="https://github.com/dakusui/jq-front"> jq-front</a>, which was named after <strong>Cfront</strong><a href="#Cfront">[3]</a>—the classic C++-to-C translator—and gives JSON a similar “front-end” power.</p>
-</div>
-<div class="paragraph">
-<p>Despite criticism of JSON<a href="#json">[6]</a> as a format for configuration<a href="#cr">[4]</a>, JSON has clear strengths: broad tool support, a good balance between machine and human readability, and simple, unambiguous syntax.</p>
-</div>
-<div class="paragraph">
-<p>Where JSON falls short is in <strong>structure</strong>.
-When you need many similar but slightly different configurations, redundancy is hard to remove because JSON does not define relationships between files or between nodes inside a file.<sup class="footnote">[<a id="_footnoteref_1" class="footnote" href="#_footnotedef_1" title="View footnote.">1</a>]</sup></p>
-</div>
-<div class="sect2">
-<h3 id="_what_is_it_good_for">What is it good for?</h3>
-<div class="paragraph">
-<p>Have you ever had to maintain configuration files that are almost the same, but not quite?</p>
-</div>
-<table class="tableblock frame-all grid-all stretch">
-<colgroup>
-<col style="width: 50%;"/>
-<col style="width: 50%;"/>
-</colgroup>
-<thead>
-<tr>
-<th class="tableblock halign-left valign-top">config for foo</th>
-<th class="tableblock halign-left valign-top">config for bar</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td class="tableblock halign-left valign-top"><div class="content"><div class="listingblock">
-<div class="content">
-<pre class="highlight"><code class="language-json" data-lang="json">{
-  "foo_database": {
-    "server": {
-      "ip": "192.168.1.5",
-      "port": 2001
-    },
-    "db_name": "foo",
-    "user": {
-      "name": "root",
-      "password": "foo_root"
-    }
-  }
-}</code></pre>
-</div>
-</div></div></td>
-<td class="tableblock halign-left valign-top"><div class="content"><div class="listingblock">
-<div class="content">
-<pre class="highlight"><code class="language-json" data-lang="json">{
-  "bar_database": {
-    "server": {
-      "ip": "192.168.1.5",
-      "port": 2001
-    },
-    "db_name": "bar",
-    "user": {
-      "name": "root",
-      "password": "bar_root"
-    }
-  }
-}</code></pre>
-</div>
-</div></div></td>
-</tr>
-</tbody>
-</table>
-<div class="paragraph">
-<p>With jq++, you can define a single base JSON for the common parts:</p>
-</div>
-<div class="listingblock">
-<div class="title">database_default</div>
-<div class="content">
-<pre class="highlight"><code class="language-json" data-lang="json">{
-    "server": {
-      "ip": "192.168.1.5",
-      "port": 2001
-    },
-    "user": {
-      "name": "root"
-    }
-}</code></pre>
-</div>
-</div>
-<div class="paragraph">
-<p>Then reuse it from other files via <code>$extends</code>:</p>
-</div>
-<table class="tableblock frame-all grid-all stretch">
-<colgroup>
-<col style="width: 50%;"/>
-<col style="width: 50%;"/>
-</colgroup>
-<thead>
-<tr>
-<th class="tableblock halign-left valign-top">foo.json</th>
-<th class="tableblock halign-left valign-top">bar.json</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td class="tableblock halign-left valign-top"><div class="content"><div class="listingblock">
-<div class="content">
-<pre class="highlight"><code class="language-json" data-lang="json">{
-  "foo_database": {
-    "$extends": [ "database_default.json" ],
-    "db_name": "foo",
-    "user": {
-      "password": "foo_root"
-    }
-  }
-}</code></pre>
-</div>
-</div></div></td>
-<td class="tableblock halign-left valign-top"><div class="content"><div class="listingblock">
-<div class="content">
-<pre class="highlight"><code class="language-json" data-lang="json">{
-  "bar_database": {
-    "$extends": [ "database_default.json" ],
-    "db_name": "bar",
-    "user": {
-      "password": "bar_root"
-    }
-  }
-}</code></pre>
-</div>
-</div></div></td>
-</tr>
-</tbody>
-</table>
-<div class="paragraph">
-<p>Run <code>jq foo.json` and you get the expanded “config for foo” from the first table; `jq bar.json</code> gives you the “config for bar”.
-You keep one source of truth and generate each variant by extending it.</p>
-</div>
-</div>
-<div class="sect2">
-<h3 id="_expression_evaluation">Expression evaluation</h3>
-<div class="paragraph">
-<p>jq++ also supports expression evaluation so you can compute values dynamically using jq expressions in string fields.</p>
-</div>
-<div class="paragraph">
-<p>Example: extend two files and build a greeting string from their fields and the current date:</p>
-</div>
-<div class="listingblock">
-<div class="title">sayHello.json</div>
-<div class="content">
-<pre class="highlight"><code class="language-json" data-lang="json">{
-  "$extends": ["greeting.json", "name.json"],
-  "sayHello": "eval:refexpr(\".greeting\") + \", \" + refexpr(\".yourname\") + \". Today is \" + (now|todate)"
-}</code></pre>
-</div>
-</div>
-<div class="paragraph">
-<p>With <code>greeting.json</code> as <code>{"greeting":"Hello"}</code> and <code>name.json</code> as <code>{"yourname":"Mark"}</code>, running <code>jq++ sayHello.json</code> produces:</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="highlight"><code class="language-json" data-lang="json">{
-  "greeting": "Hello",
-  "sayHello": "Hello, Mark. Today is 2026-02-14T13:07:57Z",
-  "yourname": "Mark"
-}</code></pre>
-</div>
-</div>
-</div>
-<div class="sect2">
-<h3 id="_yaml">YAML?</h3>
-<div class="paragraph">
-<p>JSON is often criticized as a configuration language<a href="#cr">[4]</a>.
-Whether or not you agree, jq can still improve a YAML-based workflow: you keep YAML for editing, then convert to JSON, run jq for structural reuse and expression evaluation, and optionally convert back to YAML.</p>
-</div>
-<table class="tableblock frame-all grid-all stretch">
-<colgroup>
-<col style="width: 50%;"/>
-<col style="width: 50%;"/>
-</colgroup>
-<thead>
-<tr>
-<th class="tableblock halign-left valign-top">INPUT</th>
-<th class="tableblock halign-left valign-top">OUTPUT</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td class="tableblock halign-left valign-top"><div class="content"><div class="listingblock">
-<div class="content">
-<pre class="highlight"><code class="language-yaml" data-lang="yaml">$local:
-  database_default:
-    server:
-      ip: 192.168.1.5
-      port: 2000
-    db_name: test
-    user:
-      name: root
-      password: root
-
-foo_database:
-  $extends: [ database_default ]
-  server:
-    port: 2001
-  db_name: foo
-  user:
-    password: foo_root</code></pre>
-</div>
-</div></div></td>
-<td class="tableblock halign-left valign-top"><div class="content"><div class="listingblock">
-<div class="content">
-<pre class="highlight"><code class="language-yaml" data-lang="yaml">foo_database:
-  server:
-    ip: 192.168.1.5
-    port: 2001
-  db_name: foo
-  user:
-    name: root
-    password: foo_root</code></pre>
-</div>
-</div></div></td>
-</tr>
-</tbody>
-</table>
-<div class="paragraph">
-<p>Example pipeline (using <code>yq</code> for YAML↔JSON):<a href="#stackoverflow">[8]</a></p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="highlight"><code class="language-shell script" data-lang="shell script">$ yq . -j in.yaml | jq++ | yq . -y</code></pre>
-</div>
-</div>
-</div>
-<div class="sect2">
-<h3 id="_hocon">HOCON?</h3>
-<div class="paragraph">
-<p>HOCON<a href="#hocon">[hocon]</a> is another human-friendly format with inheritance and references.
-You might still prefer jq++:</p>
-</div>
-<div class="ulist">
-<ul>
-<li>
-<p><strong>Standard JSON in and out.</strong> jq++ reads and writes JSON, which fits into almost any toolchain.</p>
-</li>
-<li>
-<p><strong>Custom behavior via expression evaluation.</strong> You can define how values are computed using <code>eval:</code> expressions without leaving JSON.</p>
-</li>
-<li>
-<p><strong>Separation of concerns.</strong> Data structure (inheritance, references) and human-friendly syntax are different problems; jq++ focuses on structure so you can choose the syntax (JSON, YAML, etc.) separately.</p>
-</li>
-</ul>
-</div>
-<div class="paragraph">
-<p>That separation matters in automation and CI/CD.
-Configs often need to be generated by programs; JSON is easy to generate and parse.
-HOCON, as a superset of JSON, is less straightforward to emit: a program might produce valid HOCON that looks different from hand-written style after a round trip.
-If you use jq++ for the “structure and value resolution” step and keep JSON (or YAML) as the interchange format, you avoid mixing style and semantics in one layer.</p>
-</div>
-<div class="paragraph">
-<p>You can combine jq++ with any JSON-oriented tools—including <a href="https://stedolan.github.io/jq/manual/">jq</a><a href="#jq">[7]</a> for querying and transformation—and still improve readability by editing in YAML or another format upstream.</p>
-</div>
-</div>
-</div>
-</div>
-<div class="sect1">
-<h2 id="_references">References</h2>
-<div class="sectionbody">
-<div class="ulist bibliography">
-<ul class="bibliography">
-<li>
-<p><a id="jqpp"/>[1] jq (jqplusplus) on GitHub. https://github.com/dakusui/jqplusplus[jq]: 2025</p>
-</li>
-<li>
-<p><a id="jq-front"/>[2] jq-front (original concept). <a href="https://github.com/dakusui/jq-front">jq-front</a>: 2019</p>
-</li>
-<li>
-<p><a id="Cfront"/>[3] Cfront. <a href="https://en.wikipedia.org/wiki/Cfront">Wikipedia</a>: 2019</p>
-</li>
-<li>
-<p><a id="cr"/>[4] Thayne McCombs. <a href="https://www.lucidchart.com/techblog/2018/07/16/why-json-isnt-a-good-configuration-language/">Why JSON isn’t a Good Configuration Language</a>: 2018</p>
-</li>
-<li>
-<p><a id="yaml"/>[5] YAML. <a href="https://en.wikipedia.org/wiki/YAML">Wikipedia</a>: 2019</p>
-</li>
-<li>
-<p><a id="json"/>[6] JSON. <a href="http://www.json.org">json.org</a>: 2019</p>
-</li>
-<li>
-<p><a id="jq"/>[7] jq manual. <a href="https://stedolan.github.io/jq/manual/">jq</a>: 2019</p>
-</li>
-<li>
-<p><a id="stackoverflow"/>[8] More complex inheritance in YAML? <a href="https://stackoverflow.com/questions/14184971/more-complex-inheritance-in-yaml">Stack Overflow</a>: 2019</p>
-</li>
-<li>
-<p><a id="hocon"/> HOCON. <a href="https://github.com/lightbend/config">HOCON</a>: 2020</p>
-</li>
-</ul>
-</div>
-<div class="paragraph text-right">
-<p><a href="index.html">top</a></p>
-</div>
-</div>
-</div>
-</div>
-<div class="paragraph text-right"><p>
-<a href="top.html">open this page in a window</a>
+<a href="reference/syntax-reference.html">open this page in a window</a>
 </p></div>
 </div>
 <script>

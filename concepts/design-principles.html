@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="generator" content="Asciidoctor 2.0.26">
-<title>A doc for style</title>
+<title>Design Principles</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Open+Sans:300,300italic,400,400italic,600,600italic%7CNoto+Serif:400,400italic,700,700italic%7CDroid+Sans+Mono:400,700">
 <style>
 /*! Asciidoctor default stylesheet | MIT License | https://asciidoctor.org */
@@ -434,13 +434,72 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 @media amzn-kf8{#header,#content,#footnotes,#footer{padding:0}}
 </style>
 </head>
-<body class="article">
+<body class="article toc2 toc-left">
 <div id="header">
-<h1>A doc for style</h1>
+<div id="toc" class="toc2">
+<div id="toctitle">Table of Contents</div>
+<ul class="sectlevel1">
+<li><a href="#_design_principles">Design Principles</a>
+<ul class="sectlevel2">
+<li><a href="#_principle_1_completeness_and_compatibility">Principle 1 — Completeness and Compatibility</a></li>
+<li><a href="#_principle_2_json_data_model_compatibility">Principle 2 — JSON Data-Model Compatibility</a></li>
+<li><a href="#_principle_3_declarative_structural_reuse">Principle 3 — Declarative Structural Reuse</a></li>
+</ul>
+</li>
+</ul>
+</div>
 </div>
 <div id="content">
+<div class="sect1">
+<h2 id="_design_principles">Design Principles</h2>
+<div class="sectionbody">
 <div class="paragraph">
-<p>This file is used to generate style element for <code>index.sh</code>.</p>
+<p>JSON&#43;&#43; was designed around three principles.</p>
+</div>
+<div class="sect2">
+<h3 id="_principle_1_completeness_and_compatibility">Principle 1 — Completeness and Compatibility</h3>
+<div class="paragraph">
+<p><strong>Any JSON can be represented as JSON&#43;&#43;:</strong>
+An important property of JSON&#43;&#43; is that it does not restrict the space of configurations that can be produced.
+The <code>jq&#43;&#43;</code> evaluation function maps JSON&#43;&#43; documents to ordinary JSON documents.
+For any valid JSON document <em>J</em>, there exists a JSON&#43;&#43; document <em>X</em> such that jq&#43;&#43;(<em>X</em>) = <em>J</em>.
+In other words, the evaluation function is surjective onto JSON.
+This property ensures that JSON&#43;&#43; can generate any configuration expected by downstream systems, allowing <code>jq&#43;&#43;</code> to be introduced as a pre-processing step without reducing expressiveness.</p>
+</div>
+<div class="paragraph">
+<p>In practice, this means that adopting JSON&#43;&#43; never forces downstream tools to change their expectations about the resulting configuration structure.<sup class="footnote">[<a id="_footnoteref_1" class="footnote" href="#_footnotedef_1" title="View footnote.">1</a>]</sup></p>
+</div>
+<div class="paragraph">
+<p><strong>All JSON&#43;&#43; documents are valid JSON:</strong>
+Moreover, JSON&#43;&#43; documents remain valid JSON, which allows existing parsers and tooling to process them without modification.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_principle_2_json_data_model_compatibility">Principle 2 — JSON Data-Model Compatibility</h3>
+<div class="paragraph">
+<p>JSON&#43;&#43; operates at the level of the JSON data model rather than a specific surface syntax.
+Because many configuration languages such as YAML, HCL, and TOML are routinely translated into JSON during processing, the same reuse mechanisms can be applied to configurations written in those formats.
+In practice this means that JSON&#43;&#43; concepts naturally extend to JSON-compatible representations such as YAML without requiring changes to the authoring language.</p>
+</div>
+<div class="paragraph">
+<p>This also implies that the same extension concept naturally applies to other JSON-compatible formats such as YAML.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_principle_3_declarative_structural_reuse">Principle 3 — Declarative Structural Reuse</h3>
+<div class="paragraph">
+<p>JSON&#43;&#43; introduces explicit constructs for expressing structural reuse.
+Configurations can extend other configurations and override selected fields.
+This mechanism enables developers to describe relationships between configurations directly in the data structure rather than through external tooling.</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div id="footnotes">
+<hr>
+<div class="footnote" id="_footnotedef_1">
+<a href="#_footnoteref_1">1</a>. All JSON&#43;&#43; meta-keywords are escapable.
 </div>
 </div>
 <div id="footer">

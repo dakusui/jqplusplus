@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="generator" content="Asciidoctor 2.0.26">
-<title>A doc for style</title>
+<title>jq++: JSON with structural reuse and expression evaluation</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Open+Sans:300,300italic,400,400italic,600,600italic%7CNoto+Serif:400,400italic,700,700italic%7CDroid+Sans+Mono:400,700">
 <style>
 /*! Asciidoctor default stylesheet | MIT License | https://asciidoctor.org */
@@ -434,13 +434,329 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 @media amzn-kf8{#header,#content,#footnotes,#footer{padding:0}}
 </style>
 </head>
-<body class="article">
+<body class="article toc2 toc-left">
 <div id="header">
-<h1>A doc for style</h1>
+<div id="toc" class="toc2">
+<div id="toctitle">Table of Contents</div>
+<ul class="sectlevel1">
+<li><a href="#_jq_json_with_structural_reuse_and_expression_evaluation">jq++: JSON with structural reuse and expression evaluation</a>
+<ul class="sectlevel2">
+<li><a href="#_what_is_it_good_for">What is it good for?</a></li>
+<li><a href="#_expression_evaluation">Expression evaluation</a></li>
+<li><a href="#_yaml">YAML?</a></li>
+<li><a href="#_hocon">HOCON?</a></li>
+</ul>
+</li>
+<li><a href="#_references">References</a></li>
+</ul>
+</div>
 </div>
 <div id="content">
+<div class="sect1">
+<h2 id="_jq_json_with_structural_reuse_and_expression_evaluation">jq++: JSON with structural reuse and expression evaluation</h2>
+<div class="sectionbody">
 <div class="paragraph">
-<p>This file is used to generate style element for <code>index.sh</code>.</p>
+<p><a href="https://github.com/dakusui/jqplusplus">jq++</a> is a tool that extends your JSON with file- and node-level structural reuse (via <code>$extends</code> and <code>$includes</code>) and expression evaluation (via <code>eval:</code>).
+It productizes the ideas of <a href="https://github.com/dakusui/jq-front"> jq-front</a>, which was named after <strong>Cfront</strong><a href="#Cfront">[3]</a>—the classic C&#43;&#43;-to-C translator—and gives JSON a similar “front-end” power.</p>
+</div>
+<div class="paragraph">
+<p>Despite criticism of JSON<a href="#json">[6]</a> as a format for configuration<a href="#cr">[4]</a>, JSON has clear strengths: broad tool support, a good balance between machine and human readability, and simple, unambiguous syntax.</p>
+</div>
+<div class="paragraph">
+<p>Where JSON falls short is in <strong>structure</strong>.
+When you need many similar but slightly different configurations, redundancy is hard to remove because JSON does not define relationships between files or between nodes inside a file.<sup class="footnote">[<a id="_footnoteref_1" class="footnote" href="#_footnotedef_1" title="View footnote.">1</a>]</sup></p>
+</div>
+<div class="sect2">
+<h3 id="_what_is_it_good_for">What is it good for?</h3>
+<div class="paragraph">
+<p>Have you ever had to maintain configuration files that are almost the same, but not quite?</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 50%;">
+<col style="width: 50%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">config for foo</th>
+<th class="tableblock halign-left valign-top">config for bar</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-json" data-lang="json">{
+  "foo_database": {
+    "server": {
+      "ip": "192.168.1.5",
+      "port": 2001
+    },
+    "db_name": "foo",
+    "user": {
+      "name": "root",
+      "password": "foo_root"
+    }
+  }
+}</code></pre>
+</div>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-json" data-lang="json">{
+  "bar_database": {
+    "server": {
+      "ip": "192.168.1.5",
+      "port": 2001
+    },
+    "db_name": "bar",
+    "user": {
+      "name": "root",
+      "password": "bar_root"
+    }
+  }
+}</code></pre>
+</div>
+</div></div></td>
+</tr>
+</tbody>
+</table>
+<div class="paragraph">
+<p>With jq++, you can define a single base JSON for the common parts:</p>
+</div>
+<div class="listingblock">
+<div class="title">database_default</div>
+<div class="content">
+<pre class="highlight"><code class="language-json" data-lang="json">{
+    "server": {
+      "ip": "192.168.1.5",
+      "port": 2001
+    },
+    "user": {
+      "name": "root"
+    }
+}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Then reuse it from other files via <code>$extends</code>:</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 50%;">
+<col style="width: 50%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">foo.json</th>
+<th class="tableblock halign-left valign-top">bar.json</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-json" data-lang="json">{
+  "foo_database": {
+    "$extends": [ "database_default.json" ],
+    "db_name": "foo",
+    "user": {
+      "password": "foo_root"
+    }
+  }
+}</code></pre>
+</div>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-json" data-lang="json">{
+  "bar_database": {
+    "$extends": [ "database_default.json" ],
+    "db_name": "bar",
+    "user": {
+      "password": "bar_root"
+    }
+  }
+}</code></pre>
+</div>
+</div></div></td>
+</tr>
+</tbody>
+</table>
+<div class="paragraph">
+<p>Run <code>jq foo.json` and you get the expanded “config for foo” from the first table; `jq bar.json</code> gives you the “config for bar”.
+You keep one source of truth and generate each variant by extending it.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_expression_evaluation">Expression evaluation</h3>
+<div class="paragraph">
+<p>jq++ also supports expression evaluation so you can compute values dynamically using jq expressions in string fields.</p>
+</div>
+<div class="paragraph">
+<p>Example: extend two files and build a greeting string from their fields and the current date:</p>
+</div>
+<div class="listingblock">
+<div class="title">sayHello.json</div>
+<div class="content">
+<pre class="highlight"><code class="language-json" data-lang="json">{
+  "$extends": ["greeting.json", "name.json"],
+  "sayHello": "eval:refexpr(\".greeting\") + \", \" + refexpr(\".yourname\") + \". Today is \" + (now|todate)"
+}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>With <code>greeting.json</code> as <code>{"greeting":"Hello"}</code> and <code>name.json</code> as <code>{"yourname":"Mark"}</code>, running <code>jq++ sayHello.json</code> produces:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-json" data-lang="json">{
+  "greeting": "Hello",
+  "sayHello": "Hello, Mark. Today is 2026-02-14T13:07:57Z",
+  "yourname": "Mark"
+}</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_yaml">YAML?</h3>
+<div class="paragraph">
+<p>JSON is often criticized as a configuration language<a href="#cr">[4]</a>.
+Whether or not you agree, jq can still improve a YAML-based workflow: you keep YAML for editing, then convert to JSON, run jq for structural reuse and expression evaluation, and optionally convert back to YAML.</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 50%;">
+<col style="width: 50%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">INPUT</th>
+<th class="tableblock halign-left valign-top">OUTPUT</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-yaml" data-lang="yaml">$local:
+  database_default:
+    server:
+      ip: 192.168.1.5
+      port: 2000
+    db_name: test
+    user:
+      name: root
+      password: root
+
+foo_database:
+  $extends: [ database_default ]
+  server:
+    port: 2001
+  db_name: foo
+  user:
+    password: foo_root</code></pre>
+</div>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-yaml" data-lang="yaml">foo_database:
+  server:
+    ip: 192.168.1.5
+    port: 2001
+  db_name: foo
+  user:
+    name: root
+    password: foo_root</code></pre>
+</div>
+</div></div></td>
+</tr>
+</tbody>
+</table>
+<div class="paragraph">
+<p>Example pipeline (using <code>yq</code> for YAML↔JSON):<a href="#stackoverflow">[8]</a></p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-shell script" data-lang="shell script">$ yq . -j in.yaml | jq++ | yq . -y</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_hocon">HOCON?</h3>
+<div class="paragraph">
+<p>HOCON<a href="#hocon">[hocon]</a> is another human-friendly format with inheritance and references.
+You might still prefer jq++:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Standard JSON in and out.</strong> jq++ reads and writes JSON, which fits into almost any toolchain.</p>
+</li>
+<li>
+<p><strong>Custom behavior via expression evaluation.</strong> You can define how values are computed using <code>eval:</code> expressions without leaving JSON.</p>
+</li>
+<li>
+<p><strong>Separation of concerns.</strong> Data structure (inheritance, references) and human-friendly syntax are different problems; jq++ focuses on structure so you can choose the syntax (JSON, YAML, etc.) separately.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>That separation matters in automation and CI/CD.
+Configs often need to be generated by programs; JSON is easy to generate and parse.
+HOCON, as a superset of JSON, is less straightforward to emit: a program might produce valid HOCON that looks different from hand-written style after a round trip.
+If you use jq++ for the “structure and value resolution” step and keep JSON (or YAML) as the interchange format, you avoid mixing style and semantics in one layer.</p>
+</div>
+<div class="paragraph">
+<p>You can combine jq++ with any JSON-oriented tools—including <a href="https://stedolan.github.io/jq/manual/">jq</a><a href="#jq">[7]</a> for querying and transformation—and still improve readability by editing in YAML or another format upstream.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_references">References</h2>
+<div class="sectionbody">
+<div class="ulist bibliography">
+<ul class="bibliography">
+<li>
+<p><a id="jqpp"></a>[1] jq (jqplusplus) on GitHub. https://github.com/dakusui/jqplusplus[jq]: 2025</p>
+</li>
+<li>
+<p><a id="jq-front"></a>[2] jq-front (original concept). <a href="https://github.com/dakusui/jq-front">jq-front</a>: 2019</p>
+</li>
+<li>
+<p><a id="Cfront"></a>[3] Cfront. <a href="https://en.wikipedia.org/wiki/Cfront">Wikipedia</a>: 2019</p>
+</li>
+<li>
+<p><a id="cr"></a>[4] Thayne McCombs. <a href="https://www.lucidchart.com/techblog/2018/07/16/why-json-isnt-a-good-configuration-language/">Why JSON isn’t a Good Configuration Language</a>: 2018</p>
+</li>
+<li>
+<p><a id="yaml"></a>[5] YAML. <a href="https://en.wikipedia.org/wiki/YAML">Wikipedia</a>: 2019</p>
+</li>
+<li>
+<p><a id="json"></a>[6] JSON. <a href="http://www.json.org">json.org</a>: 2019</p>
+</li>
+<li>
+<p><a id="jq"></a>[7] jq manual. <a href="https://stedolan.github.io/jq/manual/">jq</a>: 2019</p>
+</li>
+<li>
+<p><a id="stackoverflow"></a>[8] More complex inheritance in YAML? <a href="https://stackoverflow.com/questions/14184971/more-complex-inheritance-in-yaml">Stack Overflow</a>: 2019</p>
+</li>
+<li>
+<p><a id="hocon"></a> HOCON. <a href="https://github.com/lightbend/config">HOCON</a>: 2020</p>
+</li>
+</ul>
+</div>
+<div class="paragraph text-right">
+<p><a href="../index.html">top</a></p>
+</div>
+</div>
+</div>
+</div>
+<div id="footnotes">
+<hr>
+<div class="footnote" id="_footnotedef_1">
+<a href="#_footnoteref_1">1</a>. This limitation is not unique to JSON; YAML, for example, can reference object nodes but cannot embed one text value inside another by itself.
 </div>
 </div>
 <div id="footer">
