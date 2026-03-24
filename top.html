@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="generator" content="Asciidoctor 2.0.26">
-<title>jq++: JSON with inheritance and templating</title>
+<title>jq++: JSON with structural reuse and expression evaluation</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Open+Sans:300,300italic,400,400italic,600,600italic%7CNoto+Serif:400,400italic,700,700italic%7CDroid+Sans+Mono:400,700">
 <style>
 /*! Asciidoctor default stylesheet | MIT License | https://asciidoctor.org */
@@ -439,10 +439,10 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 <div id="toc" class="toc2">
 <div id="toctitle">Table of Contents</div>
 <ul class="sectlevel1">
-<li><a href="#_jq_json_with_inheritance_and_templating">jq++: JSON with inheritance and templating</a>
+<li><a href="#_jq_json_with_structural_reuse_and_expression_evaluation">jq++: JSON with structural reuse and expression evaluation</a>
 <ul class="sectlevel2">
 <li><a href="#_what_is_it_good_for">What is it good for?</a></li>
-<li><a href="#_templating_and_references">Templating and references</a></li>
+<li><a href="#_expression_evaluation">Expression evaluation</a></li>
 <li><a href="#_yaml">YAML?</a></li>
 <li><a href="#_hocon">HOCON?</a></li>
 </ul>
@@ -453,10 +453,10 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 </div>
 <div id="content">
 <div class="sect1">
-<h2 id="_jq_json_with_inheritance_and_templating">jq++: JSON with inheritance and templating</h2>
+<h2 id="_jq_json_with_structural_reuse_and_expression_evaluation">jq++: JSON with structural reuse and expression evaluation</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p><a href="https://github.com/dakusui/jqplusplus">jq++</a> is a tool that extends your JSON with file- and node-level inheritance, templating, and reference evaluation.
+<p><a href="https://github.com/dakusui/jqplusplus">jq++</a> is a tool that extends your JSON with file- and node-level structural reuse (via <code>$extends</code> and <code>$includes</code>) and expression evaluation (via <code>eval:</code>).
 It productizes the ideas of <a href="https://github.com/dakusui/jq-front"> jq-front</a>, which was named after <strong>Cfront</strong><a href="#Cfront">[3]</a>—the classic C&#43;&#43;-to-C translator—and gives JSON a similar “front-end” power.</p>
 </div>
 <div class="paragraph">
@@ -589,9 +589,9 @@ You keep one source of truth and generate each variant by extending it.</p>
 </div>
 </div>
 <div class="sect2">
-<h3 id="_templating_and_references">Templating and references</h3>
+<h3 id="_expression_evaluation">Expression evaluation</h3>
 <div class="paragraph">
-<p>jq++ also supports templating and references so you can embed values and run shell commands in string fields.</p>
+<p>jq++ also supports expression evaluation so you can compute values dynamically using jq expressions in string fields.</p>
 </div>
 <div class="paragraph">
 <p>Example: extend two files and build a greeting string from their fields and the current date:</p>
@@ -622,7 +622,7 @@ You keep one source of truth and generate each variant by extending it.</p>
 <h3 id="_yaml">YAML?</h3>
 <div class="paragraph">
 <p>JSON is often criticized as a configuration language<a href="#cr">[4]</a>.
-Whether or not you agree, jq can still improve a YAML-based workflow: you keep YAML for editing, then convert to JSON, run jq for inheritance and templating, and optionally convert back to YAML.</p>
+Whether or not you agree, jq can still improve a YAML-based workflow: you keep YAML for editing, then convert to JSON, run jq for structural reuse and expression evaluation, and optionally convert back to YAML.</p>
 </div>
 <table class="tableblock frame-all grid-all stretch">
 <colgroup>
@@ -694,7 +694,7 @@ You might still prefer jq++:</p>
 <p><strong>Standard JSON in and out.</strong> jq++ reads and writes JSON, which fits into almost any toolchain.</p>
 </li>
 <li>
-<p><strong>Custom behavior via templating.</strong> You can define how values are computed (references, <code>eval:</code>, etc.) without leaving JSON.</p>
+<p><strong>Custom behavior via expression evaluation.</strong> You can define how values are computed using <code>eval:</code> expressions without leaving JSON.</p>
 </li>
 <li>
 <p><strong>Separation of concerns.</strong> Data structure (inheritance, references) and human-friendly syntax are different problems; jq++ focuses on structure so you can choose the syntax (JSON, YAML, etc.) separately.</p>
@@ -761,7 +761,7 @@ If you use jq++ for the “structure and value resolution” step and keep JSON 
 </div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2026-03-24 18:47:34 UTC
+Last updated 2026-03-24 18:54:18 UTC
 </div>
 </div>
 </body>
