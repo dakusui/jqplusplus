@@ -1,0 +1,82 @@
+== JSON++ Terminology
+
+This document defines the canonical terms used throughout the JSON++ documentation.
+When describing JSON++ behaviour, always prefer these terms over informal alternatives such as _templating_ or _rendering_.
+
+=== Structural Reuse
+
+_Structural reuse_ is the umbrella concept covering all mechanisms by which a JSON++ object incorporates structure or values from another object.
+JSON++ provides two structural-reuse constructs: *inheritance* (`$extends`) and *inclusion with defaults* (`$includes`).
+
+=== Inheritance (`$extends`)
+
+*Inheritance* is the mechanism by which an object declares that it is a specialisation of one or more parent objects.
+The current object inherits every field from its parents and may override any of them with its own values.
+
+*Precedence direction: base → derived.*
+Parent (base) objects supply defaults; the derived object's own fields take precedence over all inherited fields.
+When multiple parents are listed, earlier entries in the `$extends` array take precedence over later ones.
+
+[source,json]
+----
+{
+  "$extends": ["base.json", "fallback.json"],
+  "key": "this value overrides whatever base.json or fallback.json define"
+}
+----
+
+Priority from highest to lowest: current object → first parent → … → last parent.
+
+=== Inclusion with Defaults (`$includes`)
+
+*Inclusion with defaults* is the mechanism by which an object pulls in one or more external fragments that act as authoritative defaults.
+Unlike inheritance, where the derived object overrides its parents, the included fragments override the including object's own fields.
+
+*Precedence direction: included fragments override the including object.*
+The including object provides initial values; the included fragments are applied on top, overriding those values.
+When multiple fragments are listed, later entries in the `$includes` array take precedence over earlier ones.
+
+[source,json]
+----
+{
+  "$includes": ["platform-defaults.json", "security-policy.json"],
+  "log_level": "warn"
+}
+----
+
+Priority from highest to lowest: last fragment → … → first fragment → current object's own fields.
+
+*Coexistence with `$extends`.*
+When both keys are present in the same object, `$extends` is resolved first and `$includes` is applied on top.
+The full priority order from highest to lowest is:
+
+  $includes (later entries) → $includes (earlier entries) → current object → $extends (earlier entries) → $extends (later entries)
+
+=== Expression Evaluation (`eval:`)
+
+*Expression evaluation* is the mechanism by which string values or keys prefixed with `eval:` are replaced by the result of evaluating the suffix as a jq expression.
+The expression is evaluated against the current JSON root after all structural reuse has been resolved.
+
+[source,json]
+----
+{
+  "version": "eval:string:\"v\" + (.major | tostring)",
+  "count":   "eval:number:.items | length"
+}
+----
+
+Expression evaluation applies to both values and keys.
+When a key expression evaluates to an array of strings, one key–value pair is emitted per element.
+
+=== Escaping Meta Keys (`raw:`)
+
+*Escaping* is the mechanism by which a string value or key prefixed with `raw:` is passed through to the output with the prefix stripped, without any evaluation.
+This is necessary when a value or key would otherwise be interpreted as an `eval:` expression or when a key matches a JSON++ reserved word such as `$extends`, `$includes`, or `$local`.
+
+[source,json]
+----
+{
+  "message":      "raw:eval:this is not an expression",
+  "raw:$extends": "this key appears verbatim in the output"
+}
+----
