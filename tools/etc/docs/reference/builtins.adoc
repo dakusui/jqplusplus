@@ -29,7 +29,7 @@ Converts a path expression string (e.g. `".foo.bar[0]"`) into a path array: a JS
 
 [source,json]
 ----
-include::examples/builtins/topatharray/input.json[]
+include::../examples/builtins/topatharray/input.json[]
 ----
 
 *Result:* The key `pathArray` becomes the array corresponding to the path expression:
@@ -51,7 +51,7 @@ Converts a path array (slice of keys and indices) into a path expression string 
 
 [source,json]
 ----
-include::examples/builtins/topathexpr/input.json[]
+include::../examples/builtins/topathexpr/input.json[]
 ----
 
 *Result:* The key `pathExpr` becomes the path expression string for the current parent path:
@@ -77,7 +77,7 @@ Returns the path array of the parent of the current node. With no arguments, goe
 
 [source,json]
 ----
-include::examples/builtins/parent/input.json[]
+include::../examples/builtins/parent/input.json[]
 ----
 
 *Result:* At `a.b.value`, `topathexpr(parent)` yields the path to the parent key `b`:
@@ -103,7 +103,7 @@ Returns the path array with the last segment(s) removed. First argument is a pat
 
 [source,json]
 ----
-include::examples/builtins/parentof/input.json[]
+include::../examples/builtins/parentof/input.json[]
 ----
 
 *Result:* `releaseVersion` at root is copied into `l1.l2.snapshotVersion` using `parentof($cur; 3)` to reach root:
@@ -132,7 +132,7 @@ Returns the value in the current JSON root at the given path array. If that valu
 
 [source,json]
 ----
-include::examples/builtins/ref/input.json[]
+include::../examples/builtins/ref/input.json[]
 ----
 
 *Result:* The key that uses `ref(["shared"])` is replaced by the value at root `shared`:
@@ -157,7 +157,7 @@ Like `ref`, but takes a path expression string (e.g. `".foo.bar"`) instead of a 
 
 [source,json]
 ----
-include::examples/builtins/refexpr/input.json[]
+include::../examples/builtins/refexpr/input.json[]
 ----
 
 *Result:* `copy` and `chained` resolve to the value of `source`:
@@ -181,7 +181,7 @@ Searches upward from the current path for an object that has a key equal to `tag
 
 [source,json]
 ----
-include::examples/builtins/reftag/input.json[]
+include::../examples/builtins/reftag/input.json[]
 ----
 
 *Result:* The key using `reftag("thetag")` is replaced by the value of `thetag` from an ancestor object:
@@ -208,7 +208,7 @@ Resolves the filename relative to the current file’s directory and search path
 
 [source,json]
 ----
-include::examples/builtins/readfile/input.json[]
+include::../examples/builtins/readfile/input.json[]
 ----
 
 *Result:* The key using `readfile("other.json")` is replaced by the parsed content of `other.json` (here a string):

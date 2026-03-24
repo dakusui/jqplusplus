@@ -1,7 +1,7 @@
 == jq++ Design
 
 This page describes the internal architecture of `jq++`, the tool that evaluates JSON++ configurations.
-For the design principles behind JSON++, see the link:principles.html[Design Principles] page.
+For the design principles behind JSON++, see the link:design-principles.html[Design Principles] page.
 
 === Evaluation Pipeline
 

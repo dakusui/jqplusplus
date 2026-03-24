@@ -67,7 +67,7 @@ The main file defines reusable structure and computed values:
 [source,yaml]
 .`system.yaml`
 ----
-include::../autotest/examples/motivating-example-yaml/system.yaml[]
+include::../../autotest/examples/motivating-example-yaml/system.yaml[]
 ----
 
 Lookup tables are kept in separate files:
@@ -79,12 +79,12 @@ Lookup tables are kept in separate files:
 
 |[source,yaml]
 ----
-include::../autotest/examples/motivating-example-yaml/ports.yaml[]
+include::../../autotest/examples/motivating-example-yaml/ports.yaml[]
 ----
 
 |[source,yaml]
 ----
-include::../autotest/examples/motivating-example-yaml/urls.yaml[]
+include::../../autotest/examples/motivating-example-yaml/urls.yaml[]
 ----
 |===
 
@@ -93,7 +93,7 @@ Helper functions are defined once:
 [source,jq]
 .`funcs.jq`
 ----
-include::../autotest/examples/motivating-example-yaml/funcs.jq[]
+include::../../autotest/examples/motivating-example-yaml/funcs.jq[]
 ----
 
 In this version, `funcs::type` reads the component `type` from the current level.
@@ -124,7 +124,7 @@ jq++ produces fully materialized configuration from compact source files:
 [source,yaml]
 .`expected.yaml`
 ----
-include::../autotest/examples/motivating-example-yaml/expected.yaml[]
+include::../../autotest/examples/motivating-example-yaml/expected.yaml[]
 ----
 
 == Advanced topic: split into four independent concerns
@@ -142,7 +142,7 @@ Main wiring file:
 [source,yaml]
 .`system.yaml` (advanced)
 ----
-include::../autotest/examples/motivating-example-yaml-4concerns/system.yaml[]
+include::../../autotest/examples/motivating-example-yaml-4concerns/system.yaml[]
 ----
 
 Service defaults:
@@ -150,7 +150,7 @@ Service defaults:
 [source,yaml]
 .`base-service.yaml`
 ----
-include::../autotest/examples/motivating-example-yaml-4concerns/base-service.yaml[]
+include::../../autotest/examples/motivating-example-yaml-4concerns/base-service.yaml[]
 ----
 
 Component declarations:
@@ -158,7 +158,7 @@ Component declarations:
 [source,yaml]
 .`components.yaml`
 ----
-include::../autotest/examples/motivating-example-yaml-4concerns/components.yaml[]
+include::../../autotest/examples/motivating-example-yaml-4concerns/components.yaml[]
 ----
 
 The generated result is the same as the basic example:
@@ -166,7 +166,7 @@ The generated result is the same as the basic example:
 [source,yaml]
 .`expected.yaml` (advanced)
 ----
-include::../autotest/examples/motivating-example-yaml-4concerns/expected.yaml[]
+include::../../autotest/examples/motivating-example-yaml-4concerns/expected.yaml[]
 ----
 
 == Why this is useful

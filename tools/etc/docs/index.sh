@@ -6,9 +6,16 @@ function extract_style() {
   cat "../../../docs/_style.html" | xmllint --nocdata --html --xpath '//style' - | sed -E 's/^(\]\]>)?<\/?style>(<\!\[CDATA\[)?$//g'
 }
 
+# Normalize a filestem (e.g. "concepts/overview") to a safe HTML id (e.g. "concepts-overview").
+function filestem_to_id() {
+  echo "${1//\//-}"
+}
+
 function extract_content() {
   local _filestem="${1}"
-  cat "../../../docs/${_filestem}.html" | xmllint --nocdata --html --xpath '//div[@id="content"]' - | sed -E 's/<div id="content">/<div id="'"${_filestem}"'_content">/g'
+  local _id
+  _id=$(filestem_to_id "${_filestem}")
+  cat "../../../docs/${_filestem}.html" | xmllint --nocdata --html --xpath '//div[@id="content"]' - | sed -E 's/<div id="content">/<div id="'"${_id}"'_content">/g'
 }
 
 function copy_images() {
@@ -62,12 +69,20 @@ STYLE
 
 function render_default_button() {
   local _filestem="${1}"
-  echo '<button class="tablinks" onclick="openTab(event, '"'${_filestem}'"')" id="defaultOpen">'"${_filestem}"'</button>'
+  local _id
+  _id=$(filestem_to_id "${_filestem}")
+  local _label
+  _label=$(basename "${_filestem}")
+  echo '<button class="tablinks" onclick="openTab(event, '"'${_id}'"')" id="defaultOpen">'"${_label}"'</button>'
 }
 
 function render_button() {
   local _filestem="${1}"
-  echo '<button class="tablinks" onclick="openTab(event, '"'${_filestem}'"')">'"${_filestem}"'</button>'
+  local _id
+  _id=$(filestem_to_id "${_filestem}")
+  local _label
+  _label=$(basename "${_filestem}")
+  echo '<button class="tablinks" onclick="openTab(event, '"'${_id}'"')">'"${_label}"'</button>'
 }
 
 function render_github_button() {
@@ -80,6 +95,8 @@ ELEM
 
 function render_all_buttons() {
   local _top_filestem="${1}"
+  local _top_id
+  _top_id=$(filestem_to_id "${_top_filestem}")
   shift
   local _filestems=("$@")
   echo '<div class="tab">'
@@ -87,7 +104,7 @@ function render_all_buttons() {
   render_github_button
   render_default_button "${_top_filestem}"
   for i in "${_filestems[@]}"; do
-    if [[ "${i}" == "${_top_filestem}" ]]; then
+    if [[ "$(filestem_to_id "${i}")" == "${_top_id}" ]]; then
       continue
     fi
     render_button "${i}"
@@ -97,7 +114,9 @@ function render_all_buttons() {
 
 function render_content() {
   local _filestem="${1}"
-  echo '<div id="'${_filestem}'" class="tabcontent">'
+  local _id
+  _id=$(filestem_to_id "${_filestem}")
+  echo '<div id="'${_id}'" class="tabcontent">'
   extract_content "${_filestem}"
   echo '<div class="paragraph text-right"><p>'
   echo '<a href="'${_filestem}'.html">open this page in a window</a>'
@@ -166,25 +185,27 @@ function render_footer() {
 }
 
 function render() {
+  local _top="${1}"
+  shift
   local _filestems=("$@")
   begin_header
   render_style
   end_header
   begin_body
   # shellcheck disable=SC2068
-  render_all_buttons top ${_targets[@]}
+  render_all_buttons "${_top}" "${_filestems[@]}"
   # shellcheck disable=SC2068
-  render_all_contents ${_targets[@]}
+  render_all_contents "${_filestems[@]}"
   end_body
   render_footer
   copy_images
 }
 
 function main() {
+  local _top='concepts/overview'
   local _targets
-  _targets=$(ls *.adoc | sed -E 's/\.adoc$//' | grep -v _style | sort)
-  # shellcheck disable=SC2068
-  render ${_targets[@]}
+  mapfile -t _targets < <(find . -name '*.adoc' | grep -v '_style' | sed 's|^\./||' | sed 's|\.adoc$||' | sort)
+  render "${_top}" "${_targets[@]}"
 }
 
 cd "$(dirname ${0})"
