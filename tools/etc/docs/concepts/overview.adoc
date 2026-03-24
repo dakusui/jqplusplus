@@ -210,4 +210,4 @@ You can combine jq++ with any JSON-oriented tools—including https://stedolan.g
 - [[hocon, 9]] HOCON. https://github.com/lightbend/config[HOCON]: 2020
 
 [.text-right]
-link:index.html[top]
+link:../index.html[top]

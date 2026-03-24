@@ -506,4 +506,4 @@ This mirrors the behavior of environment variables such as `PATH` or `PYTHONPATH
 $ JF_PATH=/shared/configs:/team/defaults jq++ myconfig.json
 ----
 
-See the link:design.html[Design] page for a detailed description of the evaluation pipeline.
+See the link:../concepts/evaluation-model.html[Design] page for a detailed description of the evaluation pipeline.
