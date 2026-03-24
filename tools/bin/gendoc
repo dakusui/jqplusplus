@@ -18,11 +18,14 @@ function main() {
   while IFS= read -r -d '' i; do
     local _src_file="${i}"
     message -n "Processing '${_src_file}'"
+    local _rel="${i#tools/etc/docs/}"
+    local _out="docs/${_rel%.adoc}.html"
+    mkdir -p "$(dirname "${_out}")"
     docker run --rm \
       --user "$(id -u):$(id -g)" \
       -v "$(pwd)":/documents/ \
       asciidoctor/docker-asciidoctor \
-      asciidoctor -r asciidoctor-diagram -a toc=left "${i}" -o "docs/$(basename "${i%.adoc}.html")"
+      asciidoctor -r asciidoctor-diagram -a toc=left "${i}" -o "${_out}"
     message "...done"
   done < <(find "tools/etc/docs" -type f -name '*.adoc' -print0)
   message -n "Generating 'docs/index.html'"
