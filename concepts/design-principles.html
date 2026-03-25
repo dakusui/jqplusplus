@@ -488,9 +488,17 @@ In practice this means that JSON&#43;&#43; concepts naturally extend to JSON-com
 <div class="sect2">
 <h3 id="_principle_3_declarative_structural_reuse">Principle 3 — Declarative Structural Reuse</h3>
 <div class="paragraph">
-<p>JSON&#43;&#43; introduces explicit constructs for expressing structural reuse.
-Configurations can extend other configurations and override selected fields.
-This mechanism enables developers to describe relationships between configurations directly in the data structure rather than through external tooling.</p>
+<p>JSON&#43;&#43; introduces explicit constructs for expressing structural reuse.</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Structural composition</strong> constructs (<code>$extends</code>, <code>$includes</code>) let configurations combine documents directly, describing relationships in the data structure itself rather than through external tooling.</p>
+</li>
+<li>
+<p><strong>Expression evaluation</strong> (<code>eval:</code>) lets configurations compute values dynamically from the composed result.</p>
+</li>
+</ul>
 </div>
 </div>
 </div>
@@ -504,7 +512,7 @@ This mechanism enables developers to describe relationships between configuratio
 </div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2026-03-24 19:47:21 UTC
+Last updated 2026-03-25 18:22:29 UTC
 </div>
 </div>
 </body>

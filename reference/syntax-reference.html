@@ -457,9 +457,28 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 <h2 id="_json_syntax_reference">JSON++ Syntax Reference</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>JSON is a lightweight extension of JSON that adds three mechanisms to standard JSON: **structural reuse** for reusing configuration structures (via inheritance and inclusion with defaults), **expression evaluation** for computing values dynamically, and **local node definitions** for in-file reuse.
-All JSON annotations are valid JSON, so existing JSON tooling continues to work on JSON files.
-The `jq` tool evaluates a JSON++ file and emits ordinary JSON.</p>
+<p>JSON&#43;&#43; is a lightweight extension of JSON that adds three mechanisms to standard JSON:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>structural composition</strong> for combining configuration documents (via inheritance with <code>$extends</code> and inclusion with <code>$includes</code>),</p>
+</li>
+<li>
+<p><strong>expression evaluation</strong> for computing values dynamically (via <code>eval:</code>),
+and</p>
+</li>
+<li>
+<p><strong>local node definitions</strong> for in-file reuse.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Structural composition and expression evaluation together form <strong>structural reuse</strong> — the full set of mechanisms for constructing configurations from reusable parts.</p>
+</div>
+<div class="paragraph">
+<p>All JSON&#43;&#43; documents are valid JSON, so existing JSON tooling continues to work on JSON&#43;&#43; files.
+The <code>jq&#43;&#43;</code> tool evaluates a JSON&#43;&#43; file and emits ordinary JSON.</p>
 </div>
 <div class="sect2">
 <h3 id="_special_keys">Special Keys</h3>
@@ -1147,7 +1166,7 @@ The format is determined from the file extension.</p>
 </div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2026-03-24 19:47:21 UTC
+Last updated 2026-03-25 18:22:29 UTC
 </div>
 </div>
 </body>

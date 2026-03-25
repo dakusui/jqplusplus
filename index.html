@@ -530,9 +530,17 @@ In practice this means that JSON++ concepts naturally extend to JSON-compatible 
 <div class="sect2">
 <h3 id="_principle_3_declarative_structural_reuse">Principle 3 — Declarative Structural Reuse</h3>
 <div class="paragraph">
-<p>JSON++ introduces explicit constructs for expressing structural reuse.
-Configurations can extend other configurations and override selected fields.
-This mechanism enables developers to describe relationships between configurations directly in the data structure rather than through external tooling.</p>
+<p>JSON++ introduces explicit constructs for expressing structural reuse.</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Structural composition</strong> constructs (<code>$extends</code>, <code>$includes</code>) let configurations combine documents directly, describing relationships in the data structure itself rather than through external tooling.</p>
+</li>
+<li>
+<p><strong>Expression evaluation</strong> (<code>eval:</code>) lets configurations compute values dynamically from the composed result.</p>
+</li>
+</ul>
 </div>
 </div>
 </div>
@@ -759,7 +767,7 @@ Only nested objects receive the recursive treatment.</p>
 <h2 id="_jq_json_with_structural_reuse_and_expression_evaluation">jq++: JSON with structural reuse and expression evaluation</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p><a href="https://github.com/dakusui/jqplusplus">jq++</a> is a tool that extends your JSON with file- and node-level structural reuse (via <code>$extends</code> and <code>$includes</code>) and expression evaluation (via <code>eval:</code>).
+<p><a href="https://github.com/dakusui/jqplusplus">jq++</a> is a tool that extends your JSON with <strong>structural reuse</strong>: structural composition (via <code>$extends</code> and <code>$includes</code>) and expression evaluation (via <code>eval:</code>).
 It productizes the ideas of <a href="https://github.com/dakusui/jq-front"> jq-front</a>, which was named after <strong>Cfront</strong><a href="#Cfront">[3]</a>—the classic C++-to-C translator—and gives JSON a similar “front-end” power.</p>
 </div>
 <div class="paragraph">
@@ -925,7 +933,7 @@ You keep one source of truth and generate each variant by extending it.</p>
 <h3 id="_yaml">YAML?</h3>
 <div class="paragraph">
 <p>JSON is often criticized as a configuration language<a href="#cr">[4]</a>.
-Whether or not you agree, jq can still improve a YAML-based workflow: you keep YAML for editing, then convert to JSON, run jq for structural reuse and expression evaluation, and optionally convert back to YAML.</p>
+Whether or not you agree, jq++ can still improve a YAML-based workflow: you keep YAML for editing, then convert to JSON, run jq++ for structural reuse, and optionally convert back to YAML.</p>
 </div>
 <table class="tableblock frame-all grid-all stretch">
 <colgroup>
@@ -1072,8 +1080,44 @@ When describing JSON behaviour, always prefer these terms over informal alternat
 <div class="sect2">
 <h3 id="_structural_reuse">Structural Reuse</h3>
 <div class="paragraph">
-<p><em>Structural reuse</em> is the umbrella concept covering all mechanisms by which a JSON object incorporates structure from other objects.
-JSON provides two structural-reuse constructs: <strong>inheritance</strong> (<code>$extends</code>) and <strong>inclusion with defaults</strong> (<code>$includes</code>).</p>
+<p>JSON++ provides <strong>structural reuse</strong> mechanisms that allow configurations to be constructed from reusable fragments.
+Structural reuse consists of two categories:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Structural composition</strong>, which combines configuration documents:</p>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Inheritance</strong> (<code>$extends</code>)</p>
+</li>
+<li>
+<p><strong>Inclusion</strong> (<code>$includes</code>)</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<p><strong>Expression evaluation</strong> (<code>eval:</code>), which computes configuration values dynamically.</p>
+</li>
+</ul>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>Structural reuse
+ ├─ structural composition
+ │   ├─ inheritance ($extends)
+ │   └─ inclusion ($includes)
+ └─ expression evaluation (eval:)</pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_structural_composition">Structural Composition</h3>
+<div class="paragraph">
+<p><em>Structural composition</em> is the subset of structural reuse that combines configuration documents structurally.
+JSON++ provides two structural-composition constructs: <strong>inheritance</strong> (<code>$extends</code>) and <strong>inclusion with defaults</strong> (<code>$includes</code>).</p>
 </div>
 </div>
 <div class="sect2">
@@ -1136,7 +1180,7 @@ The full priority order from highest to lowest is:</p>
 <h3 id="_expression_evaluation_eval">Expression Evaluation (<code>eval:</code>)</h3>
 <div class="paragraph">
 <p><strong>Expression evaluation</strong> is the mechanism by which string values or keys prefixed with <code>eval:</code> are replaced by the result of evaluating the suffix as a jq expression.
-The expression is evaluated against the current JSON root after all structural reuse has been resolved.</p>
+The expression is evaluated against the current JSON root after all structural composition has been resolved.</p>
 </div>
 <div class="listingblock">
 <div class="content">
@@ -1598,8 +1642,11 @@ urls:
 <h2 id="_structural_reuse">Structural Reuse</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>JSON++ provides two constructs for reusing structure across configurations: <strong>inheritance</strong> (<code>$extends</code>) and <strong>inclusion with defaults</strong> (<code>$includes</code>).
-Together they are referred to as <em>structural reuse</em>.</p>
+<p>JSON++ provides <strong>structural reuse</strong> mechanisms that allow configurations to be constructed from reusable fragments.
+Structural reuse consists of <strong>structural composition</strong> (<code>$extends</code> and <code>$includes</code>) and <strong>expression evaluation</strong> (<code>eval:</code>).</p>
+</div>
+<div class="paragraph">
+<p>This page focuses on <strong>structural composition</strong>: the two constructs that combine configuration documents — <strong>inheritance</strong> (<code>$extends</code>) and <strong>inclusion with defaults</strong> (<code>$includes</code>).</p>
 </div>
 <div class="paragraph">
 <p>For precise definitions and precedence rules see the <a href="../concepts/terminology.html">Terminology</a> page.
@@ -1944,9 +1991,28 @@ Useful for debugging or when you need the path in string form.</p>
 <h2 id="_json_syntax_reference">JSON++ Syntax Reference</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>JSON is a lightweight extension of JSON that adds three mechanisms to standard JSON: **structural reuse** for reusing configuration structures (via inheritance and inclusion with defaults), **expression evaluation** for computing values dynamically, and **local node definitions** for in-file reuse.
-All JSON annotations are valid JSON, so existing JSON tooling continues to work on JSON files.
-The `jq` tool evaluates a JSON++ file and emits ordinary JSON.</p>
+<p>JSON++ is a lightweight extension of JSON that adds three mechanisms to standard JSON:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>structural composition</strong> for combining configuration documents (via inheritance with <code>$extends</code> and inclusion with <code>$includes</code>),</p>
+</li>
+<li>
+<p><strong>expression evaluation</strong> for computing values dynamically (via <code>eval:</code>),
+and</p>
+</li>
+<li>
+<p><strong>local node definitions</strong> for in-file reuse.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Structural composition and expression evaluation together form <strong>structural reuse</strong> — the full set of mechanisms for constructing configurations from reusable parts.</p>
+</div>
+<div class="paragraph">
+<p>All JSON++ documents are valid JSON, so existing JSON tooling continues to work on JSON++ files.
+The <code>jq++</code> tool evaluates a JSON++ file and emits ordinary JSON.</p>
 </div>
 <div class="sect2">
 <h3 id="_special_keys">Special Keys</h3>
