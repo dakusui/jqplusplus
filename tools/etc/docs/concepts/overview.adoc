@@ -1,6 +1,6 @@
 == jq++: JSON with structural reuse and expression evaluation
 
-https://github.com/dakusui/jqplusplus[jq++] is a tool that extends your JSON with file- and node-level structural reuse (via `$extends` and `$includes`) and expression evaluation (via `eval:`).
+https://github.com/dakusui/jqplusplus[jq++] is a tool that extends your JSON with *structural reuse*: structural composition (via `$extends` and `$includes`) and expression evaluation (via `eval:`).
 It productizes the ideas of https://github.com/dakusui/jq-front[ jq-front], which was named after *Cfront*<<Cfront>>—the classic {cpp}-to-C translator—and gives JSON a similar “front-end” power.
 
 Despite criticism of JSON<<json>> as a format for configuration<<cr>>, JSON has clear strengths: broad tool support, a good balance between machine and human readability, and simple, unambiguous syntax.
@@ -132,7 +132,7 @@ With `greeting.json` as `{"greeting":"Hello"}` and `name.json` as `{"yourname":"
 === YAML?
 
 JSON is often criticized as a configuration language<<cr>>.
-Whether or not you agree, jq++ can still improve a YAML-based workflow: you keep YAML for editing, then convert to JSON, run jq++ for structural reuse and expression evaluation, and optionally convert back to YAML.
+Whether or not you agree, jq{plus}{plus} can still improve a YAML-based workflow: you keep YAML for editing, then convert to JSON, run jq{plus}{plus} for structural reuse, and optionally convert back to YAML.
 
 [cols="1a,1a"]
 |===
@@ -183,7 +183,7 @@ $ yq . -j in.yaml | jq++ | yq . -y
 
 // suppress inspection "SpellCheckingInspection"
 HOCON<<hocon>> is another human-friendly format with inheritance and references.
-You might still prefer jq++:
+You might still prefer jq{plus}{plus}:
 
 - **Standard JSON in and out.** jq++ reads and writes JSON, which fits into almost any toolchain.
 - **Custom behavior via expression evaluation.** You can define how values are computed using `eval:` expressions without leaving JSON.
