@@ -5,8 +5,26 @@ When describing JSON++ behaviour, always prefer these terms over informal altern
 
 === Structural Reuse
 
-_Structural reuse_ is the umbrella concept covering all mechanisms by which a JSON++ object incorporates structure from other objects.
-JSON++ provides two structural-reuse constructs: *inheritance* (`$extends`) and *inclusion with defaults* (`$includes`).
+JSON{plus}{plus} provides *structural reuse* mechanisms that allow configurations to be constructed from reusable fragments.
+Structural reuse consists of two categories:
+
+* *Structural composition*, which combines configuration documents:
+** *Inheritance* (`$extends`)
+** *Inclusion* (`$includes`)
+* *Expression evaluation* (`eval:`), which computes configuration values dynamically.
+
+----
+Structural reuse
+ ├─ structural composition
+ │   ├─ inheritance ($extends)
+ │   └─ inclusion ($includes)
+ └─ expression evaluation (eval:)
+----
+
+=== Structural Composition
+
+_Structural composition_ is the subset of structural reuse that combines configuration documents structurally.
+JSON++ provides two structural-composition constructs: *inheritance* (`$extends`) and *inclusion with defaults* (`$includes`).
 
 === Inheritance (`$extends`)
 
@@ -55,7 +73,7 @@ The full priority order from highest to lowest is:
 === Expression Evaluation (`eval:`)
 
 *Expression evaluation* is the mechanism by which string values or keys prefixed with `eval:` are replaced by the result of evaluating the suffix as a jq expression.
-The expression is evaluated against the current JSON root after all structural reuse has been resolved.
+The expression is evaluated against the current JSON root after all structural composition has been resolved.
 
 [source,json]
 ----

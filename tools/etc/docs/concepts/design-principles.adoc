@@ -27,6 +27,7 @@ This also implies that the same extension concept naturally applies to other JSO
 === Principle 3 — Declarative Structural Reuse
 
 JSON{plus}{plus} introduces explicit constructs for expressing structural reuse.
-Configurations can extend other configurations and override selected fields.
-This mechanism enables developers to describe relationships between configurations directly in the data structure rather than through external tooling.
+
+* *Structural composition* constructs (`$extends`, `$includes`) let configurations combine documents directly, describing relationships in the data structure itself rather than through external tooling.
+* *Expression evaluation* (`eval:`) lets configurations compute values dynamically from the composed result.
 

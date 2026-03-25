@@ -1,8 +1,16 @@
 == JSON++ Syntax Reference
 
-JSON++ is a lightweight extension of JSON that adds three mechanisms to standard JSON: **structural reuse** for reusing configuration structures (via inheritance and inclusion with defaults), **expression evaluation** for computing values dynamically, and **local node definitions** for in-file reuse.
-All JSON++ annotations are valid JSON, so existing JSON tooling continues to work on JSON++ files.
-The `jq++` tool evaluates a JSON++ file and emits ordinary JSON.
+JSON{plus}{plus} is a lightweight extension of JSON that adds three mechanisms to standard JSON:
+
+* **structural composition** for combining configuration documents (via inheritance with `$extends` and inclusion with `$includes`),
+* **expression evaluation** for computing values dynamically (via `eval:`),
+and
+* **local node definitions** for in-file reuse.
+
+Structural composition and expression evaluation together form *structural reuse* — the full set of mechanisms for constructing configurations from reusable parts.
+
+All JSON{plus}{plus} documents are valid JSON, so existing JSON tooling continues to work on JSON{plus}{plus} files.
+The `jq{plus}{plus}` tool evaluates a JSON{plus}{plus} file and emits ordinary JSON.
 
 === Special Keys
 
