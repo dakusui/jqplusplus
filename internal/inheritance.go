@@ -236,7 +236,7 @@ func ReadFileAsJSONObject(path string) (map[string]any, *JqModule, error) {
 func ReadFileAsJSONElement(path string) (any, *JqModule, error) {
 	ft, ok := detectFileType(path)
 	if !ok {
-		return nil, nil, fmt.Errorf("unsupported file type: %q (%s)", filepath.Ext(path), path)
+		return nil, nil, fmt.Errorf("unsupported file type: %q (%s); supported extensions are: %s", filepath.Ext(path), path, SupportedExtensions)
 	}
 
 	switch ft {
