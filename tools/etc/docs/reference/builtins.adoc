@@ -204,6 +204,8 @@ include::../examples/builtins/reftag/input.json[]
 
 Resolves the filename relative to the current file’s directory and search paths, reads the file, and parses its contents as JSON. The result is the parsed JSON value (object, array, string, number, boolean, or null). Often used with `eval:string:` when the file contains a single string to use as a string value.
 
+The filename extension determines how the file is parsed. Supported extensions are: `.json`, `.json++`, `.jq`, `.yaml`, `.yml`, `.yaml++`, `.yml++`, `.toml`, `.toml++`, `.json5`, `.json5++`, `.conf`, `.hocon`, `.conf++`, `.hocon++`. A filename with no extension is treated as JSON. Any other extension causes an error.
+
 *Example:* `examples/builtins/readfile/input.json` (and `other.json` in the same directory).
 
 [source,json]
