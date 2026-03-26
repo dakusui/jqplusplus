@@ -34,6 +34,7 @@ Parents are merged in the order listed, and the current object's own fields over
 
 The value of `$extends` must be an array of filename strings.
 Each filename is resolved relative to the current file's directory and the `JF_PATH` search path.
+Parent files may be in any <<Supported Input Formats,supported format>>; the file extension determines how each file is parsed.
 
 *Merge order*
 
@@ -80,6 +81,8 @@ Unlike `$extends`, where the derived object overrides its parents, `$includes` i
   "key": "value"
 }
 ----
+
+Fragment files may be in any <<Supported Input Formats,supported format>>; the file extension determines how each file is parsed.
 
 *Merge order*
 
@@ -490,15 +493,16 @@ The format is determined from the file extension.
 |===
 |Extension |Format
 
-|`.json`  |JSON
-|`.yaml`, `.yml` |YAML
-|`.toml`  |TOML
-|`.json5` |JSON5
-|`.hocon` |HOCON
+|`.json`, `.json++`  |JSON
+|`.yaml`, `.yml`, `.yaml++`, `.yml++` |YAML
+|`.toml`, `.toml++`  |TOML
+|`.json5`, `.json5++` |JSON5
+|`.hocon`, `.conf`, `.hocon++`, `.conf++` |HOCON
 |`.jq`    |jq module (custom functions available in eval expressions)
 |===
 
-YAML, TOML, JSON5, and HOCON files are converted to the JSON data model before processing; the same JSON++ directives work in all formats.
+YAML, TOML, JSON5, and HOCON files are converted to the JSON data model before processing; the same JSON{plus}{plus} directives work in all formats.
+The `{plus}{plus}` suffix variants (`.json++`, `.yaml++`, etc.) are treated identically to their base extensions.
 
 === Search Paths
 
