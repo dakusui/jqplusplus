@@ -28,6 +28,9 @@ const (
 	HOCON FileType = "hocon"
 )
 
+// SupportedExtensions lists the file extensions recognized by readfile and the inheritance mechanism.
+const SupportedExtensions = ".json, .json++, .jq, .yaml, .yml, .yaml++, .yml++, .toml, .toml++, .json5, .json5++, .conf, .hocon, .conf++, .hocon++ (no extension is treated as JSON)"
+
 func detectFileType(name string) (FileType, bool) {
 	ext := strings.ToLower(filepath.Ext(name))
 

@@ -1,0 +1,3 @@
+{
+  "arr": "eval:array:readfile(\"list.json\")"
+}
