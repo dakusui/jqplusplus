@@ -2042,7 +2042,8 @@ Parents are merged in the order listed, and the current object’s own fields ov
 </div>
 <div class="paragraph">
 <p>The value of <code>$extends</code> must be an array of filename strings.
-Each filename is resolved relative to the current file’s directory and the <code>JF_PATH</code> search path.</p>
+Each filename is resolved relative to the current file’s directory and the <code>JF_PATH</code> search path.
+Parent files may be in any <a href="#_supported_input_formats">supported format</a>; the file extension determines how each file is parsed.</p>
 </div>
 <div class="paragraph">
 <p><strong>Merge order</strong></p>
@@ -2098,6 +2099,9 @@ Unlike <code>$extends</code>, where the derived object overrides its parents, <c
   "key": "value"
 }</code></pre>
 </div>
+</div>
+<div class="paragraph">
+<p>Fragment files may be in any <a href="#_supported_input_formats">supported format</a>; the file extension determines how each file is parsed.</p>
 </div>
 <div class="paragraph">
 <p><strong>Merge order</strong></p>
@@ -2642,23 +2646,23 @@ The format is determined from the file extension.</p>
 </thead>
 <tbody>
 <tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>.json</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>.json</code>, <code>.json++</code></p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">JSON</p></td>
 </tr>
 <tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>.yaml</code>, <code>.yml</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>.yaml</code>, <code>.yml</code>, <code>.yaml`, `.yml</code></p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">YAML</p></td>
 </tr>
 <tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>.toml</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>.toml</code>, <code>.toml++</code></p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">TOML</p></td>
 </tr>
 <tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>.json5</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>.json5</code>, <code>.json5++</code></p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">JSON5</p></td>
 </tr>
 <tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>.hocon</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>.hocon</code>, <code>.conf</code>, <code>.hocon`, `.conf</code></p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">HOCON</p></td>
 </tr>
 <tr>
@@ -2668,7 +2672,8 @@ The format is determined from the file extension.</p>
 </tbody>
 </table>
 <div class="paragraph">
-<p>YAML, TOML, JSON5, and HOCON files are converted to the JSON data model before processing; the same JSON++ directives work in all formats.</p>
+<p>YAML, TOML, JSON5, and HOCON files are converted to the JSON data model before processing; the same JSON++ directives work in all formats.
+The <code>++</code> suffix variants (<code>.json`, `.yaml</code>, etc.) are treated identically to their base extensions.</p>
 </div>
 </div>
 <div class="sect2">
