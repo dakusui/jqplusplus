@@ -63,15 +63,25 @@ func NewNodePoolWithBaseSearchPaths(baseDir, sessionDirectory string, searchPath
 }
 
 func (p *NodePoolImpl) ReadNodeEntryValue(baseDir_, filename_ string, compilerOptions []*JqModule) (*NodeEntryValue, error) {
-	baseDir := filepath.Dir(filepath.Join(baseDir_, filename_))
-	filename := filepath.Base(filepath.Join(baseDir_, filename_))
-	slog.Debug("NodePoolImpl:ReadingNodeEntry", "filename", filename)
-	nodeEntryKey := NodeEntryKey{filename: filename, baseDir: baseDir}
+	normalizedBaseDir := baseDir_
+	normalizedFilename := filepath.Clean(filename_)
+
+	// Keep absolute paths stable by splitting them into (baseDir, filename).
+	// For relative paths (including "relative/X.json"), keep the relative
+	// directory part in normalizedFilename so ResolveFilePath can search it
+	// under each JF_PATH entry.
+	if filepath.IsAbs(normalizedFilename) {
+		normalizedBaseDir = filepath.Dir(normalizedFilename)
+		normalizedFilename = filepath.Base(normalizedFilename)
+	}
+
+	slog.Debug("NodePoolImpl:ReadingNodeEntry", "filename", normalizedFilename)
+	nodeEntryKey := NodeEntryKey{filename: normalizedFilename, baseDir: normalizedBaseDir}
 	ret, ok := p.cache[nodeEntryKey]
 	if !ok {
-		slog.Debug("NodePoolImpl:CacheMiss", "filename", filename)
+		slog.Debug("NodePoolImpl:CacheMiss", "filename", normalizedFilename)
 		previous := len(p.SessionDirectory())
-		nodeEntryValue, err := LoadAndResolveInheritancesRecursively(baseDir, filename, p)
+		nodeEntryValue, err := LoadAndResolveInheritancesRecursively(normalizedBaseDir, normalizedFilename, p)
 		if err != nil {
 			return nil, err
 		}
@@ -82,7 +92,7 @@ func (p *NodePoolImpl) ReadNodeEntryValue(baseDir_, filename_ string, compilerOp
 		ret = *nodeEntryValue
 	}
 	ret.CompilerOptions = append(compilerOptions, ret.CompilerOptions...)
-	slog.Debug("NodePoolImpl:ReadNodeEntry", "filename", filename)
+	slog.Debug("NodePoolImpl:ReadNodeEntry", "filename", normalizedFilename)
 	return &ret, nil
 }
 
