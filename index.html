@@ -1262,7 +1262,8 @@ def url_of($service):
 </div>
 </div>
 <div class="paragraph">
-<p>Functions in a <code>.jq</code> module have full access to jq++ builtins such as <code>ref</code>, <code>refexpr</code>, <code>parent</code>, and <code>topathexpr</code>.</p>
+<p>Functions in a <code>.jq</code> module have full access to jq++ builtins such as <code>ref</code>, <code>refexpr</code>, <code>reftag</code>, <code>parent</code>, and <code>topathexpr</code>.
+They do not run in a restricted "plain jq only" context, so they can resolve dynamic values directly instead of forcing every such value through explicit parameters.</p>
 </div>
 </div>
 <div class="sect2">
@@ -1344,6 +1345,31 @@ A function wrapping <code>parent</code> to return a path expression:</p>
 </div>
 <div class="paragraph">
 <p>The expression evaluates to the jq path of the <code>nested</code> object (e.g., <code>.info.nested</code>).</p>
+</div>
+<div class="paragraph">
+<p>A function can also resolve values from the surrounding jq++ document directly:</p>
+</div>
+<div class="listingblock">
+<div class="title"><code>funcs.jq</code></div>
+<div class="content">
+<pre class="highlight"><code class="language-jq" data-lang="jq">def port_of($service):
+  refexpr(".ports.\($service)");
+
+def tag_value:
+  reftag("thetag");</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title"><code>input.json</code></div>
+<div class="content">
+<pre class="highlight"><code class="language-json" data-lang="json">{
+  "$extends": ["funcs.jq"],
+  "thetag": "tag-value",
+  "ports": { "api": 8080 },
+  "resolvedPort": "eval:number:funcs::port_of(\"api\")",
+  "resolvedTag": "eval:string:funcs::tag_value"
+}</code></pre>
+</div>
 </div>
 </div>
 </div>
