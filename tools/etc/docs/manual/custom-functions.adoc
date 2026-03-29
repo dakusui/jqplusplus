@@ -33,7 +33,8 @@ def url_of($service):
   refexpr(".urls.\($service)");
 ----
 
-Functions in a `.jq` module have full access to jq{plus}{plus} builtins such as `ref`, `refexpr`, `parent`, and `topathexpr`.
+Functions in a `.jq` module have full access to jq{plus}{plus} builtins such as `ref`, `refexpr`, `reftag`, `parent`, and `topathexpr`.
+They do not run in a restricted "plain jq only" context, so they can resolve dynamic values directly instead of forcing every such value through explicit parameters.
 
 === Loading a module
 
@@ -105,3 +106,27 @@ def current_path:
 ----
 
 The expression evaluates to the jq path of the `nested` object (e.g., `.info.nested`).
+
+A function can also resolve values from the surrounding jq{plus}{plus} document directly:
+
+[source,jq]
+.`funcs.jq`
+----
+def port_of($service):
+  refexpr(".ports.\($service)");
+
+def tag_value:
+  reftag("thetag");
+----
+
+[source,json]
+.`input.json`
+----
+{
+  "$extends": ["funcs.jq"],
+  "thetag": "tag-value",
+  "ports": { "api": 8080 },
+  "resolvedPort": "eval:number:funcs::port_of(\"api\")",
+  "resolvedTag": "eval:string:funcs::tag_value"
+}
+----
