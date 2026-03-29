@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="generator" content="Asciidoctor 2.0.26">
-<title>Expression Evaluation</title>
+<title>Custom Functions</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Open+Sans:300,300italic,400,400italic,600,600italic%7CNoto+Serif:400,400italic,700,700italic%7CDroid+Sans+Mono:400,700">
 <style>
 /*! Asciidoctor default stylesheet | MIT License | https://asciidoctor.org */
@@ -439,22 +439,143 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 <div id="toc" class="toc2">
 <div id="toctitle">Table of Contents</div>
 <ul class="sectlevel1">
-<li><a href="#_expression_evaluation">Expression Evaluation</a></li>
+<li><a href="#_custom_functions">Custom Functions</a>
+<ul class="sectlevel2">
+<li><a href="#_defining_a_module">Defining a module</a></li>
+<li><a href="#_loading_a_module">Loading a module</a></li>
+<li><a href="#_calling_a_function">Calling a function</a></li>
+<li><a href="#_using_jq_builtins_inside_functions">Using jq&#43;&#43; builtins inside functions</a></li>
+</ul>
+</li>
 </ul>
 </div>
 </div>
 <div id="content">
 <div class="sect1">
-<h2 id="_expression_evaluation">Expression Evaluation</h2>
+<h2 id="_custom_functions">Custom Functions</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>JSON++ string values and keys that begin with <code>eval:</code> are evaluated as jq expressions.
-The result replaces the original string in the output.</p>
+<p>Custom functions let you define reusable jq logic and call it from <code>eval:</code> expressions anywhere in your configuration.
+Functions are written in plain jq <code>def</code> syntax and placed in a <code>.jq</code> file.
+That file is then loaded as a <strong>jq module</strong> via <code>$extends</code> or <code>$includes</code>.</p>
 </div>
 <div class="paragraph">
-<p>For precise definitions see the <a href="../concepts/terminology.html">Terminology</a> page.
-For the full syntax and type annotations see the <a href="../reference/syntax-reference.html">Syntax Reference</a>.
+<p>For the full syntax of <code>$extends</code> and <code>$includes</code> see the <a href="../reference/syntax-reference.html">Syntax Reference</a>.
 For available builtin variables and functions see the <a href="../reference/builtins.html">Builtins</a> page.</p>
+</div>
+<div class="sect2">
+<h3 id="_defining_a_module">Defining a module</h3>
+<div class="paragraph">
+<p>Create a file with a <code>.jq</code> extension.
+Each function is declared with the standard jq <code>def</code> keyword.</p>
+</div>
+<div class="paragraph">
+<p>A <strong>parameterless</strong> function:</p>
+</div>
+<div class="listingblock">
+<div class="title"><code>greet.jq</code></div>
+<div class="content">
+<pre class="highlight"><code class="language-jq" data-lang="jq">def hello_world:
+  "Hello, world!";</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>A <strong>parameterized</strong> function (jq uses <code>;</code> to separate parameters):</p>
+</div>
+<div class="listingblock">
+<div class="title"><code>utils.jq</code></div>
+<div class="content">
+<pre class="highlight"><code class="language-jq" data-lang="jq">def port_of($service):
+  refexpr(".ports.\($service)");
+
+def url_of($service):
+  refexpr(".urls.\($service)");</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Functions in a <code>.jq</code> module have full access to jq&#43;&#43; builtins such as <code>ref</code>, <code>refexpr</code>, <code>parent</code>, and <code>topathexpr</code>.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_loading_a_module">Loading a module</h3>
+<div class="paragraph">
+<p>Reference the <code>.jq</code> file in the <code>$extends</code> or <code>$includes</code> list of your configuration:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-json" data-lang="json">{
+  "$extends": ["greet.jq"],
+  "greeting": "eval:string:greet::hello_world"
+}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The file is resolved using the standard search path (current directory first, then <code>JF_PATH</code>).
+See the <a href="../reference/syntax-reference.html">Syntax Reference — Search Paths</a> section for details.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_calling_a_function">Calling a function</h3>
+<div class="paragraph">
+<p>Inside an <code>eval:</code> expression, call a custom function using <strong>module-qualified syntax</strong>:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>modulename::functionname</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The module name is the filename without the <code>.jq</code> extension.
+For example, <code>greet.jq</code> becomes the module <code>greet</code>, and <code>utils.jq</code> becomes <code>utils</code>.</p>
+</div>
+<div class="listingblock">
+<div class="title"><code>input.json</code> — parameterless call</div>
+<div class="content">
+<pre class="highlight"><code class="language-json" data-lang="json">{
+  "$extends": ["greet.jq"],
+  "greeting": "eval:string:greet::hello_world"
+}</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title"><code>input.json</code> — parameterized call</div>
+<div class="content">
+<pre class="highlight"><code class="language-json" data-lang="json">{
+  "$extends": ["utils.jq"],
+  "apiUrl": "eval:string:utils::url_of(\"api\")"
+}</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_using_jq_builtins_inside_functions">Using jq&#43;&#43; builtins inside functions</h3>
+<div class="paragraph">
+<p>Custom functions can call any jq&#43;&#43; builtin.
+A function wrapping <code>parent</code> to return a path expression:</p>
+</div>
+<div class="listingblock">
+<div class="title"><code>nav.jq</code></div>
+<div class="content">
+<pre class="highlight"><code class="language-jq" data-lang="jq">def current_path:
+  parent;</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title"><code>input.json</code></div>
+<div class="content">
+<pre class="highlight"><code class="language-json" data-lang="json">{
+  "$extends": ["nav.jq"],
+  "info": {
+    "nested": {
+      "path": "eval:string:nav::current_path | topathexpr(.)"
+    }
+  }
+}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The expression evaluates to the jq path of the <code>nested</code> object (e.g., <code>.info.nested</code>).</p>
+</div>
 </div>
 </div>
 </div>
