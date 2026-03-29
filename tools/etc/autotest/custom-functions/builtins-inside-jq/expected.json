@@ -1,0 +1,8 @@
+{
+  "ports": {
+    "api": 8080
+  },
+  "resolvedPort": 8080,
+  "resolvedTag": "tag-value",
+  "thetag": "tag-value"
+}
