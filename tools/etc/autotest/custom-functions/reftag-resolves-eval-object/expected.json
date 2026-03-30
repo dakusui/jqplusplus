@@ -1,0 +1,10 @@
+{
+  "_svc": "reviews",
+  "backendRef": {
+    "name": "reviews-v1",
+    "port": 9080
+  },
+  "metadata": {
+    "name": "reviews"
+  }
+}
