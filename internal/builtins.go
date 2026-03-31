@@ -3,6 +3,7 @@ package internal
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 )
 
 // CreateToPathArrayFunc returns a builtin function descriptor for "topatharray".
@@ -96,7 +97,7 @@ func CreateRefFunc(self any, currentPath []any, expression string, invocationSpe
 			return fmt.Errorf("expression: %s at %v; ret(%v); %v must be an array", expression, currentPath, args, pathArg)
 		}
 
-		return resolveRef(self, path, currentPath, invocationSpec, expression, baseDir, searchPaths, visited)
+		return resolveRef(self, path, currentPath, invocationSpec, expression, baseDir, searchPaths, visited, false)
 	}
 }
 
@@ -116,7 +117,7 @@ func CreateRefExprFunc(self any, currentPath []any, expression string, invocatio
 			return err
 		}
 
-		return resolveRef(self, path, currentPath, invocationSpec, expression, "", nil, visited)
+		return resolveRef(self, path, currentPath, invocationSpec, expression, "", nil, visited, false)
 	}
 }
 
@@ -135,7 +136,7 @@ func CreateRefTagFunc(self any, currentPath []any, expression string, invocation
 		for i := pathLength; i >= 0; i-- {
 			p := append(DeepCopy(currentPath[0:i]).([]any), tag)
 
-			ret := resolveRef(self, p, currentPath, invocationSpec, expression, "", nil, visited)
+			ret := resolveRef(self, p, currentPath, invocationSpec, expression, "", nil, visited, true)
 			if _, ok := ret.(error); !ok {
 				return ret
 			}
@@ -172,7 +173,7 @@ func CreateReadFileFunc(self any, currentPath []any, expression string, baseDir 
 // is evaluated as an expression (e.g. a reference). visited is used to detect
 // and reject circular references. Returns the value, or an error if the path
 // is missing, already visited, or evaluation fails.
-func resolveRef(self any, path []any, currentPath []any, invocationSpec InvocationSpec, expression string, baseDir string, searchPaths []string, visited map[string]int) any {
+func resolveRef(self any, path []any, currentPath []any, invocationSpec InvocationSpec, expression string, baseDir string, searchPaths []string, visited map[string]int, resolveComposite bool) any {
 	pathexpr, err := PathArrayToPathExpression(path)
 	if err != nil {
 		panic(err)
@@ -182,7 +183,14 @@ func resolveRef(self any, path []any, currentPath []any, invocationSpec Invocati
 	}
 	visited[pathexpr] = len(visited)
 	if value, ok := GetAtPath(self, path); ok {
-		// Process only if value is a string
+		if resolveComposite {
+			ret, err := resolveReferencedValue(self, value, path, invocationSpec, baseDir, searchPaths, visited, 7)
+			delete(visited, pathexpr)
+			if err != nil {
+				return composeExpressionError(err, expression, currentPath)
+			}
+			return ret
+		}
 		if str, ok := value.(string); ok {
 			ret, err := evaluateString(str, currentPath, self, invocationSpec, baseDir, searchPaths, visited)
 			if err != nil {
@@ -196,6 +204,92 @@ func resolveRef(self any, path []any, currentPath []any, invocationSpec Invocati
 	}
 	delete(visited, pathexpr)
 	return fmt.Errorf("path: %v in expression: %v not found in object: %s", toPathExpression(path), expression, marshal(self))
+}
+
+func resolveReferencedValue(
+	self any,
+	value any,
+	path []any,
+	invocationSpec InvocationSpec,
+	baseDir string,
+	searchPaths []string,
+	visited map[string]int,
+	ttl int,
+) (any, error) {
+	if ttl <= 0 {
+		return nil, fmt.Errorf("value at %v could not be fully resolved", toPathExpression(path))
+	}
+	switch v := value.(type) {
+	case string:
+		resolved, err := evaluateString(v, path, self, invocationSpec, baseDir, searchPaths, visited)
+		if err != nil {
+			return nil, err
+		}
+		switch x := resolved.(type) {
+		case string:
+			if strings.HasPrefix(x, prefixEval) || strings.HasPrefix(x, prefixRaw) {
+				return resolveReferencedValue(self, x, path, invocationSpec, baseDir, searchPaths, visited, ttl-1)
+			}
+			return x, nil
+		case map[string]any, []any:
+			return resolveReferencedValue(self, x, path, invocationSpec, baseDir, searchPaths, visited, ttl-1)
+		default:
+			return x, nil
+		}
+	case map[string]any:
+		ret := make(map[string]any, len(v))
+		for key, child := range v {
+			keys, err := resolveReferencedKeys(key, path, self, invocationSpec)
+			if err != nil {
+				return nil, err
+			}
+			for _, resolvedKey := range keys {
+				childPath := append(append([]any{}, path...), resolvedKey)
+				resolvedChild, err := resolveReferencedValue(self, child, childPath, invocationSpec, baseDir, searchPaths, visited, ttl-1)
+				if err != nil {
+					return nil, err
+				}
+				ret[resolvedKey] = DeepCopyAs(resolvedChild)
+			}
+		}
+		return ret, nil
+	case []any:
+		ret := make([]any, len(v))
+		for i, child := range v {
+			childPath := append(append([]any{}, path...), i)
+			resolvedChild, err := resolveReferencedValue(self, child, childPath, invocationSpec, baseDir, searchPaths, visited, ttl-1)
+			if err != nil {
+				return nil, err
+			}
+			ret[i] = resolvedChild
+		}
+		return ret, nil
+	default:
+		return DeepCopyAs(value), nil
+	}
+}
+
+func resolveReferencedKeys(key string, currentPath []any, self any, invocationSpec InvocationSpec) ([]string, error) {
+	if strings.HasPrefix(key, prefixRaw) {
+		return []string{key[len(prefixRaw):]}, nil
+	}
+	if !strings.HasPrefix(key, prefixEval) {
+		return []string{key}, nil
+	}
+
+	expr, expectedType := extractExpressionAndExpectedType(key[len(prefixEval):])
+	if expectedType != String && expectedType != Array {
+		return nil, fmt.Errorf("key expression must evaluate to string or array at %v", toPathExpression(currentPath))
+	}
+
+	spec := FromSpec(&invocationSpec).
+		AddVariable("$cur", currentPath).
+		Build()
+	resolved, err := EvaluateExpression(self, expr, []JSONType{String, Array}, *spec)
+	if err != nil {
+		return nil, err
+	}
+	return toStringArray(resolved), nil
 }
 
 func marshal(v any) any {

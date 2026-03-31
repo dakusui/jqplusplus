@@ -1,0 +1,8 @@
+{
+  "$extends": ["funcs.jq"],
+  "_svc": "reviews",
+  "metadata": {
+    "name": "eval:string:refexpr(\"._svc\")"
+  },
+  "backendRef": "eval:object:funcs::backendRef(\"v1\"; 9080)"
+}
