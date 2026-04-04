@@ -901,6 +901,136 @@ You keep one source of truth and generate each variant by extending it.</p>
 </div>
 </div>
 <div class="sect2">
+<h3 id="_inheritance_merge_semantics">Inheritance merge semantics</h3>
+<div class="paragraph">
+<p>When jq++ resolves <code>$extends</code> or <code>$includes</code>, it uses <strong>index-wise recursive merge</strong>:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>object values are merged recursively</p>
+</li>
+<li>
+<p>array values are merged by index</p>
+</li>
+<li>
+<p>if both sides have an element at the same index, those elements are merged recursively</p>
+</li>
+<li>
+<p>if only one side has an element at an index, that element is kept</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>This is especially useful when you want to override only part of an array element without rewriting the entire array.</p>
+</div>
+<div class="paragraph">
+<p>For example, suppose a parent defines:</p>
+</div>
+<div class="listingblock">
+<div class="title">parent.json</div>
+<div class="content">
+<pre class="highlight"><code class="language-json" data-lang="json">{
+  "spec": {
+    "http": [
+      {
+        "match": [
+          {
+            "headers": {
+              "end-user": {
+                "exact": "jason"
+              }
+            }
+          }
+        ],
+        "fault": {},
+        "route": [
+          {
+            "destination": "v1"
+          }
+        ]
+      },
+      {
+        "route": [
+          {
+            "destination": "v2"
+          }
+        ]
+      }
+    ]
+  }
+}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>and the child defines:</p>
+</div>
+<div class="listingblock">
+<div class="title">child.json</div>
+<div class="content">
+<pre class="highlight"><code class="language-json" data-lang="json">{
+  "$extends": ["parent.json"],
+  "spec": {
+    "http": [
+      {
+        "fault": {
+          "abort": {
+            "httpStatus": 500
+          }
+        }
+      }
+    ]
+  }
+}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Running <code>jq++ child.json</code> produces:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-json" data-lang="json">{
+  "spec": {
+    "http": [
+      {
+        "match": [
+          {
+            "headers": {
+              "end-user": {
+                "exact": "jason"
+              }
+            }
+          }
+        ],
+        "fault": {
+          "abort": {
+            "httpStatus": 500
+          }
+        },
+        "route": [
+          {
+            "destination": "v1"
+          }
+        ]
+      },
+      {
+        "route": [
+          {
+            "destination": "v2"
+          }
+        ]
+      }
+    ]
+  }
+}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The child’s <code>spec.http[0].fault</code> overrides only that part of the first element.
+The parent’s <code>match</code>, <code>route</code>, and second array element are preserved.</p>
+</div>
+</div>
+<div class="sect2">
 <h3 id="_expression_evaluation">Expression evaluation</h3>
 <div class="paragraph">
 <p>jq++ also supports expression evaluation so you can compute values dynamically using jq expressions in string fields.</p>
