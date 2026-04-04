@@ -1,0 +1,23 @@
+{
+  "spec": {
+    "http": [
+      {
+        "enabled": true,
+        "name": "base",
+        "route": [
+          {
+            "destination": "v1"
+          }
+        ]
+      },
+      {
+        "name": "extra",
+        "route": [
+          {
+            "destination": "v2"
+          }
+        ]
+      }
+    ]
+  }
+}

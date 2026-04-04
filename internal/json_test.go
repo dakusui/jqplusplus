@@ -113,7 +113,7 @@ func TestMergeObjects(t *testing.T) {
 		}
 	})
 
-	t.Run("deep merge", func(t *testing.T) {
+	t.Run("recursive merge for nested objects", func(t *testing.T) {
 		a := map[string]interface{}{
 			"a": 1,
 			"b": map[string]interface{}{"x": 10, "y": 20},
@@ -126,6 +126,100 @@ func TestMergeObjects(t *testing.T) {
 			"a": 1,
 			"b": map[string]interface{}{"x": 10, "y": 200, "z": 300},
 			"c": 3,
+		}
+		result := MergeObjects(a, b, MergePolicyDefault)
+		if !reflect.DeepEqual(result, expected) {
+			t.Errorf("expected %v, got %v", expected, result)
+		}
+	})
+
+	t.Run("array elements are merged by index", func(t *testing.T) {
+		a := map[string]interface{}{
+			"http": []any{
+				map[string]any{
+					"match": []any{
+						map[string]any{
+							"headers": map[string]any{
+								"end-user": map[string]any{
+									"exact": "jason",
+								},
+							},
+						},
+					},
+					"fault": map[string]any{},
+					"route": []any{
+						map[string]any{"destination": "v1"},
+					},
+				},
+				map[string]any{
+					"route": []any{
+						map[string]any{"destination": "v2"},
+					},
+				},
+			},
+		}
+		b := map[string]interface{}{
+			"http": []any{
+				map[string]any{
+					"fault": map[string]any{
+						"abort": map[string]any{
+							"httpStatus": 500,
+						},
+					},
+				},
+			},
+		}
+		expected := map[string]interface{}{
+			"http": []any{
+				map[string]any{
+					"match": []any{
+						map[string]any{
+							"headers": map[string]any{
+								"end-user": map[string]any{
+									"exact": "jason",
+								},
+							},
+						},
+					},
+					"fault": map[string]any{
+						"abort": map[string]any{
+							"httpStatus": 500,
+						},
+					},
+					"route": []any{
+						map[string]any{"destination": "v1"},
+					},
+				},
+				map[string]any{
+					"route": []any{
+						map[string]any{"destination": "v2"},
+					},
+				},
+			},
+		}
+		result := MergeObjects(a, b, MergePolicyDefault)
+		if !reflect.DeepEqual(result, expected) {
+			t.Errorf("expected %v, got %v", expected, result)
+		}
+	})
+
+	t.Run("child-only array elements are appended", func(t *testing.T) {
+		a := map[string]interface{}{
+			"http": []any{
+				map[string]any{"name": "base"},
+			},
+		}
+		b := map[string]interface{}{
+			"http": []any{
+				map[string]any{"enabled": true},
+				map[string]any{"name": "extra"},
+			},
+		}
+		expected := map[string]interface{}{
+			"http": []any{
+				map[string]any{"name": "base", "enabled": true},
+				map[string]any{"name": "extra"},
+			},
 		}
 		result := MergeObjects(a, b, MergePolicyDefault)
 		if !reflect.DeepEqual(result, expected) {
