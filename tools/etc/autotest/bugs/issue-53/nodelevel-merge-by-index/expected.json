@@ -1,0 +1,34 @@
+{
+  "spec": {
+    "http": [
+      {
+        "match": [
+          {
+            "headers": {
+              "end-user": {
+                "exact": "jason"
+              }
+            }
+          }
+        ],
+        "fault": {
+          "delay": {
+            "fixedDelay": "7s"
+          }
+        },
+        "route": [
+          {
+            "destination": "v1"
+          }
+        ]
+      },
+      {
+        "route": [
+          {
+            "destination": "v2"
+          }
+        ]
+      }
+    ]
+  }
+}

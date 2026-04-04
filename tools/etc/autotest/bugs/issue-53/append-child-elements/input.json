@@ -1,0 +1,20 @@
+{
+  "$extends": [
+    "parent.json"
+  ],
+  "spec": {
+    "http": [
+      {
+        "enabled": true
+      },
+      {
+        "name": "extra",
+        "route": [
+          {
+            "destination": "v2"
+          }
+        ]
+      }
+    ]
+  }
+}

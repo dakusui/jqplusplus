@@ -1,0 +1,34 @@
+{
+  "spec": {
+    "http": [
+      {
+        "match": [
+          {
+            "headers": {
+              "end-user": {
+                "exact": "jason"
+              }
+            }
+          }
+        ],
+        "fault": {
+          "abort": {
+            "httpStatus": 500
+          }
+        },
+        "route": [
+          {
+            "destination": "v1"
+          }
+        ]
+      },
+      {
+        "route": [
+          {
+            "destination": "v2"
+          }
+        ]
+      }
+    ]
+  }
+}

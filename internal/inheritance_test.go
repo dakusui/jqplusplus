@@ -317,6 +317,249 @@ func TestLoadAndResolveInheritances_NestedExtends(t *testing.T) {
 	}
 }
 
+func TestLoadAndResolveInheritances_IndexWiseRecursiveMergeAtFileLevel(t *testing.T) {
+	dir := t.TempDir()
+	_ = testutil.WriteTempJSON(t, dir, "parent.json", `{
+  "spec": {
+    "http": [
+      {
+        "match": [
+          {
+            "headers": {
+              "end-user": {
+                "exact": "jason"
+              }
+            }
+          }
+        ],
+        "fault": {},
+        "route": [
+          {
+            "destination": "v1"
+          }
+        ]
+      },
+      {
+        "route": [
+          {
+            "destination": "v2"
+          }
+        ]
+      }
+    ]
+  }
+}`)
+	child := testutil.WriteTempJSON(t, dir, "child.json", `{
+  "$extends": ["parent.json"],
+  "spec": {
+    "http": [
+      {
+        "fault": {
+          "abort": {
+            "httpStatus": 500
+          }
+        }
+      }
+    ]
+  }
+}`)
+	result, err := LoadAndResolveInheritances(filepath.Dir(child), filepath.Base(child), []string{})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	expected := map[string]any{
+		"spec": map[string]any{
+			"http": []any{
+				map[string]any{
+					"match": []any{
+						map[string]any{
+							"headers": map[string]any{
+								"end-user": map[string]any{
+									"exact": "jason",
+								},
+							},
+						},
+					},
+					"fault": map[string]any{
+						"abort": map[string]any{
+							"httpStatus": float64(500),
+						},
+					},
+					"route": []any{
+						map[string]any{
+							"destination": "v1",
+						},
+					},
+				},
+				map[string]any{
+					"route": []any{
+						map[string]any{
+							"destination": "v2",
+						},
+					},
+				},
+			},
+		},
+	}
+	if !reflect.DeepEqual(result.Obj, expected) {
+		t.Errorf("expected %v, got %v", expected, result.Obj)
+	}
+}
+
+func TestLoadAndResolveInheritances_IndexWiseRecursiveMergeAtNodeLevel(t *testing.T) {
+	dir := t.TempDir()
+	_ = testutil.WriteTempJSON(t, dir, "parent.json", `{
+  "http": [
+    {
+      "match": [
+        {
+          "headers": {
+            "end-user": {
+              "exact": "jason"
+            }
+          }
+        }
+      ],
+      "fault": {},
+      "route": [
+        {
+          "destination": "v1"
+        }
+      ]
+    },
+    {
+      "route": [
+        {
+          "destination": "v2"
+        }
+      ]
+    }
+  ]
+}`)
+	child := testutil.WriteTempJSON(t, dir, "child.json", `{
+  "spec": {
+    "$extends": ["parent.json"],
+    "http": [
+      {
+        "fault": {
+          "delay": {
+            "fixedDelay": "7s"
+          }
+        }
+      }
+    ]
+  }
+}`)
+	result, err := LoadAndResolveInheritances(filepath.Dir(child), filepath.Base(child), []string{})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	expected := map[string]any{
+		"spec": map[string]any{
+			"http": []any{
+				map[string]any{
+					"match": []any{
+						map[string]any{
+							"headers": map[string]any{
+								"end-user": map[string]any{
+									"exact": "jason",
+								},
+							},
+						},
+					},
+					"fault": map[string]any{
+						"delay": map[string]any{
+							"fixedDelay": "7s",
+						},
+					},
+					"route": []any{
+						map[string]any{
+							"destination": "v1",
+						},
+					},
+				},
+				map[string]any{
+					"route": []any{
+						map[string]any{
+							"destination": "v2",
+						},
+					},
+				},
+			},
+		},
+	}
+	if !reflect.DeepEqual(result.Obj, expected) {
+		t.Errorf("expected %v, got %v", expected, result.Obj)
+	}
+}
+
+func TestLoadAndResolveInheritances_IndexWiseRecursiveMergeWithNestedArrays(t *testing.T) {
+	dir := t.TempDir()
+	_ = testutil.WriteTempJSON(t, dir, "parent.json", `{
+  "matrix": [
+    [
+      {
+        "x": 1,
+        "y": 2
+      }
+    ],
+    [
+      {
+        "z": 3
+      }
+    ]
+  ]
+}`)
+	child := testutil.WriteTempJSON(t, dir, "child.json", `{
+  "$extends": ["parent.json"],
+  "matrix": [
+    [
+      {
+        "y": 20
+      }
+    ],
+    [
+      {
+        "w": 4
+      }
+    ],
+    [
+      {
+        "k": 5
+      }
+    ]
+  ]
+}`)
+	result, err := LoadAndResolveInheritances(filepath.Dir(child), filepath.Base(child), []string{})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	expected := map[string]any{
+		"matrix": []any{
+			[]any{
+				map[string]any{
+					"x": float64(1),
+					"y": float64(20),
+				},
+			},
+			[]any{
+				map[string]any{
+					"z": float64(3),
+					"w": float64(4),
+				},
+			},
+			[]any{
+				map[string]any{
+					"k": float64(5),
+				},
+			},
+		},
+	}
+	if !reflect.DeepEqual(result.Obj, expected) {
+		t.Errorf("expected %v, got %v", expected, result.Obj)
+	}
+}
+
 func TestLoadAndResolveInheritances_CircularExtends(t *testing.T) {
 	dir := t.TempDir()
 	_ = testutil.WriteTempJSON(t, dir, "p1.json", `{"$extends": ["p2.json"]}`)

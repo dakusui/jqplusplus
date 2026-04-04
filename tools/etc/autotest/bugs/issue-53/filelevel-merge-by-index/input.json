@@ -1,0 +1,16 @@
+{
+  "$extends": [
+    "parent.json"
+  ],
+  "spec": {
+    "http": [
+      {
+        "fault": {
+          "abort": {
+            "httpStatus": 500
+          }
+        }
+      }
+    ]
+  }
+}

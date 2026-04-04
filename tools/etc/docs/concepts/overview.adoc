@@ -103,6 +103,118 @@ Then reuse it from other files via `$extends`:
 Run `jq++ foo.json` and you get the expanded “config for foo” from the first table; `jq++ bar.json` gives you the “config for bar”.
 You keep one source of truth and generate each variant by extending it.
 
+=== Inheritance merge semantics
+
+When jq++ resolves `$extends` or `$includes`, it uses *index-wise recursive merge*:
+
+- object values are merged recursively
+- array values are merged by index
+- if both sides have an element at the same index, those elements are merged recursively
+- if only one side has an element at an index, that element is kept
+
+This is especially useful when you want to override only part of an array element without rewriting the entire array.
+
+For example, suppose a parent defines:
+
+[source,json]
+.parent.json
+----
+{
+  "spec": {
+    "http": [
+      {
+        "match": [
+          {
+            "headers": {
+              "end-user": {
+                "exact": "jason"
+              }
+            }
+          }
+        ],
+        "fault": {},
+        "route": [
+          {
+            "destination": "v1"
+          }
+        ]
+      },
+      {
+        "route": [
+          {
+            "destination": "v2"
+          }
+        ]
+      }
+    ]
+  }
+}
+----
+
+and the child defines:
+
+[source,json]
+.child.json
+----
+{
+  "$extends": ["parent.json"],
+  "spec": {
+    "http": [
+      {
+        "fault": {
+          "abort": {
+            "httpStatus": 500
+          }
+        }
+      }
+    ]
+  }
+}
+----
+
+Running `jq++ child.json` produces:
+
+[source,json]
+----
+{
+  "spec": {
+    "http": [
+      {
+        "match": [
+          {
+            "headers": {
+              "end-user": {
+                "exact": "jason"
+              }
+            }
+          }
+        ],
+        "fault": {
+          "abort": {
+            "httpStatus": 500
+          }
+        },
+        "route": [
+          {
+            "destination": "v1"
+          }
+        ]
+      },
+      {
+        "route": [
+          {
+            "destination": "v2"
+          }
+        ]
+      }
+    ]
+  }
+}
+----
+
+The child's `spec.http[0].fault` overrides only that part of the first element.
+The parent's `match`, `route`, and second array element are preserved.
+
 === Expression evaluation
 
 jq++ also supports expression evaluation so you can compute values dynamically using jq expressions in string fields.

@@ -1,0 +1,14 @@
+{
+  "spec": {
+    "http": [
+      {
+        "name": "base",
+        "route": [
+          {
+            "destination": "v1"
+          }
+        ]
+      }
+    ]
+  }
+}

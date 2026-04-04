@@ -193,19 +193,47 @@ func mergeObjects(parent, child map[string]any) map[string]any {
 	return MergeObjects(parent, child, MergePolicyDefault)
 }
 
+// MergeObjects recursively merges object values and merges array values by index.
 func MergeObjects(a, b map[string]interface{}, policy MergePolicy) map[string]interface{} {
 	result := make(map[string]interface{})
 	for k, v := range a {
 		result[k] = v
 	}
 	for k, v := range b {
-		if av, ok := result[k].(map[string]interface{}); ok {
-			if bv, ok := v.(map[string]interface{}); ok {
-				result[k] = MergeObjects(av, bv, policy)
-				continue
-			}
+		result[k] = mergeValues(result[k], v, policy)
+	}
+	return result
+}
+
+func mergeValues(a, b any, policy MergePolicy) any {
+	if av, ok := a.(map[string]interface{}); ok {
+		if bv, ok := b.(map[string]interface{}); ok {
+			return MergeObjects(av, bv, policy)
 		}
-		result[k] = v
+	}
+	if av, ok := a.([]any); ok {
+		if bv, ok := b.([]any); ok {
+			return mergeArrays(av, bv, policy)
+		}
+	}
+	return b
+}
+
+func mergeArrays(a, b []any, policy MergePolicy) []any {
+	maxLen := len(a)
+	if len(b) > maxLen {
+		maxLen = len(b)
+	}
+	result := make([]any, 0, maxLen)
+	for i := 0; i < maxLen; i++ {
+		switch {
+		case i < len(a) && i < len(b):
+			result = append(result, mergeValues(a[i], b[i], policy))
+		case i < len(a):
+			result = append(result, a[i])
+		default:
+			result = append(result, b[i])
+		}
 	}
 	return result
 }
