@@ -149,6 +149,16 @@ func toStringArray(v any) []string {
 		return []string{v.(string)}
 	case []string:
 		return v.([]string)
+	case []any:
+		ret := make([]string, len(x))
+		for i, each := range x {
+			s, ok := each.(string)
+			if !ok {
+				panic(fmt.Sprintf("Unexpected element type: %T (%v)", each, each))
+			}
+			ret[i] = s
+		}
+		return ret
 	default:
 		panic(fmt.Sprintf("Unexpected type: %v (%v)", x, v))
 	}

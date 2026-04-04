@@ -1,0 +1,132 @@
+== Custom Functions
+
+Custom functions let you define reusable jq logic and call it from `eval:` expressions anywhere in your configuration.
+Functions are written in plain jq `def` syntax and placed in a `.jq` file.
+That file is then loaded as a *jq module* via `$extends` or `$includes`.
+
+For the full syntax of `$extends` and `$includes` see the link:../reference/syntax-reference.html[Syntax Reference].
+For available builtin variables and functions see the link:../reference/builtins.html[Builtins] page.
+
+=== Defining a module
+
+Create a file with a `.jq` extension.
+Each function is declared with the standard jq `def` keyword.
+
+A *parameterless* function:
+
+[source,jq]
+.`greet.jq`
+----
+def hello_world:
+  "Hello, world!";
+----
+
+A *parameterized* function (jq uses `;` to separate parameters):
+
+[source,jq]
+.`utils.jq`
+----
+def port_of($service):
+  refexpr(".ports.\($service)");
+
+def url_of($service):
+  refexpr(".urls.\($service)");
+----
+
+Functions in a `.jq` module have full access to jq{plus}{plus} builtins such as `ref`, `refexpr`, `reftag`, `parent`, and `topathexpr`.
+They do not run in a restricted "plain jq only" context, so they can resolve dynamic values directly instead of forcing every such value through explicit parameters.
+
+=== Loading a module
+
+Reference the `.jq` file in the `$extends` or `$includes` list of your configuration:
+
+[source,json]
+----
+{
+  "$extends": ["greet.jq"],
+  "greeting": "eval:string:greet::hello_world"
+}
+----
+
+The file is resolved using the standard search path (current directory first, then `JF_PATH`).
+See the link:../reference/syntax-reference.html[Syntax Reference — Search Paths] section for details.
+
+=== Calling a function
+
+Inside an `eval:` expression, call a custom function using *module-qualified syntax*:
+
+----
+modulename::functionname
+----
+
+The module name is the filename without the `.jq` extension.
+For example, `greet.jq` becomes the module `greet`, and `utils.jq` becomes `utils`.
+
+[source,json]
+.`input.json` — parameterless call
+----
+{
+  "$extends": ["greet.jq"],
+  "greeting": "eval:string:greet::hello_world"
+}
+----
+
+[source,json]
+.`input.json` — parameterized call
+----
+{
+  "$extends": ["utils.jq"],
+  "apiUrl": "eval:string:utils::url_of(\"api\")"
+}
+----
+
+=== Using jq{plus}{plus} builtins inside functions
+
+Custom functions can call any jq{plus}{plus} builtin.
+A function wrapping `parent` to return a path expression:
+
+[source,jq]
+.`nav.jq`
+----
+def current_path:
+  parent;
+----
+
+[source,json]
+.`input.json`
+----
+{
+  "$extends": ["nav.jq"],
+  "info": {
+    "nested": {
+      "path": "eval:string:nav::current_path | topathexpr(.)"
+    }
+  }
+}
+----
+
+The expression evaluates to the jq path of the `nested` object (e.g., `.info.nested`).
+
+A function can also resolve values from the surrounding jq{plus}{plus} document directly:
+
+[source,jq]
+.`funcs.jq`
+----
+def port_of($service):
+  refexpr(".ports.\($service)");
+
+def tag_value:
+  reftag("thetag");
+----
+
+[source,json]
+.`input.json`
+----
+{
+  "$extends": ["funcs.jq"],
+  "thetag": "tag-value",
+  "ports": { "api": 8080 },
+  "resolvedPort": "eval:number:funcs::port_of(\"api\")",
+  "resolvedTag": "eval:string:funcs::tag_value"
+}
+----

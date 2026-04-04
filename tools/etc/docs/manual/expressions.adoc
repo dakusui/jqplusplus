@@ -1,0 +1,8 @@
+== Expression Evaluation
+
+JSON++ string values and keys that begin with `eval:` are evaluated as jq expressions.
+The result replaces the original string in the output.
+
+For precise definitions see the link:../concepts/terminology.html[Terminology] page.
+For the full syntax and type annotations see the link:../reference/syntax-reference.html[Syntax Reference].
+For available builtin variables and functions see the link:../reference/builtins.html[Builtins] page.

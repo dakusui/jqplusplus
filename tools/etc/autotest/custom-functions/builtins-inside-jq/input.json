@@ -1,0 +1,9 @@
+{
+  "$extends": ["funcs.jq"],
+  "thetag": "tag-value",
+  "ports": {
+    "api": 8080
+  },
+  "resolvedPort": "eval:number:funcs::port_of(\"api\")",
+  "resolvedTag": "eval:string:funcs::tag_value"
+}

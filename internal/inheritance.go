@@ -38,9 +38,14 @@ func LoadAndResolveInheritancesRecursively(baseDir string, targetFile string, no
 	if err != nil {
 		return nil, composeFileNotFoundError(targetFile)
 	}
+
+	// From this point on, inheritance resolution must be anchored at the
+	// actual resolved file location, not the caller's baseDir.
+	resolvedBaseDir := filepath.Dir(absPath)
+
 	if nodepool.IsVisited(absPath) {
 		visitedFiles := append(nodepool.VisitedFiles(absPath), absPath)
-		circulatingFiles := formatCirculatingFileLoop(visitedFiles, baseDir)
+		circulatingFiles := formatCirculatingFileLoop(visitedFiles, resolvedBaseDir)
 		return nil, fmt.Errorf("circular inheritance detected: [%s]", circulatingFiles)
 	}
 	nodepool.MarkVisited(absPath)
@@ -70,7 +75,7 @@ func LoadAndResolveInheritancesRecursively(baseDir string, targetFile string, no
 	{
 		// File-level inheritance
 		slog.Debug("BEGIN: File-level inheritance: ", "targetFile", targetFile)
-		nodeEntryValue, err = expandFileLevelInheritances(obj, compilerOptions(compilerOption), nodepool, baseDir)
+		nodeEntryValue, err = expandFileLevelInheritances(obj, compilerOptions(compilerOption), nodepool, resolvedBaseDir)
 		if err != nil {
 			return nil, composeInheritanceResolutionErr(err, "file")
 		}
@@ -78,7 +83,7 @@ func LoadAndResolveInheritancesRecursively(baseDir string, targetFile string, no
 	}
 	{
 		// Node-level inheritance
-		nodeEntryValue, err = expandNodeLevelInheritances(nodeEntryValue.Obj, nodeEntryValue.CompilerOptions, nodepool, baseDir)
+		nodeEntryValue, err = expandNodeLevelInheritances(nodeEntryValue.Obj, nodeEntryValue.CompilerOptions, nodepool, resolvedBaseDir)
 		if err != nil {
 			return nil, composeInheritanceResolutionErr(err, "node")
 		}
@@ -236,7 +241,7 @@ func ReadFileAsJSONObject(path string) (map[string]any, *JqModule, error) {
 func ReadFileAsJSONElement(path string) (any, *JqModule, error) {
 	ft, ok := detectFileType(path)
 	if !ok {
-		return nil, nil, fmt.Errorf("unsupported file type: %q (%s)", filepath.Ext(path), path)
+		return nil, nil, fmt.Errorf("unsupported file type: %q (%s); supported extensions are: %s", filepath.Ext(path), path, SupportedExtensions)
 	}
 
 	switch ft {

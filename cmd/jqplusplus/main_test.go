@@ -57,6 +57,43 @@ func TestLoadAndResolveInheritances_TagRef(t *testing.T) {
 	}
 }
 
+func TestLoadAndResolveInheritances_ReftagInsideModuleResolvesNestedEvalStrings(t *testing.T) {
+	dir := t.TempDir()
+	_ = testutil.WriteTempJSON(t, dir, "funcs.jq",
+		`def backendRef($version; $port):
+  {"name": reftag("metadata").name + "-" + $version, "port": $port};
+`)
+	child := testutil.WriteTempJSON(t, dir, "child.json",
+		`{
+  "$extends": ["funcs.jq"],
+  "_svc": "reviews",
+  "metadata": {
+    "name": "eval:string:refexpr(\"._svc\")"
+  },
+  "backendRef": "eval:object:funcs::backendRef(\"v1\"; 9080)"
+}`)
+	result, err := processNodeEntryKey((internal.NewNodeEntryKey(filepath.Dir(child), filepath.Base(child))))
+
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	expected, _ := json.MarshalIndent(
+		map[string]any{
+			"_svc": "reviews",
+			"metadata": map[string]any{
+				"name": "reviews",
+			},
+			"backendRef": map[string]any{
+				"name": "reviews-v1",
+				"port": 9080,
+			},
+		},
+		"", "  ")
+	if !reflect.DeepEqual(result, string(expected)) {
+		t.Errorf("expected %v, got %v", string(expected), result)
+	}
+}
+
 func TestLoadAndResolveInheritances_RefToStringFromInsideArray(t *testing.T) {
 	dir := t.TempDir()
 	child := testutil.WriteTempJSON(t, dir, "child.json",

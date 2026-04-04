@@ -1,0 +1,4 @@
+{
+  "$extends": ["libdir/helper_message.jq"],
+  "value": "eval:string:helper_message::helper_message"
+}
