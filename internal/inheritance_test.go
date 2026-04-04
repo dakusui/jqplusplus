@@ -493,6 +493,73 @@ func TestLoadAndResolveInheritances_IndexWiseRecursiveMergeAtNodeLevel(t *testin
 	}
 }
 
+func TestLoadAndResolveInheritances_IndexWiseRecursiveMergeWithNestedArrays(t *testing.T) {
+	dir := t.TempDir()
+	_ = testutil.WriteTempJSON(t, dir, "parent.json", `{
+  "matrix": [
+    [
+      {
+        "x": 1,
+        "y": 2
+      }
+    ],
+    [
+      {
+        "z": 3
+      }
+    ]
+  ]
+}`)
+	child := testutil.WriteTempJSON(t, dir, "child.json", `{
+  "$extends": ["parent.json"],
+  "matrix": [
+    [
+      {
+        "y": 20
+      }
+    ],
+    [
+      {
+        "w": 4
+      }
+    ],
+    [
+      {
+        "k": 5
+      }
+    ]
+  ]
+}`)
+	result, err := LoadAndResolveInheritances(filepath.Dir(child), filepath.Base(child), []string{})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	expected := map[string]any{
+		"matrix": []any{
+			[]any{
+				map[string]any{
+					"x": float64(1),
+					"y": float64(20),
+				},
+			},
+			[]any{
+				map[string]any{
+					"z": float64(3),
+					"w": float64(4),
+				},
+			},
+			[]any{
+				map[string]any{
+					"k": float64(5),
+				},
+			},
+		},
+	}
+	if !reflect.DeepEqual(result.Obj, expected) {
+		t.Errorf("expected %v, got %v", expected, result.Obj)
+	}
+}
+
 func TestLoadAndResolveInheritances_CircularExtends(t *testing.T) {
 	dir := t.TempDir()
 	_ = testutil.WriteTempJSON(t, dir, "p1.json", `{"$extends": ["p2.json"]}`)

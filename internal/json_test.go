@@ -227,6 +227,49 @@ func TestMergeObjects(t *testing.T) {
 		}
 	})
 
+	t.Run("nested arrays inside array elements are merged recursively by index", func(t *testing.T) {
+		a := map[string]interface{}{
+			"matrix": []any{
+				[]any{
+					map[string]any{"x": 1, "y": 2},
+				},
+				[]any{
+					map[string]any{"z": 3},
+				},
+			},
+		}
+		b := map[string]interface{}{
+			"matrix": []any{
+				[]any{
+					map[string]any{"y": 20},
+				},
+				[]any{
+					map[string]any{"w": 4},
+				},
+				[]any{
+					map[string]any{"k": 5},
+				},
+			},
+		}
+		expected := map[string]interface{}{
+			"matrix": []any{
+				[]any{
+					map[string]any{"x": 1, "y": 20},
+				},
+				[]any{
+					map[string]any{"z": 3, "w": 4},
+				},
+				[]any{
+					map[string]any{"k": 5},
+				},
+			},
+		}
+		result := MergeObjects(a, b, MergePolicyDefault)
+		if !reflect.DeepEqual(result, expected) {
+			t.Errorf("expected %v, got %v", expected, result)
+		}
+	})
+
 	t.Run("primitive overwrite", func(t *testing.T) {
 		a := map[string]interface{}{"a": 1, "b": 2}
 		b := map[string]interface{}{"b": 100}
