@@ -442,7 +442,6 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 <li><a href="#_jq_json_with_structural_reuse_and_expression_evaluation">jq++: JSON with structural reuse and expression evaluation</a>
 <ul class="sectlevel2">
 <li><a href="#_what_is_it_good_for">What is it good for?</a></li>
-<li><a href="#_inheritance_merge_semantics">Inheritance merge semantics</a></li>
 <li><a href="#_expression_evaluation">Expression evaluation</a></li>
 <li><a href="#_yaml">YAML?</a></li>
 <li><a href="#_hocon">HOCON?</a></li>
@@ -587,136 +586,6 @@ When you need many similar but slightly different configurations, redundancy is 
 <div class="paragraph">
 <p>Run <code>jq foo.json` and you get the expanded “config for foo” from the first table; `jq bar.json</code> gives you the “config for bar”.
 You keep one source of truth and generate each variant by extending it.</p>
-</div>
-</div>
-<div class="sect2">
-<h3 id="_inheritance_merge_semantics">Inheritance merge semantics</h3>
-<div class="paragraph">
-<p>When jq++ resolves <code>$extends</code> or <code>$includes</code>, it uses <strong>index-wise recursive merge</strong>:</p>
-</div>
-<div class="ulist">
-<ul>
-<li>
-<p>object values are merged recursively</p>
-</li>
-<li>
-<p>array values are merged by index</p>
-</li>
-<li>
-<p>if both sides have an element at the same index, those elements are merged recursively</p>
-</li>
-<li>
-<p>if only one side has an element at an index, that element is kept</p>
-</li>
-</ul>
-</div>
-<div class="paragraph">
-<p>This is especially useful when you want to override only part of an array element without rewriting the entire array.</p>
-</div>
-<div class="paragraph">
-<p>For example, suppose a parent defines:</p>
-</div>
-<div class="listingblock">
-<div class="title">parent.json</div>
-<div class="content">
-<pre class="highlight"><code class="language-json" data-lang="json">{
-  "spec": {
-    "http": [
-      {
-        "match": [
-          {
-            "headers": {
-              "end-user": {
-                "exact": "jason"
-              }
-            }
-          }
-        ],
-        "fault": {},
-        "route": [
-          {
-            "destination": "v1"
-          }
-        ]
-      },
-      {
-        "route": [
-          {
-            "destination": "v2"
-          }
-        ]
-      }
-    ]
-  }
-}</code></pre>
-</div>
-</div>
-<div class="paragraph">
-<p>and the child defines:</p>
-</div>
-<div class="listingblock">
-<div class="title">child.json</div>
-<div class="content">
-<pre class="highlight"><code class="language-json" data-lang="json">{
-  "$extends": ["parent.json"],
-  "spec": {
-    "http": [
-      {
-        "fault": {
-          "abort": {
-            "httpStatus": 500
-          }
-        }
-      }
-    ]
-  }
-}</code></pre>
-</div>
-</div>
-<div class="paragraph">
-<p>Running <code>jq++ child.json</code> produces:</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="highlight"><code class="language-json" data-lang="json">{
-  "spec": {
-    "http": [
-      {
-        "match": [
-          {
-            "headers": {
-              "end-user": {
-                "exact": "jason"
-              }
-            }
-          }
-        ],
-        "fault": {
-          "abort": {
-            "httpStatus": 500
-          }
-        },
-        "route": [
-          {
-            "destination": "v1"
-          }
-        ]
-      },
-      {
-        "route": [
-          {
-            "destination": "v2"
-          }
-        ]
-      }
-    ]
-  }
-}</code></pre>
-</div>
-</div>
-<div class="paragraph">
-<p>The child&#8217;s <code>spec.http[0].fault</code> overrides only that part of the first element.
-The parent&#8217;s <code>match</code>, <code>route</code>, and second array element are preserved.</p>
 </div>
 </div>
 <div class="sect2">
@@ -892,7 +761,7 @@ If you use jq++ for the “structure and value resolution” step and keep JSON 
 </div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2026-04-04 13:28:40 UTC
+Last updated 2026-04-05 22:16:19 UTC
 </div>
 </div>
 </body>
