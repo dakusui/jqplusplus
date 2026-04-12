@@ -42,7 +42,7 @@ If both `$extends` and `$includes` are present, `$includes` wins over the combin
 |Defines reusable named objects inside the current file.
 Each local node is materialized into a temporary session-local file and can then be referenced by bare name from `$extends` or `$includes`.
 |`$local` is removed from the final output.
-Scope is limited to the object tree rooted at the file that defined it.
+Local nodes are visible within the composed subtree of the defining file.
 
 |`"eval:<jq-expr>"` and `"eval:<type>:<jq-expr>"`
 |Expression evaluation
