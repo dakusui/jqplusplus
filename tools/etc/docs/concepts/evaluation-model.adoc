@@ -1,11 +1,11 @@
-== jq++ Design
+== jq{plus}{plus} Design
 
-This page describes the internal architecture of `jq++`, the tool that evaluates JSON++ configurations.
-For the design principles behind JSON++, see the link:design-principles.html[Design Principles] page.
+This page describes the internal architecture of `jq{plus}{plus}`, the tool that evaluates JSON{plus}{plus} configurations.
+For the design principles behind JSON{plus}{plus}, see the link:design-principles.html[Design Principles] page.
 
 === Evaluation Pipeline
 
-`jq++` transforms a JSON++ configuration file into plain JSON through a deterministic sequence of stages.
+`jq{plus}{plus}` transforms a JSON{plus}{plus} configuration file into plain JSON through a deterministic sequence of stages.
 Each stage reads from the result of the previous one; no stage revisits earlier work.
 
 [ditaa]
@@ -87,7 +87,7 @@ YAML, TOML, JSON5, and HOCON files are decoded by their respective parsers and t
 The module name is the base filename without the extension.
 Any `eval:` expression in a file that includes such a `.jq` file via `$extends` or `$includes` can call functions defined in that module.
 
-Files with no extension or with `.json++`, `.yaml++`, `.toml++`, `.json5++`, `.conf++`, or `.hocon++` are treated the same as their base format.
+Files with no extension or with `.json{plus}{plus}`, `.yaml{plus}{plus}`, `.toml{plus}{plus}`, `.json5{plus}{plus}`, `.conf{plus}{plus}`, or `.hocon{plus}{plus}` are treated the same as their base format.
 
 ==== Stage 2 — File-level inheritance
 
@@ -96,8 +96,8 @@ Both directives are handled by the same underlying merge engine; the difference 
 
 *Resolving parents*
 
-For each filename listed in `$extends` or `$includes`, `jq++` resolves the file against the search path (current file's directory → local node search paths → `JF_PATH`), then recursively applies the full pipeline (stages 1–4) to that parent file.
-The result is cached in a _node pool_ so that each file is evaluated at most once per `jq++` invocation, even when it is referenced from multiple places.
+For each filename listed in `$extends` or `$includes`, `jq{plus}{plus}` resolves the file against the search path (current file's directory → local node search paths → `JF_PATH`), then recursively applies the full pipeline (stages 1–4) to that parent file.
+The result is cached in a _node pool_ so that each file is evaluated at most once per `jq{plus}{plus}` invocation, even when it is referenced from multiple places.
 
 Circular inheritance chains are detected by tracking visited absolute paths.
 If a file that is already being resolved appears again in the chain, an error is reported immediately.
@@ -119,7 +119,7 @@ In other words, `$includes` fragments override everything that `$extends` and th
 
 ==== Stage 3 — Materialize local nodes
 
-Objects defined under the `$local` key are extracted and written as individual files in a temporary _session directory_ that is created fresh for each top-level `jq++` invocation.
+Objects defined under the `$local` key are extracted and written as individual files in a temporary _session directory_ that is created fresh for each top-level `jq{plus}{plus}` invocation.
 Each local node name becomes its own file (e.g. `BaseThing` becomes a file `BaseThing` with no extension, treated as JSON).
 
 The session directory is placed on the front of the search path for the duration of processing.
@@ -155,7 +155,7 @@ All string values in the object that start with `eval:` or `raw:` are evaluated.
 
 - A `raw:` value has its prefix stripped; the remaining string is the final value.
 - An `eval:` value is compiled and executed as a jq expression against the current full object as input.
-  The expression has access to the builtin variables `$cur` and `$curexpr`, and to the JSON++ builtin functions (`ref`, `refexpr`, `reftag`, `parent`, `parentof`, `topatharray`, `topathexpr`, `readfile`).
+  The expression has access to the builtin variables `$cur` and `$curexpr`, and to the JSON{plus}{plus} builtin functions (`ref`, `refexpr`, `reftag`, `parent`, `parentof`, `topatharray`, `topathexpr`, `readfile`).
 
 An `eval:` result may itself be a string starting with `eval:` (for example, when a value is resolved via `ref` and the referenced value is also an expression).
 The stage therefore loops, decrementing its own time-to-live counter (starting at 7) on each pass, re-evaluating until no `eval:` strings remain.
@@ -166,13 +166,13 @@ Circular references within expressions—where evaluating value A leads back to 
 
 The fully resolved `map[string]any` object is serialised to JSON with two-space indentation and written to standard output.
 When multiple input files are provided on the command line, each is processed independently and its output is written in order.
-When no file arguments are given, `jq++` reads from standard input, writing the input to a temporary file first (since the inheritance resolution needs a filesystem path to anchor relative file references).
+When no file arguments are given, `jq{plus}{plus}` reads from standard input, writing the input to a temporary file first (since the inheritance resolution needs a filesystem path to anchor relative file references).
 
 ---
 
 === Node Pool and Caching
 
-The node pool is the shared state that persists across all recursive inheritance resolutions within a single `jq++` invocation.
+The node pool is the shared state that persists across all recursive inheritance resolutions within a single `jq{plus}{plus}` invocation.
 Its two main responsibilities are:
 
 *Caching.*
