@@ -1,4 +1,4 @@
-== JSON++ Syntax Reference
+== JSON{plus}{plus} Syntax Reference
 
 JSON{plus}{plus} is a lightweight extension of JSON that adds three mechanisms to standard JSON:
 
@@ -12,10 +12,81 @@ Structural composition and expression evaluation together form *structural reuse
 All JSON{plus}{plus} documents are valid JSON, so existing JSON tooling continues to work on JSON{plus}{plus} files.
 The `jq{plus}{plus}` tool evaluates a JSON{plus}{plus} file and emits ordinary JSON.
 
-=== Special Keys
+=== Semantic Summary
 
-JSON++ uses a small set of reserved keys—all prefixed with `$`—to express structural relationships.
-These keys are consumed during evaluation and do not appear in the output.
+[cols="1,2,3,2", options="header"]
+|===
+|Construct
+|Role
+|Behavior
+|Constraints / Notes
+
+|`$extends: [f1, f2, ...]`
+|Inheritance
+|Derives the current object from one or more parent definitions.
+Parents are resolved recursively, merged in listed order, and then overridden by the current object's own fields.
+|Earlier parents take precedence over later ones.
+Priority is: current object -> first parent -> ... -> last parent.
+Circular resolution is rejected.
+
+|`$includes: [f1, f2, ...]`
+|Inclusion
+|Applies external fragments on top of the current object after `$extends` has been resolved.
+This is the opposite precedence direction from `$extends`.
+|Later included fragments take precedence over earlier ones.
+Priority is: last fragment -> ... -> first fragment -> current object.
+If both `$extends` and `$includes` are present, `$includes` wins over the combined result.
+
+|`$local`
+|Local node definitions
+|Defines reusable named objects inside the current file.
+Each local node is materialized into a temporary session-local file and can then be referenced by bare name from `$extends` or `$includes`.
+|`$local` is removed from the final output.
+Scope is limited to the object tree rooted at the file that defined it.
+
+|`"eval:<jq-expr>"` and `"eval:<type>:<jq-expr>"`
+|Expression evaluation
+|A string value starting with `eval:` is compiled as a jq expression and evaluated against the fully composed JSON object.
+The result replaces the original string.
+|Value-side evaluation happens after structural composition and after key-side evaluation.
+Without a type annotation, the result must be a string.
+If the result is another `eval:` string, jq{plus}{plus} re-evaluates it up to a fixed iteration limit.
+
+|`"eval:<jq-expr>"` as a key
+|Computed keys
+|A key starting with `eval:` is evaluated and replaced with the resulting key name.
+If the expression yields an array of strings, one key is emitted per element.
+|Key-side evaluation runs before value-side evaluation.
+When evaluating a key, `$cur` points to the parent object.
+
+|`raw:`
+|Escaping
+|A key or string value starting with `raw:` is passed through unchanged except that the prefix is removed.
+|Guaranteed escape hatch for literal control-like strings and reserved keywords.footnote:[`raw:` is the formal, guaranteed way to preserve values or keys that would otherwise be treated as JSON{plus}{plus} control syntax. In practice, jq{plus}{plus} keeps inheritance-time control keywords in the `$...` namespace, and introducing new reserved prefixes or new keyword families is treated as a major-version compatibility change.]
+
+|Evaluation order
+|Resolution sequencing
+|jq{plus}{plus} first resolves file-level `$extends` / `$includes`, then materializes `$local`, then resolves nested `$extends` / `$includes`, then evaluates keys, and finally evaluates values.
+|This ordering makes precedence deterministic and ensures expressions see the fully composed structure.
+
+|`JF_PATH`
+|File resolution
+|Referenced files are resolved using jq{plus}{plus}'s search path.
+|Resolution order is: current file directory -> active local-node directories -> `JF_PATH` entries.
+`JF_PATH` supplements, rather than replaces, relative resolution.
+
+|Output guarantee
+|JSON output
+|jq{plus}{plus} is a preprocessing step only.
+The result of evaluating JSON{plus}{plus} is always ordinary JSON.
+|Downstream tools consume the output exactly as JSON; JSON{plus}{plus} constructs do not survive evaluation unless explicitly escaped with `raw:`.
+|===
+
+=== Special Keywords
+
+JSON{plus}{plus} uses a small set of reserved keywords to express control semantics during evaluation.
+At present, the inheritance-time keywords are prefixed with `$`.
+These keywords are consumed during evaluation and do not appear in the output unless escaped.
 
 ==== $extends
 
@@ -69,8 +140,8 @@ If the file does not exist, it is silently skipped.
 
 ==== $includes
 
-Declares that the current object includes one or more external fragments as authoritative defaults.
-Unlike `$extends`, where the derived object overrides its parents, `$includes` inverts the relationship: the current object's own fields serve as defaults that the included fragments can override.
+Declares that the current object includes one or more external fragments to be applied on top of it.
+Unlike `$extends`, where the current object overrides its parents, `$includes` gives higher priority to the included fragments than to the including object's own fields.
 
 *Syntax*
 
@@ -116,7 +187,7 @@ Any configuration file can then pull in exactly the behaviour it needs with a si
 }
 ----
 
-Running `JF_PATH=/opt/myapp/lib jq++ service.json` resolves `defaults/runtime.json` and `defaults/logging.json` from the library directory.
+Running `JF_PATH=/opt/myapp/lib jq{plus}{plus} service.json` resolves `defaults/runtime.json` and `defaults/logging.json` from the library directory.
 Switching environments is a matter of changing `JF_PATH`—the configuration files themselves are untouched.
 
 This pattern lets teams publish versioned "standard" fragments that any project can `$includes` without copying content.
@@ -283,11 +354,13 @@ Output:
 }
 ----
 
-*Tip — escaping reserved keys*
+*Tip — escaping reserved keywords*
 
-`raw:` is the only way to produce a literal key (or value) that starts with a JSON++ reserved prefix such as `$extends`, `$includes`, or `$local`.
-Because these strings are consumed by jq++ before output, a bare `"$extends"` key cannot survive into the final JSON.
-Prefix it with `raw:` to pass it through unchanged.
+`raw:` is the formal, guaranteed way to produce a literal key (or value) that would otherwise match a JSON{plus}{plus} control prefix such as `eval:` or a reserved keyword such as `$extends`, `$includes`, or `$local`.
+Because these strings are interpreted by jq{plus}{plus} during evaluation, prefixing with `raw:` is the portability-safe way to ensure they survive unchanged in the final JSON.
+
+In practice, jq{plus}{plus} keeps inheritance-time control keywords in the `$...` namespace, and introducing new reserved prefixes or new keyword families is treated as a major-version compatibility change.
+That policy makes accidental collisions unlikely, but `raw:` remains the documented escape hatch.
 
 [source,json]
 ----
@@ -339,11 +412,11 @@ In standard jq, a _path expression_ (e.g. `.foo.bar[0]`) is a syntactic construc
 It exists only at the language level—as a fragment of source code—and cannot be stored in a variable, passed as an argument, or returned from a function.
 Functions such as `path/1`, `getpath/1`, and `setpath/1` accept _path arrays_ (plain JSON arrays of strings and integers) precisely because path expressions are not first-class data.
 
-JSON++ intentionally departs from this principle.
+JSON{plus}{plus} intentionally departs from this principle.
 `$cur` and `$curexpr` expose the current location as runtime values, and `topatharray`/`topathexpr` let you convert between the two representations freely.
 This is a deliberate usability trade-off: configuration authors need to navigate and reference locations in the document, and string-based path expressions are considerably more readable than raw path arrays when written inside a JSON string.
 
-Treating path expressions as strings is therefore a JSON++-specific convention.
+Treating path expressions as strings is therefore a JSON{plus}{plus}-specific convention.
 It has no meaning to jq itself; the conversion functions bridge the gap when you need to pass a location to a jq built-in such as `getpath` or `setpath`.
 ====
 
@@ -486,7 +559,7 @@ The result is the parsed JSON value (object, array, string, number, boolean, or 
 
 === Supported Input Formats
 
-`jq++` accepts files in any of the following formats.
+`jq{plus}{plus}` accepts files in any of the following formats.
 The format is determined from the file extension.
 
 [cols="1,2"]
@@ -502,11 +575,11 @@ The format is determined from the file extension.
 |===
 
 YAML, TOML, JSON5, and HOCON files are converted to the JSON data model before processing; the same JSON{plus}{plus} directives work in all formats.
-The `{plus}{plus}` suffix variants (`.json++`, `.yaml++`, etc.) are treated identically to their base extensions.
+The `++` suffix variants (`.json++`, `.yaml++`, etc.) are treated identically to their base extensions.
 
 === Search Paths
 
-When resolving filenames in `$extends`, `$includes`, and `readfile()`, `jq++` searches directories in the following order:
+When resolving filenames in `$extends`, `$includes`, and `readfile()`, `jq{plus}{plus}` searches directories in the following order:
 
 1. The directory of the file that contains the reference.
 2. Directories listed in the `JF_PATH` environment variable, separated by `:` (colon).
@@ -515,7 +588,7 @@ This mirrors the behavior of environment variables such as `PATH` or `PYTHONPATH
 
 [source,shell script]
 ----
-$ JF_PATH=/shared/configs:/team/defaults jq++ myconfig.json
+$ JF_PATH=/shared/configs:/team/defaults jq{plus}{plus} myconfig.json
 ----
 
 See the link:../concepts/evaluation-model.html[Design] page for a detailed description of the evaluation pipeline.

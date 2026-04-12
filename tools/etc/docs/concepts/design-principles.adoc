@@ -11,7 +11,7 @@ For any valid JSON document _J_, there exists a JSON{plus}{plus} document _X_ su
 In other words, the evaluation function is surjective onto JSON.
 This property ensures that JSON{plus}{plus} can generate any configuration expected by downstream systems, allowing `jq{plus}{plus}` to be introduced as a pre-processing step without reducing expressiveness.
 
-In practice, this means that adopting JSON{plus}{plus} never forces downstream tools to change their expectations about the resulting configuration structure.footnote:[All JSON{plus}{plus} meta-keywords are escapable.]
+In practice, this means that adopting JSON{plus}{plus} never forces downstream tools to change their expectations about the resulting configuration structure.footnote:[`raw:` is the guaranteed escape mechanism for values or keys that would otherwise be treated as JSON{plus}{plus} control syntax. jq{plus}{plus} also keeps inheritance-time keywords in the `$...` namespace and treats new keyword families as a major-version compatibility change.]
 
 **All JSON{plus}{plus} documents are valid JSON:**
 Moreover, JSON{plus}{plus} documents remain valid JSON, which allows existing parsers and tooling to process them without modification.
@@ -30,4 +30,3 @@ JSON{plus}{plus} introduces explicit constructs for expressing structural reuse.
 
 * *Structural composition* constructs (`$extends`, `$includes`) let configurations combine documents directly, describing relationships in the data structure itself rather than through external tooling.
 * *Expression evaluation* (`eval:`) lets configurations compute values dynamically from the composed result.
-
