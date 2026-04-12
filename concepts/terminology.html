@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="generator" content="Asciidoctor 2.0.26">
-<title>JSON++ Terminology</title>
+<title>JSON&#43;&#43; Terminology</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Open+Sans:300,300italic,400,400italic,600,600italic%7CNoto+Serif:400,400italic,700,700italic%7CDroid+Sans+Mono:400,700">
 <style>
 /*! Asciidoctor default stylesheet | MIT License | https://asciidoctor.org */
@@ -439,14 +439,14 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 <div id="toc" class="toc2">
 <div id="toctitle">Table of Contents</div>
 <ul class="sectlevel1">
-<li><a href="#_json_terminology">JSON++ Terminology</a>
+<li><a href="#_json_terminology">JSON&#43;&#43; Terminology</a>
 <ul class="sectlevel2">
 <li><a href="#_structural_reuse">Structural Reuse</a></li>
 <li><a href="#_structural_composition">Structural Composition</a></li>
 <li><a href="#_inheritance_extends">Inheritance (<code>$extends</code>)</a></li>
-<li><a href="#_inclusion_with_defaults_includes">Inclusion with Defaults (<code>$includes</code>)</a></li>
+<li><a href="#_inclusion_includes">Inclusion (<code>$includes</code>)</a></li>
 <li><a href="#_expression_evaluation_eval">Expression Evaluation (<code>eval:</code>)</a></li>
-<li><a href="#_escaping_meta_keys_raw">Escaping Meta Keys (<code>raw:</code>)</a></li>
+<li><a href="#_escaping_meta_keywords_raw">Escaping Meta Keywords (<code>raw:</code>)</a></li>
 </ul>
 </li>
 </ul>
@@ -454,11 +454,11 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 </div>
 <div id="content">
 <div class="sect1">
-<h2 id="_json_terminology">JSON++ Terminology</h2>
+<h2 id="_json_terminology">JSON&#43;&#43; Terminology</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>This document defines the canonical terms used throughout the JSON documentation.
-When describing JSON behaviour, always prefer these terms over informal alternatives such as <em>templating</em> or <em>rendering</em>.</p>
+<p>This document defines the canonical terms used throughout the JSON&#43;&#43; documentation.
+When describing JSON&#43;&#43; behaviour, always prefer these terms over informal alternatives such as <em>templating</em> or <em>rendering</em>.</p>
 </div>
 <div class="sect2">
 <h3 id="_structural_reuse">Structural Reuse</h3>
@@ -500,7 +500,7 @@ Structural reuse consists of two categories:</p>
 <h3 id="_structural_composition">Structural Composition</h3>
 <div class="paragraph">
 <p><em>Structural composition</em> is the subset of structural reuse that combines configuration documents structurally.
-JSON++ provides two structural-composition constructs: <strong>inheritance</strong> (<code>$extends</code>) and <strong>inclusion with defaults</strong> (<code>$includes</code>).</p>
+JSON&#43;&#43; provides two structural-composition constructs: <strong>inheritance</strong> (<code>$extends</code>) and <strong>inclusion</strong> (<code>$includes</code>).</p>
 </div>
 </div>
 <div class="sect2">
@@ -527,14 +527,14 @@ When multiple parents are listed, earlier entries in the <code>$extends</code> a
 </div>
 </div>
 <div class="sect2">
-<h3 id="_inclusion_with_defaults_includes">Inclusion with Defaults (<code>$includes</code>)</h3>
+<h3 id="_inclusion_includes">Inclusion (<code>$includes</code>)</h3>
 <div class="paragraph">
-<p><strong>Inclusion with defaults</strong> is the mechanism by which an object pulls in one or more external fragments that act as authoritative defaults.
-Unlike inheritance, where the derived object overrides its parents, the included fragments override the including object&#8217;s own fields.</p>
+<p><strong>Inclusion</strong> is the mechanism by which an object pulls in one or more external fragments that are applied on top of the including object.
+Unlike inheritance, where the current object overrides its parents, inclusion gives higher priority to the included fragments.</p>
 </div>
 <div class="paragraph">
-<p><strong>Precedence direction: included fragments override the including object.</strong>
-The including object provides initial values; the included fragments are applied on top, overriding those values.
+<p><strong>Precedence direction: included fragments → including object.</strong>
+The including object provides the starting values; the included fragments are then applied on top, overriding those values.
 When multiple fragments are listed, later entries in the <code>$includes</code> array take precedence over earlier ones.</p>
 </div>
 <div class="listingblock">
@@ -579,10 +579,11 @@ When a key expression evaluates to an array of strings, one key–value pair is 
 </div>
 </div>
 <div class="sect2">
-<h3 id="_escaping_meta_keys_raw">Escaping Meta Keys (<code>raw:</code>)</h3>
+<h3 id="_escaping_meta_keywords_raw">Escaping Meta Keywords (<code>raw:</code>)</h3>
 <div class="paragraph">
 <p><strong>Escaping</strong> is the mechanism by which a string value or key prefixed with <code>raw:</code> is passed through to the output with the prefix stripped, without any evaluation.
-This is necessary when a value or key would otherwise be interpreted as an <code>eval:</code> expression or when a key matches a JSON++ reserved word such as <code>$extends</code>, <code>$includes</code>, or <code>$local</code>.</p>
+This is the guaranteed way to preserve a value or key that would otherwise be interpreted as an <code>eval:</code> expression or as a JSON&#43;&#43; reserved keyword such as <code>$extends</code>, <code>$includes</code>, or <code>$local</code>.
+In practice, jq&#43;&#43; keeps inheritance-time control keywords in the <code>$&#8230;&#8203;</code> namespace and treats new keyword families as a major-version compatibility concern, so accidental collisions should remain rare.</p>
 </div>
 <div class="listingblock">
 <div class="content">
@@ -598,7 +599,7 @@ This is necessary when a value or key would otherwise be interpreted as an <code
 </div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2026-04-05 22:16:19 UTC
+Last updated 2026-04-12 07:20:56 UTC
 </div>
 </div>
 </body>

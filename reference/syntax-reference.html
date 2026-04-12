@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="generator" content="Asciidoctor 2.0.26">
-<title>JSON++ Syntax Reference</title>
+<title>JSON&#43;&#43; Syntax Reference</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Open+Sans:300,300italic,400,400italic,600,600italic%7CNoto+Serif:400,400italic,700,700italic%7CDroid+Sans+Mono:400,700">
 <style>
 /*! Asciidoctor default stylesheet | MIT License | https://asciidoctor.org */
@@ -439,9 +439,10 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 <div id="toc" class="toc2">
 <div id="toctitle">Table of Contents</div>
 <ul class="sectlevel1">
-<li><a href="#_json_syntax_reference">JSON++ Syntax Reference</a>
+<li><a href="#_json_syntax_reference">JSON&#43;&#43; Syntax Reference</a>
 <ul class="sectlevel2">
-<li><a href="#_special_keys">Special Keys</a></li>
+<li><a href="#_semantic_summary">Semantic Summary</a></li>
+<li><a href="#_special_keywords">Special Keywords</a></li>
 <li><a href="#_expression_evaluation">Expression Evaluation</a></li>
 <li><a href="#_builtin_variables">Builtin Variables</a></li>
 <li><a href="#_builtin_functions">Builtin Functions</a></li>
@@ -454,7 +455,7 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 </div>
 <div id="content">
 <div class="sect1">
-<h2 id="_json_syntax_reference">JSON++ Syntax Reference</h2>
+<h2 id="_json_syntax_reference">JSON&#43;&#43; Syntax Reference</h2>
 <div class="sectionbody">
 <div class="paragraph">
 <p>JSON&#43;&#43; is a lightweight extension of JSON that adds three mechanisms to standard JSON:</p>
@@ -481,10 +482,101 @@ and</p>
 The <code>jq&#43;&#43;</code> tool evaluates a JSON&#43;&#43; file and emits ordinary JSON.</p>
 </div>
 <div class="sect2">
-<h3 id="_special_keys">Special Keys</h3>
+<h3 id="_semantic_summary">Semantic Summary</h3>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 12.5%;">
+<col style="width: 25%;">
+<col style="width: 37.5%;">
+<col style="width: 25%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Construct</th>
+<th class="tableblock halign-left valign-top">Role</th>
+<th class="tableblock halign-left valign-top">Behavior</th>
+<th class="tableblock halign-left valign-top">Constraints / Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>$extends: [f1, f2, &#8230;&#8203;]</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Inheritance</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Derives the current object from one or more parent definitions.
+Parents are resolved recursively, merged in listed order, and then overridden by the current object&#8217;s own fields.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Earlier parents take precedence over later ones.
+Priority is: current object &#8594; first parent &#8594; &#8230;&#8203; &#8594; last parent.
+Circular resolution is rejected.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>$includes: [f1, f2, &#8230;&#8203;]</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Inclusion</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Applies external fragments on top of the current object after <code>$extends</code> has been resolved.
+This is the opposite precedence direction from <code>$extends</code>.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Later included fragments take precedence over earlier ones.
+Priority is: last fragment &#8594; &#8230;&#8203; &#8594; first fragment &#8594; current object.
+If both <code>$extends</code> and <code>$includes</code> are present, <code>$includes</code> wins over the combined result.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>$local</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Local node definitions</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Defines reusable named objects inside the current file.
+Each local node is materialized into a temporary session-local file and can then be referenced by bare name from <code>$extends</code> or <code>$includes</code>.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>$local</code> is removed from the final output.
+Local nodes are visible within the composed subtree of the defining file.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>"eval:&lt;jq-expr&gt;"</code> and <code>"eval:&lt;type&gt;:&lt;jq-expr&gt;"</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Expression evaluation</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">A string value starting with <code>eval:</code> is compiled as a jq expression and evaluated against the fully composed JSON object.
+The result replaces the original string.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Value-side evaluation happens after structural composition and after key-side evaluation.
+Without a type annotation, the result must be a string.
+If the result is another <code>eval:</code> string, jq&#43;&#43; re-evaluates it up to a fixed iteration limit.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>"eval:&lt;jq-expr&gt;"</code> as a key</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Computed keys</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">A key starting with <code>eval:</code> is evaluated and replaced with the resulting key name.
+If the expression yields an array of strings, one key is emitted per element.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Key-side evaluation runs before value-side evaluation.
+When evaluating a key, <code>$cur</code> points to the parent object.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>raw:</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Escaping</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">A key or string value starting with <code>raw:</code> is passed through unchanged except that the prefix is removed.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Guaranteed escape hatch for literal control-like strings and reserved keywords.<sup class="footnote">[<a id="_footnoteref_1" class="footnote" href="#_footnotedef_1" title="View footnote.">1</a>]</sup></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Evaluation order</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Resolution sequencing</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">jq&#43;&#43; first resolves file-level <code>$extends</code> / <code>$includes</code>, then materializes <code>$local</code>, then resolves nested <code>$extends</code> / <code>$includes</code>, then evaluates keys, and finally evaluates values.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">This ordering makes precedence deterministic and ensures expressions see the fully composed structure.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>JF_PATH</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">File resolution</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Referenced files are resolved using jq&#43;&#43;'s search path.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Resolution order is: current file directory &#8594; active local-node directories &#8594; <code>JF_PATH</code> entries.
+<code>JF_PATH</code> supplements, rather than replaces, relative resolution.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Output guarantee</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">JSON output</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">jq&#43;&#43; is a preprocessing step only.
+The result of evaluating JSON&#43;&#43; is always ordinary JSON.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Downstream tools consume the output exactly as JSON; JSON&#43;&#43; constructs do not survive evaluation unless explicitly escaped with <code>raw:</code>.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="sect2">
+<h3 id="_special_keywords">Special Keywords</h3>
 <div class="paragraph">
-<p>JSON++ uses a small set of reserved keys—all prefixed with <code>$</code>—to express structural relationships.
-These keys are consumed during evaluation and do not appear in the output.</p>
+<p>JSON&#43;&#43; uses a small set of reserved keywords to express control semantics during evaluation.
+At present, the inheritance-time keywords are prefixed with <code>$</code>.
+These keywords are consumed during evaluation and do not appear in the output unless escaped.</p>
 </div>
 <div class="sect3">
 <h4 id="_extends">$extends</h4>
@@ -549,8 +641,8 @@ If the file does not exist, it is silently skipped.</p>
 <div class="sect3">
 <h4 id="_includes">$includes</h4>
 <div class="paragraph">
-<p>Declares that the current object includes one or more external fragments as authoritative defaults.
-Unlike <code>$extends</code>, where the derived object overrides its parents, <code>$includes</code> inverts the relationship: the current object&#8217;s own fields serve as defaults that the included fragments can override.</p>
+<p>Declares that the current object includes one or more external fragments to be applied on top of it.
+Unlike <code>$extends</code>, where the current object overrides its parents, <code>$includes</code> gives higher priority to the included fragments than to the including object&#8217;s own fields.</p>
 </div>
 <div class="paragraph">
 <p><strong>Syntax</strong></p>
@@ -613,7 +705,7 @@ Any configuration file can then pull in exactly the behaviour it needs with a si
 </div>
 </div>
 <div class="paragraph">
-<p>Running <code>JF_PATH=/opt/myapp/lib jq++ service.json</code> resolves <code>defaults/runtime.json</code> and <code>defaults/logging.json</code> from the library directory.
+<p>Running <code>JF_PATH=/opt/myapp/lib jq&#43;&#43; service.json</code> resolves <code>defaults/runtime.json</code> and <code>defaults/logging.json</code> from the library directory.
 Switching environments is a matter of changing <code>JF_PATH</code>—the configuration files themselves are untouched.</p>
 </div>
 <div class="paragraph">
@@ -837,12 +929,15 @@ This is an escape mechanism for strings that would otherwise be mistaken for <co
 </div>
 </div>
 <div class="paragraph">
-<p><strong>Tip — escaping reserved keys</strong></p>
+<p><strong>Tip — escaping reserved keywords</strong></p>
 </div>
 <div class="paragraph">
-<p><code>raw:</code> is the only way to produce a literal key (or value) that starts with a JSON reserved prefix such as `$extends`, `$includes`, or `$local`.
-Because these strings are consumed by jq before output, a bare <code>"$extends"</code> key cannot survive into the final JSON.
-Prefix it with <code>raw:</code> to pass it through unchanged.</p>
+<p><code>raw:</code> is the formal, guaranteed way to produce a literal key (or value) that would otherwise match a JSON&#43;&#43; control prefix such as <code>eval:</code> or a reserved keyword such as <code>$extends</code>, <code>$includes</code>, or <code>$local</code>.
+Because these strings are interpreted by jq&#43;&#43; during evaluation, prefixing with <code>raw:</code> is the portability-safe way to ensure they survive unchanged in the final JSON.</p>
+</div>
+<div class="paragraph">
+<p>In practice, jq&#43;&#43; keeps inheritance-time control keywords in the <code>$&#8230;&#8203;</code> namespace, and introducing new reserved prefixes or new keyword families is treated as a major-version compatibility change.
+That policy makes accidental collisions unlikely, but <code>raw:</code> remains the documented escape hatch.</p>
 </div>
 <div class="listingblock">
 <div class="content">
@@ -913,12 +1008,12 @@ It exists only at the language level—as a fragment of source code—and cannot
 Functions such as <code>path/1</code>, <code>getpath/1</code>, and <code>setpath/1</code> accept <em>path arrays</em> (plain JSON arrays of strings and integers) precisely because path expressions are not first-class data.</p>
 </div>
 <div class="paragraph">
-<p>JSON++ intentionally departs from this principle.
+<p>JSON&#43;&#43; intentionally departs from this principle.
 <code>$cur</code> and <code>$curexpr</code> expose the current location as runtime values, and <code>topatharray</code>/<code>topathexpr</code> let you convert between the two representations freely.
 This is a deliberate usability trade-off: configuration authors need to navigate and reference locations in the document, and string-based path expressions are considerably more readable than raw path arrays when written inside a JSON string.</p>
 </div>
 <div class="paragraph">
-<p>Treating path expressions as strings is therefore a JSON++-specific convention.
+<p>Treating path expressions as strings is therefore a JSON&#43;&#43;-specific convention.
 It has no meaning to jq itself; the conversion functions bridge the gap when you need to pass a location to a jq built-in such as <code>getpath</code> or <code>setpath</code>.</p>
 </div>
 </td>
@@ -1093,7 +1188,7 @@ The result is the parsed JSON value (object, array, string, number, boolean, or 
 <div class="sect2">
 <h3 id="_supported_input_formats">Supported Input Formats</h3>
 <div class="paragraph">
-<p><code>jq++</code> accepts files in any of the following formats.
+<p><code>jq&#43;&#43;</code> accepts files in any of the following formats.
 The format is determined from the file extension.</p>
 </div>
 <table class="tableblock frame-all grid-all stretch">
@@ -1136,13 +1231,13 @@ The format is determined from the file extension.</p>
 </table>
 <div class="paragraph">
 <p>YAML, TOML, JSON5, and HOCON files are converted to the JSON data model before processing; the same JSON&#43;&#43; directives work in all formats.
-The <code>&#43;&#43;</code> suffix variants (<code>.json`, `.yaml</code>, etc.) are treated identically to their base extensions.</p>
+The <code>` suffix variants (`.json</code>, <code>.yaml++</code>, etc.) are treated identically to their base extensions.</p>
 </div>
 </div>
 <div class="sect2">
 <h3 id="_search_paths">Search Paths</h3>
 <div class="paragraph">
-<p>When resolving filenames in <code>$extends</code>, <code>$includes</code>, and <code>readfile()</code>, <code>jq++</code> searches directories in the following order:</p>
+<p>When resolving filenames in <code>$extends</code>, <code>$includes</code>, and <code>readfile()</code>, <code>jq&#43;&#43;</code> searches directories in the following order:</p>
 </div>
 <div class="olist arabic">
 <ol class="arabic">
@@ -1159,7 +1254,7 @@ The <code>&#43;&#43;</code> suffix variants (<code>.json`, `.yaml</code>, etc.) 
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="highlight"><code class="language-shell script" data-lang="shell script">$ JF_PATH=/shared/configs:/team/defaults jq++ myconfig.json</code></pre>
+<pre class="highlight"><code class="language-shell script" data-lang="shell script">$ JF_PATH=/shared/configs:/team/defaults jq{plus}{plus} myconfig.json</code></pre>
 </div>
 </div>
 <div class="paragraph">
@@ -1169,9 +1264,15 @@ The <code>&#43;&#43;</code> suffix variants (<code>.json`, `.yaml</code>, etc.) 
 </div>
 </div>
 </div>
+<div id="footnotes">
+<hr>
+<div class="footnote" id="_footnotedef_1">
+<a href="#_footnoteref_1">1</a>. <code>raw:</code> is the formal, guaranteed way to preserve values or keys that would otherwise be treated as JSON&#43;&#43; control syntax. In practice, jq&#43;&#43; keeps inheritance-time control keywords in the <code>$&#8230;&#8203;</code> namespace, and introducing new reserved prefixes or new keyword families is treated as a major-version compatibility change.
+</div>
+</div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2026-04-05 22:16:19 UTC
+Last updated 2026-04-12 07:20:56 UTC
 </div>
 </div>
 </body>

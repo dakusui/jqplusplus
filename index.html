@@ -456,6 +456,18 @@ body {font-family: Arial;}
   font-size: 17px;
 }
 
+.tab button .tab-folder {
+  display: block;
+  font-size: 12px;
+  line-height: 1.1;
+  color: #555;
+}
+
+.tab button .tab-page {
+  display: block;
+  line-height: 1.2;
+}
+
 /* Change background color of buttons on hover */
 .tab button:hover {
   background-color: #ddd;
@@ -480,16 +492,16 @@ body {font-family: Arial;}
 <button class="tablinks" onclick="location.href='https://github.com/dakusui/jqplusplus';">
   <img src="images/github.png" width="60px;20px" onclick="location.href = 'https://github.com/dakusui/jqplusplus';" align="middle"/>
 </button>
-<button class="tablinks" onclick="openTab(event, 'concepts-overview')" id="defaultOpen">overview</button>
-<button class="tablinks" onclick="openTab(event, 'concepts-design-principles')">design-principles</button>
-<button class="tablinks" onclick="openTab(event, 'concepts-evaluation-model')">evaluation-model</button>
-<button class="tablinks" onclick="openTab(event, 'concepts-terminology')">terminology</button>
-<button class="tablinks" onclick="openTab(event, 'manual-custom-functions')">custom-functions</button>
-<button class="tablinks" onclick="openTab(event, 'manual-expressions')">expressions</button>
-<button class="tablinks" onclick="openTab(event, 'manual-getting-started')">getting-started</button>
-<button class="tablinks" onclick="openTab(event, 'manual-structural-reuse')">structural-reuse</button>
-<button class="tablinks" onclick="openTab(event, 'reference-builtins')">builtins</button>
-<button class="tablinks" onclick="openTab(event, 'reference-syntax-reference')">syntax-reference</button>
+<button class="tablinks" onclick="openTab(event, 'concepts-overview')" id="defaultOpen"><span class="tab-folder">concepts/</span><span class="tab-page">overview</span></button>
+<button class="tablinks" onclick="openTab(event, 'concepts-design-principles')"><span class="tab-folder">&nbsp;</span><span class="tab-page">design-principles</span></button>
+<button class="tablinks" onclick="openTab(event, 'concepts-evaluation-model')"><span class="tab-folder">&nbsp;</span><span class="tab-page">evaluation-model</span></button>
+<button class="tablinks" onclick="openTab(event, 'concepts-terminology')"><span class="tab-folder">&nbsp;</span><span class="tab-page">terminology</span></button>
+<button class="tablinks" onclick="openTab(event, 'manual-custom-functions')"><span class="tab-folder">manual/</span><span class="tab-page">custom-functions</span></button>
+<button class="tablinks" onclick="openTab(event, 'manual-expressions')"><span class="tab-folder">&nbsp;</span><span class="tab-page">expressions</span></button>
+<button class="tablinks" onclick="openTab(event, 'manual-getting-started')"><span class="tab-folder">&nbsp;</span><span class="tab-page">getting-started</span></button>
+<button class="tablinks" onclick="openTab(event, 'manual-structural-reuse')"><span class="tab-folder">&nbsp;</span><span class="tab-page">structural-reuse</span></button>
+<button class="tablinks" onclick="openTab(event, 'reference-builtins')"><span class="tab-folder">reference/</span><span class="tab-page">builtins</span></button>
+<button class="tablinks" onclick="openTab(event, 'reference-syntax-reference')"><span class="tab-folder">&nbsp;</span><span class="tab-page">syntax-reference</span></button>
 </div>
 <div id="concepts-design-principles" class="tabcontent">
 <div id="concepts-design-principles_content">
@@ -1075,8 +1087,8 @@ If you use jq++ for the “structure and value resolution” step and keep JSON 
 <h2 id="_json_terminology">JSON++ Terminology</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>This document defines the canonical terms used throughout the JSON documentation.
-When describing JSON behaviour, always prefer these terms over informal alternatives such as <em>templating</em> or <em>rendering</em>.</p>
+<p>This document defines the canonical terms used throughout the JSON++ documentation.
+When describing JSON++ behaviour, always prefer these terms over informal alternatives such as <em>templating</em> or <em>rendering</em>.</p>
 </div>
 <div class="sect2">
 <h3 id="_structural_reuse">Structural Reuse</h3>
@@ -1118,7 +1130,7 @@ Structural reuse consists of two categories:</p>
 <h3 id="_structural_composition">Structural Composition</h3>
 <div class="paragraph">
 <p><em>Structural composition</em> is the subset of structural reuse that combines configuration documents structurally.
-JSON++ provides two structural-composition constructs: <strong>inheritance</strong> (<code>$extends</code>) and <strong>inclusion with defaults</strong> (<code>$includes</code>).</p>
+JSON++ provides two structural-composition constructs: <strong>inheritance</strong> (<code>$extends</code>) and <strong>inclusion</strong> (<code>$includes</code>).</p>
 </div>
 </div>
 <div class="sect2">
@@ -1145,14 +1157,14 @@ When multiple parents are listed, earlier entries in the <code>$extends</code> a
 </div>
 </div>
 <div class="sect2">
-<h3 id="_inclusion_with_defaults_includes">Inclusion with Defaults (<code>$includes</code>)</h3>
+<h3 id="_inclusion_includes">Inclusion (<code>$includes</code>)</h3>
 <div class="paragraph">
-<p><strong>Inclusion with defaults</strong> is the mechanism by which an object pulls in one or more external fragments that act as authoritative defaults.
-Unlike inheritance, where the derived object overrides its parents, the included fragments override the including object’s own fields.</p>
+<p><strong>Inclusion</strong> is the mechanism by which an object pulls in one or more external fragments that are applied on top of the including object.
+Unlike inheritance, where the current object overrides its parents, inclusion gives higher priority to the included fragments.</p>
 </div>
 <div class="paragraph">
-<p><strong>Precedence direction: included fragments override the including object.</strong>
-The including object provides initial values; the included fragments are applied on top, overriding those values.
+<p><strong>Precedence direction: included fragments → including object.</strong>
+The including object provides the starting values; the included fragments are then applied on top, overriding those values.
 When multiple fragments are listed, later entries in the <code>$includes</code> array take precedence over earlier ones.</p>
 </div>
 <div class="listingblock">
@@ -1197,10 +1209,11 @@ When a key expression evaluates to an array of strings, one key–value pair is 
 </div>
 </div>
 <div class="sect2">
-<h3 id="_escaping_meta_keys_raw">Escaping Meta Keys (<code>raw:</code>)</h3>
+<h3 id="_escaping_meta_keywords_raw">Escaping Meta Keywords (<code>raw:</code>)</h3>
 <div class="paragraph">
 <p><strong>Escaping</strong> is the mechanism by which a string value or key prefixed with <code>raw:</code> is passed through to the output with the prefix stripped, without any evaluation.
-This is necessary when a value or key would otherwise be interpreted as an <code>eval:</code> expression or when a key matches a JSON++ reserved word such as <code>$extends</code>, <code>$includes</code>, or <code>$local</code>.</p>
+This is the guaranteed way to preserve a value or key that would otherwise be interpreted as an <code>eval:</code> expression or as a JSON++ reserved keyword such as <code>$extends</code>, <code>$includes</code>, or <code>$local</code>.
+In practice, jq++ keeps inheritance-time control keywords in the <code>$…​</code> namespace and treats new keyword families as a major-version compatibility concern, so accidental collisions should remain rare.</p>
 </div>
 <div class="listingblock">
 <div class="content">
@@ -1808,7 +1821,7 @@ urls:
 Structural reuse consists of <strong>structural composition</strong> (<code>$extends</code> and <code>$includes</code>) and <strong>expression evaluation</strong> (<code>eval:</code>).</p>
 </div>
 <div class="paragraph">
-<p>This page focuses on <strong>structural composition</strong>: the two constructs that combine configuration documents — <strong>inheritance</strong> (<code>$extends</code>) and <strong>inclusion with defaults</strong> (<code>$includes</code>).</p>
+<p>This page focuses on <strong>structural composition</strong>: the two constructs that combine configuration documents — <strong>inheritance</strong> (<code>$extends</code>) and <strong>inclusion</strong> (<code>$includes</code>).</p>
 </div>
 <div class="paragraph">
 <p>For precise definitions and precedence rules see the <a href="../concepts/terminology.html">Terminology</a> page.
@@ -2180,10 +2193,101 @@ and</p>
 The <code>jq++</code> tool evaluates a JSON++ file and emits ordinary JSON.</p>
 </div>
 <div class="sect2">
-<h3 id="_special_keys">Special Keys</h3>
+<h3 id="_semantic_summary">Semantic Summary</h3>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 12.5%;"/>
+<col style="width: 25%;"/>
+<col style="width: 37.5%;"/>
+<col style="width: 25%;"/>
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Construct</th>
+<th class="tableblock halign-left valign-top">Role</th>
+<th class="tableblock halign-left valign-top">Behavior</th>
+<th class="tableblock halign-left valign-top">Constraints / Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>$extends: [f1, f2, …​]</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Inheritance</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Derives the current object from one or more parent definitions.
+Parents are resolved recursively, merged in listed order, and then overridden by the current object’s own fields.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Earlier parents take precedence over later ones.
+Priority is: current object → first parent → …​ → last parent.
+Circular resolution is rejected.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>$includes: [f1, f2, …​]</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Inclusion</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Applies external fragments on top of the current object after <code>$extends</code> has been resolved.
+This is the opposite precedence direction from <code>$extends</code>.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Later included fragments take precedence over earlier ones.
+Priority is: last fragment → …​ → first fragment → current object.
+If both <code>$extends</code> and <code>$includes</code> are present, <code>$includes</code> wins over the combined result.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>$local</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Local node definitions</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Defines reusable named objects inside the current file.
+Each local node is materialized into a temporary session-local file and can then be referenced by bare name from <code>$extends</code> or <code>$includes</code>.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>$local</code> is removed from the final output.
+Local nodes are visible within the composed subtree of the defining file.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>"eval:&lt;jq-expr&gt;"</code> and <code>"eval:&lt;type&gt;:&lt;jq-expr&gt;"</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Expression evaluation</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">A string value starting with <code>eval:</code> is compiled as a jq expression and evaluated against the fully composed JSON object.
+The result replaces the original string.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Value-side evaluation happens after structural composition and after key-side evaluation.
+Without a type annotation, the result must be a string.
+If the result is another <code>eval:</code> string, jq++ re-evaluates it up to a fixed iteration limit.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>"eval:&lt;jq-expr&gt;"</code> as a key</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Computed keys</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">A key starting with <code>eval:</code> is evaluated and replaced with the resulting key name.
+If the expression yields an array of strings, one key is emitted per element.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Key-side evaluation runs before value-side evaluation.
+When evaluating a key, <code>$cur</code> points to the parent object.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>raw:</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Escaping</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">A key or string value starting with <code>raw:</code> is passed through unchanged except that the prefix is removed.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Guaranteed escape hatch for literal control-like strings and reserved keywords.<sup class="footnote">[<a id="_footnoteref_1" class="footnote" href="#_footnotedef_1" title="View footnote.">1</a>]</sup></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Evaluation order</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Resolution sequencing</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">jq++ first resolves file-level <code>$extends</code> / <code>$includes</code>, then materializes <code>$local</code>, then resolves nested <code>$extends</code> / <code>$includes</code>, then evaluates keys, and finally evaluates values.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">This ordering makes precedence deterministic and ensures expressions see the fully composed structure.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>JF_PATH</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">File resolution</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Referenced files are resolved using jq++'s search path.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Resolution order is: current file directory → active local-node directories → <code>JF_PATH</code> entries.
+<code>JF_PATH</code> supplements, rather than replaces, relative resolution.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Output guarantee</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">JSON output</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">jq++ is a preprocessing step only.
+The result of evaluating JSON++ is always ordinary JSON.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Downstream tools consume the output exactly as JSON; JSON++ constructs do not survive evaluation unless explicitly escaped with <code>raw:</code>.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="sect2">
+<h3 id="_special_keywords">Special Keywords</h3>
 <div class="paragraph">
-<p>JSON++ uses a small set of reserved keys—all prefixed with <code>$</code>—to express structural relationships.
-These keys are consumed during evaluation and do not appear in the output.</p>
+<p>JSON++ uses a small set of reserved keywords to express control semantics during evaluation.
+At present, the inheritance-time keywords are prefixed with <code>$</code>.
+These keywords are consumed during evaluation and do not appear in the output unless escaped.</p>
 </div>
 <div class="sect3">
 <h4 id="_extends">$extends</h4>
@@ -2248,8 +2352,8 @@ If the file does not exist, it is silently skipped.</p>
 <div class="sect3">
 <h4 id="_includes">$includes</h4>
 <div class="paragraph">
-<p>Declares that the current object includes one or more external fragments as authoritative defaults.
-Unlike <code>$extends</code>, where the derived object overrides its parents, <code>$includes</code> inverts the relationship: the current object’s own fields serve as defaults that the included fragments can override.</p>
+<p>Declares that the current object includes one or more external fragments to be applied on top of it.
+Unlike <code>$extends</code>, where the current object overrides its parents, <code>$includes</code> gives higher priority to the included fragments than to the including object’s own fields.</p>
 </div>
 <div class="paragraph">
 <p><strong>Syntax</strong></p>
@@ -2536,12 +2640,15 @@ This is an escape mechanism for strings that would otherwise be mistaken for <co
 </div>
 </div>
 <div class="paragraph">
-<p><strong>Tip — escaping reserved keys</strong></p>
+<p><strong>Tip — escaping reserved keywords</strong></p>
 </div>
 <div class="paragraph">
-<p><code>raw:</code> is the only way to produce a literal key (or value) that starts with a JSON reserved prefix such as `$extends`, `$includes`, or `$local`.
-Because these strings are consumed by jq before output, a bare <code>"$extends"</code> key cannot survive into the final JSON.
-Prefix it with <code>raw:</code> to pass it through unchanged.</p>
+<p><code>raw:</code> is the formal, guaranteed way to produce a literal key (or value) that would otherwise match a JSON++ control prefix such as <code>eval:</code> or a reserved keyword such as <code>$extends</code>, <code>$includes</code>, or <code>$local</code>.
+Because these strings are interpreted by jq++ during evaluation, prefixing with <code>raw:</code> is the portability-safe way to ensure they survive unchanged in the final JSON.</p>
+</div>
+<div class="paragraph">
+<p>In practice, jq++ keeps inheritance-time control keywords in the <code>$…​</code> namespace, and introducing new reserved prefixes or new keyword families is treated as a major-version compatibility change.
+That policy makes accidental collisions unlikely, but <code>raw:</code> remains the documented escape hatch.</p>
 </div>
 <div class="listingblock">
 <div class="content">
@@ -2835,7 +2942,7 @@ The format is determined from the file extension.</p>
 </table>
 <div class="paragraph">
 <p>YAML, TOML, JSON5, and HOCON files are converted to the JSON data model before processing; the same JSON++ directives work in all formats.
-The <code>++</code> suffix variants (<code>.json`, `.yaml</code>, etc.) are treated identically to their base extensions.</p>
+The <code>` suffix variants (`.json</code>, <code>.yaml++</code>, etc.) are treated identically to their base extensions.</p>
 </div>
 </div>
 <div class="sect2">
@@ -2858,7 +2965,7 @@ The <code>++</code> suffix variants (<code>.json`, `.yaml</code>, etc.) are trea
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="highlight"><code class="language-shell script" data-lang="shell script">$ JF_PATH=/shared/configs:/team/defaults jq++ myconfig.json</code></pre>
+<pre class="highlight"><code class="language-shell script" data-lang="shell script">$ JF_PATH=/shared/configs:/team/defaults jq{plus}{plus} myconfig.json</code></pre>
 </div>
 </div>
 <div class="paragraph">
