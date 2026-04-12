@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="generator" content="Asciidoctor 2.0.26">
-<title>jq++ Design</title>
+<title>jq&#43;&#43; Design</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Open+Sans:300,300italic,400,400italic,600,600italic%7CNoto+Serif:400,400italic,700,700italic%7CDroid+Sans+Mono:400,700">
 <style>
 /*! Asciidoctor default stylesheet | MIT License | https://asciidoctor.org */
@@ -439,7 +439,7 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 <div id="toc" class="toc2">
 <div id="toctitle">Table of Contents</div>
 <ul class="sectlevel1">
-<li><a href="#_jq_design">jq++ Design</a>
+<li><a href="#_jq_design">jq&#43;&#43; Design</a>
 <ul class="sectlevel2">
 <li><a href="#_evaluation_pipeline">Evaluation Pipeline</a></li>
 <li><a href="#_node_pool_and_caching">Node Pool and Caching</a></li>
@@ -451,16 +451,16 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 </div>
 <div id="content">
 <div class="sect1">
-<h2 id="_jq_design">jq++ Design</h2>
+<h2 id="_jq_design">jq&#43;&#43; Design</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>This page describes the internal architecture of `jq`, the tool that evaluates JSON configurations.
-For the design principles behind JSON++, see the <a href="design-principles.html">Design Principles</a> page.</p>
+<p>This page describes the internal architecture of <code>jq&#43;&#43;</code>, the tool that evaluates JSON&#43;&#43; configurations.
+For the design principles behind JSON&#43;&#43;, see the <a href="design-principles.html">Design Principles</a> page.</p>
 </div>
 <div class="sect2">
 <h3 id="_evaluation_pipeline">Evaluation Pipeline</h3>
 <div class="paragraph">
-<p>`jq` transforms a JSON configuration file into plain JSON through a deterministic sequence of stages.
+<p><code>jq&#43;&#43;</code> transforms a JSON&#43;&#43; configuration file into plain JSON through a deterministic sequence of stages.
 Each stage reads from the result of the previous one; no stage revisits earlier work.</p>
 </div>
 <div class="imageblock">
@@ -484,7 +484,7 @@ The module name is the base filename without the extension.
 Any <code>eval:</code> expression in a file that includes such a <code>.jq</code> file via <code>$extends</code> or <code>$includes</code> can call functions defined in that module.</p>
 </div>
 <div class="paragraph">
-<p>Files with no extension or with <code>.json`, `.yaml</code>, <code>.toml`, `.json5</code>, <code>.conf`, or `.hocon</code> are treated the same as their base format.</p>
+<p>Files with no extension or with <code>.json&#43;&#43;</code>, <code>.yaml&#43;&#43;</code>, <code>.toml&#43;&#43;</code>, <code>.json5&#43;&#43;</code>, <code>.conf&#43;&#43;</code>, or <code>.hocon&#43;&#43;</code> are treated the same as their base format.</p>
 </div>
 </div>
 <div class="sect3">
@@ -497,8 +497,8 @@ Both directives are handled by the same underlying merge engine; the difference 
 <p><strong>Resolving parents</strong></p>
 </div>
 <div class="paragraph">
-<p>For each filename listed in <code>$extends</code> or <code>$includes</code>, <code>jq` resolves the file against the search path (current file's directory → local node search paths → `JF_PATH`), then recursively applies the full pipeline (stages 1–4) to that parent file.
-The result is cached in a _node pool_ so that each file is evaluated at most once per `jq</code> invocation, even when it is referenced from multiple places.</p>
+<p>For each filename listed in <code>$extends</code> or <code>$includes</code>, <code>jq&#43;&#43;</code> resolves the file against the search path (current file&#8217;s directory → local node search paths → <code>JF_PATH</code>), then recursively applies the full pipeline (stages 1–4) to that parent file.
+The result is cached in a <em>node pool</em> so that each file is evaluated at most once per <code>jq&#43;&#43;</code> invocation, even when it is referenced from multiple places.</p>
 </div>
 <div class="paragraph">
 <p>Circular inheritance chains are detected by tracking visited absolute paths.
@@ -529,7 +529,7 @@ In other words, <code>$includes</code> fragments override everything that <code>
 <div class="sect3">
 <h4 id="_stage_3_materialize_local_nodes">Stage 3 — Materialize local nodes</h4>
 <div class="paragraph">
-<p>Objects defined under the <code>$local</code> key are extracted and written as individual files in a temporary <em>session directory</em> that is created fresh for each top-level <code>jq++</code> invocation.
+<p>Objects defined under the <code>$local</code> key are extracted and written as individual files in a temporary <em>session directory</em> that is created fresh for each top-level <code>jq&#43;&#43;</code> invocation.
 Each local node name becomes its own file (e.g. <code>BaseThing</code> becomes a file <code>BaseThing</code> with no extension, treated as JSON).</p>
 </div>
 <div class="paragraph">
@@ -587,7 +587,7 @@ The stage therefore runs in a loop, decrementing a time-to-live counter (startin
 </li>
 <li>
 <p>An <code>eval:</code> value is compiled and executed as a jq expression against the current full object as input.
-The expression has access to the builtin variables <code>$cur</code> and <code>$curexpr</code>, and to the JSON++ builtin functions (<code>ref</code>, <code>refexpr</code>, <code>reftag</code>, <code>parent</code>, <code>parentof</code>, <code>topatharray</code>, <code>topathexpr</code>, <code>readfile</code>).</p>
+The expression has access to the builtin variables <code>$cur</code> and <code>$curexpr</code>, and to the JSON&#43;&#43; builtin functions (<code>ref</code>, <code>refexpr</code>, <code>reftag</code>, <code>parent</code>, <code>parentof</code>, <code>topatharray</code>, <code>topathexpr</code>, <code>readfile</code>).</p>
 </li>
 </ul>
 </div>
@@ -604,7 +604,7 @@ The stage therefore loops, decrementing its own time-to-live counter (starting a
 <div class="paragraph">
 <p>The fully resolved <code>map[string]any</code> object is serialised to JSON with two-space indentation and written to standard output.
 When multiple input files are provided on the command line, each is processed independently and its output is written in order.
-When no file arguments are given, <code>jq++</code> reads from standard input, writing the input to a temporary file first (since the inheritance resolution needs a filesystem path to anchor relative file references).</p>
+When no file arguments are given, <code>jq&#43;&#43;</code> reads from standard input, writing the input to a temporary file first (since the inheritance resolution needs a filesystem path to anchor relative file references).</p>
 </div>
 <hr>
 </div>
@@ -612,7 +612,7 @@ When no file arguments are given, <code>jq++</code> reads from standard input, w
 <div class="sect2">
 <h3 id="_node_pool_and_caching">Node Pool and Caching</h3>
 <div class="paragraph">
-<p>The node pool is the shared state that persists across all recursive inheritance resolutions within a single <code>jq++</code> invocation.
+<p>The node pool is the shared state that persists across all recursive inheritance resolutions within a single <code>jq&#43;&#43;</code> invocation.
 Its two main responsibilities are:</p>
 </div>
 <div class="paragraph">
@@ -657,7 +657,7 @@ Only nested objects receive the recursive treatment.</p>
 </div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2026-04-12 07:20:56 UTC
+Last updated 2026-04-12 07:36:37 UTC
 </div>
 </div>
 </body>

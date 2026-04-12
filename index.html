@@ -569,13 +569,13 @@ In practice this means that JSON++ concepts naturally extend to JSON-compatible 
 <h2 id="_jq_design">jq++ Design</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>This page describes the internal architecture of `jq`, the tool that evaluates JSON configurations.
+<p>This page describes the internal architecture of <code>jq++</code>, the tool that evaluates JSON++ configurations.
 For the design principles behind JSON++, see the <a href="design-principles.html">Design Principles</a> page.</p>
 </div>
 <div class="sect2">
 <h3 id="_evaluation_pipeline">Evaluation Pipeline</h3>
 <div class="paragraph">
-<p>`jq` transforms a JSON configuration file into plain JSON through a deterministic sequence of stages.
+<p><code>jq++</code> transforms a JSON++ configuration file into plain JSON through a deterministic sequence of stages.
 Each stage reads from the result of the previous one; no stage revisits earlier work.</p>
 </div>
 <div class="imageblock">
@@ -599,7 +599,7 @@ The module name is the base filename without the extension.
 Any <code>eval:</code> expression in a file that includes such a <code>.jq</code> file via <code>$extends</code> or <code>$includes</code> can call functions defined in that module.</p>
 </div>
 <div class="paragraph">
-<p>Files with no extension or with <code>.json`, `.yaml</code>, <code>.toml`, `.json5</code>, <code>.conf`, or `.hocon</code> are treated the same as their base format.</p>
+<p>Files with no extension or with <code>.json++</code>, <code>.yaml++</code>, <code>.toml++</code>, <code>.json5++</code>, <code>.conf++</code>, or <code>.hocon++</code> are treated the same as their base format.</p>
 </div>
 </div>
 <div class="sect3">
@@ -612,8 +612,8 @@ Both directives are handled by the same underlying merge engine; the difference 
 <p><strong>Resolving parents</strong></p>
 </div>
 <div class="paragraph">
-<p>For each filename listed in <code>$extends</code> or <code>$includes</code>, <code>jq` resolves the file against the search path (current file's directory → local node search paths → `JF_PATH`), then recursively applies the full pipeline (stages 1–4) to that parent file.
-The result is cached in a _node pool_ so that each file is evaluated at most once per `jq</code> invocation, even when it is referenced from multiple places.</p>
+<p>For each filename listed in <code>$extends</code> or <code>$includes</code>, <code>jq++</code> resolves the file against the search path (current file’s directory → local node search paths → <code>JF_PATH</code>), then recursively applies the full pipeline (stages 1–4) to that parent file.
+The result is cached in a <em>node pool</em> so that each file is evaluated at most once per <code>jq++</code> invocation, even when it is referenced from multiple places.</p>
 </div>
 <div class="paragraph">
 <p>Circular inheritance chains are detected by tracking visited absolute paths.
