@@ -1,7 +1,7 @@
-== JSON++ Terminology
+== JSON{plus}{plus} Terminology
 
-This document defines the canonical terms used throughout the JSON++ documentation.
-When describing JSON++ behaviour, always prefer these terms over informal alternatives such as _templating_ or _rendering_.
+This document defines the canonical terms used throughout the JSON{plus}{plus} documentation.
+When describing JSON{plus}{plus} behaviour, always prefer these terms over informal alternatives such as _templating_ or _rendering_.
 
 === Structural Reuse
 
@@ -24,7 +24,7 @@ Structural reuse
 === Structural Composition
 
 _Structural composition_ is the subset of structural reuse that combines configuration documents structurally.
-JSON++ provides two structural-composition constructs: *inheritance* (`$extends`) and *inclusion with defaults* (`$includes`).
+JSON{plus}{plus} provides two structural-composition constructs: *inheritance* (`$extends`) and *inclusion* (`$includes`).
 
 === Inheritance (`$extends`)
 
@@ -45,13 +45,13 @@ When multiple parents are listed, earlier entries in the `$extends` array take p
 
 Priority from highest to lowest: current object → first parent → … → last parent.
 
-=== Inclusion with Defaults (`$includes`)
+=== Inclusion (`$includes`)
 
-*Inclusion with defaults* is the mechanism by which an object pulls in one or more external fragments that act as authoritative defaults.
-Unlike inheritance, where the derived object overrides its parents, the included fragments override the including object's own fields.
+*Inclusion* is the mechanism by which an object pulls in one or more external fragments that are applied on top of the including object.
+Unlike inheritance, where the current object overrides its parents, inclusion gives higher priority to the included fragments.
 
-*Precedence direction: included fragments override the including object.*
-The including object provides initial values; the included fragments are applied on top, overriding those values.
+*Precedence direction: included fragments → including object.*
+The including object provides the starting values; the included fragments are then applied on top, overriding those values.
 When multiple fragments are listed, later entries in the `$includes` array take precedence over earlier ones.
 
 [source,json]
@@ -86,10 +86,11 @@ The expression is evaluated against the current JSON root after all structural c
 Expression evaluation applies to both values and keys.
 When a key expression evaluates to an array of strings, one key–value pair is emitted per element.
 
-=== Escaping Meta Keys (`raw:`)
+=== Escaping Meta Keywords (`raw:`)
 
 *Escaping* is the mechanism by which a string value or key prefixed with `raw:` is passed through to the output with the prefix stripped, without any evaluation.
-This is necessary when a value or key would otherwise be interpreted as an `eval:` expression or when a key matches a JSON++ reserved word such as `$extends`, `$includes`, or `$local`.
+This is the guaranteed way to preserve a value or key that would otherwise be interpreted as an `eval:` expression or as a JSON{plus}{plus} reserved keyword such as `$extends`, `$includes`, or `$local`.
+In practice, jq{plus}{plus} keeps inheritance-time control keywords in the `$...` namespace and treats new keyword families as a major-version compatibility concern, so accidental collisions should remain rare.
 
 [source,json]
 ----

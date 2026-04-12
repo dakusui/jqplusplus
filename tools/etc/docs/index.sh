@@ -47,6 +47,18 @@ body {font-family: Arial;}
   font-size: 17px;
 }
 
+.tab button .tab-folder {
+  display: block;
+  font-size: 12px;
+  line-height: 1.1;
+  color: #555;
+}
+
+.tab button .tab-page {
+  display: block;
+  line-height: 1.2;
+}
+
 /* Change background color of buttons on hover */
 .tab button:hover {
   background-color: #ddd;
@@ -67,21 +79,41 @@ body {font-family: Arial;}
 STYLE
 }
 
+function format_button_label() {
+  local _filestem="${1}"
+  local _include_parent="${2:-false}"
+  local _label
+  _label=$(basename "${_filestem}")
+  if [[ "${_include_parent}" != "true" ]]; then
+    echo '<span class="tab-folder">&nbsp;</span><span class="tab-page">'"${_label}"'</span>'
+    return
+  fi
+  local _parent
+  _parent=$(dirname "${_filestem}")
+  if [[ "${_parent}" == "." || "${_parent}" == "/" ]]; then
+    echo '<span class="tab-folder">&nbsp;</span><span class="tab-page">'"${_label}"'</span>'
+    return
+  fi
+  echo '<span class="tab-folder">'"${_parent}/"'</span><span class="tab-page">'"${_label}"'</span>'
+}
+
 function render_default_button() {
   local _filestem="${1}"
+  local _include_parent="${2:-false}"
   local _id
   _id=$(filestem_to_id "${_filestem}")
   local _label
-  _label=$(basename "${_filestem}")
+  _label=$(format_button_label "${_filestem}" "${_include_parent}")
   echo '<button class="tablinks" onclick="openTab(event, '"'${_id}'"')" id="defaultOpen">'"${_label}"'</button>'
 }
 
 function render_button() {
   local _filestem="${1}"
+  local _include_parent="${2:-false}"
   local _id
   _id=$(filestem_to_id "${_filestem}")
   local _label
-  _label=$(basename "${_filestem}")
+  _label=$(format_button_label "${_filestem}" "${_include_parent}")
   echo '<button class="tablinks" onclick="openTab(event, '"'${_id}'"')">'"${_label}"'</button>'
 }
 
@@ -97,17 +129,26 @@ function render_all_buttons() {
   local _top_filestem="${1}"
   local _top_id
   _top_id=$(filestem_to_id "${_top_filestem}")
+  local _previous_dir
+  _previous_dir=$(dirname "${_top_filestem}")
   shift
   local _filestems=("$@")
   echo '<div class="tab">'
   local i
   render_github_button
-  render_default_button "${_top_filestem}"
+  render_default_button "${_top_filestem}" "true"
   for i in "${_filestems[@]}"; do
     if [[ "$(filestem_to_id "${i}")" == "${_top_id}" ]]; then
       continue
     fi
-    render_button "${i}"
+    local _current_dir
+    _current_dir=$(dirname "${i}")
+    if [[ "${_current_dir}" != "${_previous_dir}" ]]; then
+      render_button "${i}" "true"
+    else
+      render_button "${i}" "false"
+    fi
+    _previous_dir="${_current_dir}"
   done
   echo '</div>'
 }
