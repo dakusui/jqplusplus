@@ -1,0 +1,34 @@
+#!/usr/bin/env bash
+# yq++ — YAML front-end for jq++.
+#
+# jq++ reads YAML/JSON (resolving $extends and eval: expressions) but emits JSON.
+# yq++ wraps it: run jq++, strip private _-prefixed holder keys, emit YAML.
+# Relationship:  yq++ : jq++  ::  yq : jq
+#
+# Usage:    yq++ [jq++ options] [files...]
+#           JF_PATH=shared yq++ leaf.yaml++
+# Requires: jq++, jq, and a YAML emitter (ruby, or python3 with PyYAML).
+set -euo pipefail
+
+_die() { echo "yq++: $*" >&2; exit 1; }
+command -v jq++ >/dev/null 2>&1 || _die "jq++ not found on PATH"
+command -v jq   >/dev/null 2>&1 || _die "jq not found on PATH"
+
+_to_yaml() {
+  if command -v ruby >/dev/null 2>&1; then
+    ruby -ryaml -rjson -e 'puts YAML.dump(JSON.parse(STDIN.read))'
+  elif command -v python3 >/dev/null 2>&1; then
+    python3 -c 'import sys,json,yaml; print(yaml.safe_dump(json.load(sys.stdin), sort_keys=False), end="")'
+  else
+    _die "need ruby or python3 to emit YAML"
+  fi
+}
+
+# Recursively drop object keys beginning with "_" (private holder fields).
+_strip='def walk(f): . as $in
+  | if type=="object" then reduce keys_unsorted[] as $k ({}; . + {($k): ($in[$k]|walk(f))}) | f
+    elif type=="array" then map(walk(f)) | f
+    else f end;
+  walk(if type=="object" then with_entries(select(.key|startswith("_")|not)) else . end)'
+
+jq++ "$@" | jq "$_strip" | _to_yaml
