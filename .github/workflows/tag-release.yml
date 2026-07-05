@@ -60,3 +60,36 @@ jobs:
         run: |
           git tag "${{ steps.version.outputs.tag }}"
           git push origin "${{ steps.version.outputs.tag }}"
+
+      - name: Set up Go
+        if: steps.version.outputs.skip != 'true'
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - name: Build release binaries
+        if: steps.version.outputs.skip != 'true'
+        run: |
+          VERSION="$(tools/bin/version)"
+          REVISION="$(tools/bin/revision)"
+          LDFLAGS="-X main.version=${VERSION} -X main.revision=${REVISION}"
+          mkdir -p dist
+          for target in linux/amd64 linux/arm64 darwin/amd64 darwin/arm64 windows/amd64; do
+            GOOS="${target%/*}"; GOARCH="${target#*/}"
+            out="dist/jq++-${GOOS}-${GOARCH}"
+            [ "$GOOS" = "windows" ] && out="${out}.exe"
+            echo "Building $out"
+            GOOS="$GOOS" GOARCH="$GOARCH" CGO_ENABLED=0 \
+              go build -ldflags "$LDFLAGS" -o "$out" ./cmd/jqplusplus
+          done
+          ls -la dist
+
+      - name: Create GitHub release with binaries
+        if: steps.version.outputs.skip != 'true'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create "${{ steps.version.outputs.tag }}" \
+            --title "${{ steps.version.outputs.tag }}" \
+            --generate-notes \
+            dist/*

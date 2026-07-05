@@ -12,6 +12,12 @@ This project follows the standard Go project layout.
 - Go 1.24.5 or later (see [go.mod](go.mod) for the exact version requirement)
 - Make (optional, for using the Makefile)
 
+### Download a prebuilt binary
+
+Each release attaches prebuilt binaries for common platforms. Grab the one for
+your OS/arch from the [Releases page](https://github.com/dakusui/jqplusplus/releases),
+rename it to `jq++`, `chmod +x` it, and put it on your `PATH`.
+
 ### Install from Source
 
 The easiest way to install `jqplusplus` is using `go install`:
