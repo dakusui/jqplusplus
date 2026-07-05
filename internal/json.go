@@ -31,6 +31,25 @@ const (
 // SupportedExtensions lists the file extensions recognized by readfile and the inheritance mechanism.
 const SupportedExtensions = ".json, .json++, .jq, .yaml, .yml, .yaml++, .yml++, .toml, .toml++, .json5, .json5++, .conf, .hocon, .conf++, .hocon++ (no extension is treated as JSON)"
 
+// InputTypeToExt maps a user-supplied input type (e.g. "yaml", ".yaml",
+// "yaml++") to a canonical file-extension suffix (e.g. ".yaml") recognized by
+// detectFileType. It is used to tell jq++ how to parse data read from stdin,
+// which otherwise has no filename to detect the type from. It returns ok=false
+// when the type is not supported.
+func InputTypeToExt(t string) (string, bool) {
+	ext := strings.ToLower(t)
+	if ext == "" {
+		return "", false
+	}
+	if !strings.HasPrefix(ext, ".") {
+		ext = "." + ext
+	}
+	if _, ok := detectFileType("x" + ext); ok {
+		return ext, true
+	}
+	return "", false
+}
+
 func detectFileType(name string) (FileType, bool) {
 	ext := strings.ToLower(filepath.Ext(name))
 

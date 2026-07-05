@@ -93,6 +93,39 @@ $
 ```
 Doesn't it seem useful? Have fun!
 
+### Reading from stdin
+
+If no files are given, `jq++` reads from stdin. Stdin has no filename, so it is
+parsed as **JSON by default**. To feed YAML (or any other supported format) via
+stdin, tell `jq++` the type with `-t` / `--input`:
+
+```shell script
+$ echo 'greeting: Hello' | jq++ --input yaml
+{
+  "greeting": "Hello"
+}
+
+$ echo 'greeting: Hello' | jq++ -t yaml   # short form; -t=yaml also works
+```
+
+Supported types match the recognized file extensions: `json`, `yaml`/`yml`,
+`toml`, `json5`, `hocon`/`conf`, and their `++` variants. The flag only applies
+to stdin — input from files is detected by its extension, so passing `-t`
+together with file arguments is an error.
+
+### YAML in, YAML out with `yq++`
+
+`yq++` is a YAML front-end for `jq++`: it runs `jq++`, strips private
+`_`-prefixed holder keys, and emits YAML. Because its job is YAML, stdin is
+treated as YAML by default (no `-t` needed):
+
+```shell script
+$ yq++ config.yaml++          # resolve a YAML file, emit YAML
+$ yq++ < config.yaml          # same, from stdin
+```
+
+`yq++` requires `jq`, plus either `ruby` or `python3` (with PyYAML) to emit YAML.
+
 ## Project Structure
 
 - `cmd/jqplusplus/main.go`: Application entry point

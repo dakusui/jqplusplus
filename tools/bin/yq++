@@ -31,4 +31,30 @@ _strip='def walk(f): . as $in
     else f end;
   walk(if type=="object" then with_entries(select(.key|startswith("_")|not)) else . end)'
 
-jq++ "$@" | jq "$_strip" | _to_yaml
+# yq++'s job is YAML, so when reading from stdin (no file operands) default
+# jq++'s input type to YAML — unless the caller already picked one with
+# -t/--input. Scan the operands without disturbing "$@".
+_have_files=0
+_have_input=0
+_prev=""
+for _a in "$@"; do
+  case "$_a" in
+    -t|--input)          _have_input=1 ;;
+    -t=*|--input=*)      _have_input=1 ;;
+    -h|--help|-v|--version) ;;
+    -*) ;;
+    *)  [ "$_prev" = "-t" ] || [ "$_prev" = "--input" ] || _have_files=1 ;;
+  esac
+  _prev="$_a"
+done
+if [ "$_have_files" -eq 0 ] && [ "$_have_input" -eq 0 ]; then
+  set -- --input yaml "$@"
+fi
+
+# Run jq++ first and capture its output. With `set -e`, a jq++ failure exits
+# here with jq++'s own error on stderr — so we never feed empty/partial output
+# into jq and the YAML emitter, which used to bury the real message under a
+# JSON parse traceback.
+_json="$(jq++ "$@")"
+[ -n "$_json" ] || exit 0
+printf '%s\n' "$_json" | jq "$_strip" | _to_yaml

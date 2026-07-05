@@ -10,6 +10,46 @@ import (
 	"github.com/dakusui/jqplusplus/internal/testutil"
 )
 
+func TestParseArgs(t *testing.T) {
+	cases := []struct {
+		name      string
+		args      []string
+		wantFiles []string
+		wantExt   string
+		wantErr   bool
+	}{
+		{name: "no args", args: nil, wantFiles: nil, wantExt: ""},
+		{name: "files only", args: []string{"a.yaml", "b.json"}, wantFiles: []string{"a.yaml", "b.json"}, wantExt: ""},
+		{name: "input yaml", args: []string{"--input", "yaml"}, wantFiles: nil, wantExt: ".yaml"},
+		{name: "input short", args: []string{"-t", "toml"}, wantFiles: nil, wantExt: ".toml"},
+		{name: "input equals", args: []string{"--input=json5"}, wantFiles: nil, wantExt: ".json5"},
+		{name: "input dotted plusplus", args: []string{"-t", ".yaml++"}, wantFiles: nil, wantExt: ".yaml++"},
+		{name: "missing value", args: []string{"-t"}, wantErr: true},
+		{name: "unsupported type", args: []string{"-t", "xml"}, wantErr: true},
+		{name: "type with files", args: []string{"-t", "yaml", "a.yaml"}, wantErr: true},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			files, ext, err := parseArgs(c.args)
+			if c.wantErr {
+				if err == nil {
+					t.Fatalf("expected error, got files=%v ext=%q", files, ext)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			if ext != c.wantExt {
+				t.Errorf("ext: want %q, got %q", c.wantExt, ext)
+			}
+			if !reflect.DeepEqual(files, c.wantFiles) {
+				t.Errorf("files: want %v, got %v", c.wantFiles, files)
+			}
+		})
+	}
+}
+
 func TestLoadAndResolveInheritances_SingleExtendsForJqFile(t *testing.T) {
 	dir := t.TempDir()
 	_ = testutil.WriteTempJSON(t, dir, "parent.jq",

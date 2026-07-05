@@ -59,10 +59,13 @@ func main() {
 		help := `Usage: <program> [options] [files...]
 
 Options:
-  -h, --help   Show this help message
-  -v, --version Show version info
+  -h, --help          Show this help message
+  -v, --version       Show version info
+  -t, --input <type>  Treat stdin as <type> (e.g. yaml, json, toml, json5,
+                      hocon, and their ++ variants). Only applies when reading
+                      from stdin; input from files is detected by extension.
 
-If no files are provided, input is read from stdin.
+If no files are provided, input is read from stdin (JSON by default).
 `
 		_, _ = os.Stderr.WriteString(help)
 		os.Exit(0)
@@ -78,7 +81,13 @@ If no files are provided, input is read from stdin.
 		os.Exit(0)
 	}
 
-	in, d, err := inputFiles(os.Args)
+	files, inputExt, err := parseArgs(os.Args[1:])
+	if err != nil {
+		_, _ = os.Stderr.WriteString("Error processing arguments: " + err.Error() + "\n")
+		os.Exit(1)
+	}
+
+	in, d, err := inputFiles(files, inputExt)
 	defer d()
 	if err != nil {
 		_, _ = os.Stderr.WriteString("Error processing arguments: " + err.Error() + "\n")
@@ -88,11 +97,55 @@ If no files are provided, input is read from stdin.
 	os.Exit(exitCode)
 }
 
-func inputFiles(args []string) ([]internal.NodeEntryKey, func(), error) {
+// parseArgs splits jq++ operands into input files and an optional stdin input
+// type (from -t/--input). The type is normalized to a file-extension suffix
+// (e.g. ".yaml"); it is an error to supply it alongside file operands, since
+// those are detected by their own extension.
+func parseArgs(args []string) (files []string, inputExt string, err error) {
+	var inputType string
+	haveInputType := false
+	setType := func(v string) error {
+		ext, ok := internal.InputTypeToExt(v)
+		if !ok {
+			return fmt.Errorf("unsupported input type %q; supported types are: %s", v, internal.SupportedExtensions)
+		}
+		inputType, haveInputType = ext, true
+		return nil
+	}
+	for i := 0; i < len(args); i++ {
+		a := args[i]
+		switch {
+		case a == "-t" || a == "--input":
+			if i+1 >= len(args) {
+				return nil, "", fmt.Errorf("%s requires an argument (e.g. yaml, json, toml)", a)
+			}
+			i++
+			if err := setType(args[i]); err != nil {
+				return nil, "", err
+			}
+		case strings.HasPrefix(a, "--input="):
+			if err := setType(strings.TrimPrefix(a, "--input=")); err != nil {
+				return nil, "", err
+			}
+		case strings.HasPrefix(a, "-t="):
+			if err := setType(strings.TrimPrefix(a, "-t=")); err != nil {
+				return nil, "", err
+			}
+		default:
+			files = append(files, a)
+		}
+	}
+	if haveInputType && len(files) > 0 {
+		return nil, "", fmt.Errorf("-t/--input only applies to stdin; input from files is detected by extension")
+	}
+	return files, inputType, nil
+}
+
+func inputFiles(args []string, inputExt string) ([]internal.NodeEntryKey, func(), error) {
 	var in []internal.NodeEntryKey
 	exit := func() {}
-	if len(args) == 1 {
-		tempFile, err := os.CreateTemp("", "input-*")
+	if len(args) == 0 {
+		tempFile, err := os.CreateTemp("", "input-*"+inputExt)
 		if err != nil {
 			_, _ = os.Stderr.WriteString("Error creating temporary file: " + err.Error() + "\n")
 			return nil, exit, err
@@ -123,7 +176,7 @@ func inputFiles(args []string) ([]internal.NodeEntryKey, func(), error) {
 			internal.NewNodeEntryKey("", absolutePath),
 		}
 	} else {
-		in = internal.Map(args[1:], func(t string) internal.NodeEntryKey {
+		in = internal.Map(args, func(t string) internal.NodeEntryKey {
 			return internal.NewNodeEntryKey(filepath.Dir(t), filepath.Base(t))
 		})
 	}
@@ -136,7 +189,7 @@ func processNodeEntryKeys(in []internal.NodeEntryKey) int {
 		v, err := processNodeEntryKey(eachNodeEntryKey)
 		if err != nil {
 			ret = 1
-			_, _ = os.Stderr.WriteString(fmt.Sprintf("ERROR: %s: in %v", err.Error(), eachNodeEntryKey))
+			_, _ = os.Stderr.WriteString(fmt.Sprintf("ERROR: %s: in %v\n", err.Error(), eachNodeEntryKey))
 			break
 		}
 		_, err = os.Stdout.WriteString(v + "\n")
