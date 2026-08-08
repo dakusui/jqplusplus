@@ -1,0 +1,3 @@
+{
+  "content": "eval:object:readfile(\"nonexistent.json\")"
+}
