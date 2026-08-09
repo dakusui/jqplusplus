@@ -401,3 +401,180 @@ func TestLoadAndResolveInheritances_BothExtendsAndIncludesOneLevelNested(t *test
 		t.Errorf("expected %v, got %v", expected, result)
 	}
 }
+
+func TestLoadAndResolveInheritances_ExplicitArraySplicePositions(t *testing.T) {
+	tests := []struct {
+		name  string
+		array string
+		want  []any
+	}{
+		{name: "append", array: `["$super", "child"]`, want: []any{"parent", "child"}},
+		{name: "prepend", array: `["child", "$super"]`, want: []any{"child", "parent"}},
+		{name: "wrap", array: `["before", "$super", "after"]`, want: []any{"before", "parent", "after"}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			dir := t.TempDir()
+			_ = testutil.WriteTempJSON(t, dir, "parent.json", `{"items":["parent"]}`)
+			child := testutil.WriteTempJSON(t, dir, "child.json", fmt.Sprintf(`{"$extends":["parent.json"],"items":%s}`, tt.array))
+
+			result, err := LoadAndResolveInheritances(filepath.Dir(child), filepath.Base(child), []string{})
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			got := result.Obj["items"]
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Fatalf("got %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestLoadAndResolveInheritances_ExplicitArrayPairwiseMerge(t *testing.T) {
+	dir := t.TempDir()
+	_ = testutil.WriteTempJSON(t, dir, "parent.json", `{
+  "items": [
+    {"name":"old", "keep":true},
+    "parent-extra"
+  ]
+}`)
+	child := testutil.WriteTempJSON(t, dir, "child.json", `{
+  "$extends": ["parent.json"],
+  "items": ["prefix", "$super*", {"name":"new"}]
+}`)
+
+	result, err := LoadAndResolveInheritances(filepath.Dir(child), filepath.Base(child), []string{})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	want := []any{
+		"prefix",
+		map[string]any{"name": "new", "keep": true},
+		"parent-extra",
+	}
+	if !reflect.DeepEqual(result.Obj["items"], want) {
+		t.Fatalf("got %v, want %v", result.Obj["items"], want)
+	}
+}
+
+func TestLoadAndResolveInheritances_ArrayDeltasComposeThroughIncludes(t *testing.T) {
+	dir := t.TempDir()
+	_ = testutil.WriteTempJSON(t, dir, "base.json", `{"tags":["base"]}`)
+	_ = testutil.WriteTempJSON(t, dir, "mixin.json", `{"tags":["$super","mixin"]}`)
+	child := testutil.WriteTempJSON(t, dir, "child.json", `{
+  "$extends":["base.json"],
+  "$includes":["mixin.json"]
+}`)
+
+	result, err := LoadAndResolveInheritances(filepath.Dir(child), filepath.Base(child), []string{})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	want := []any{"base", "mixin"}
+	if !reflect.DeepEqual(result.Obj["tags"], want) {
+		t.Fatalf("got %v, want %v", result.Obj["tags"], want)
+	}
+}
+
+func TestLoadAndResolveInheritances_MultipleSpliceMixinsCompose(t *testing.T) {
+	dir := t.TempDir()
+	_ = testutil.WriteTempJSON(t, dir, "base.json", `{"tags":["base"]}`)
+	_ = testutil.WriteTempJSON(t, dir, "first.json", `{"tags":["$super","first"]}`)
+	_ = testutil.WriteTempJSON(t, dir, "second.json", `{"tags":["$super","second"]}`)
+	child := testutil.WriteTempJSON(t, dir, "child.json", `{
+  "$extends":["base.json"],
+  "$includes":["first.json","second.json"]
+}`)
+
+	result, err := LoadAndResolveInheritances(filepath.Dir(child), filepath.Base(child), []string{})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	want := []any{"base", "first", "second"}
+	if !reflect.DeepEqual(result.Obj["tags"], want) {
+		t.Fatalf("got %v, want %v", result.Obj["tags"], want)
+	}
+}
+
+func TestLoadAndResolveInheritances_ArrayDeltasComposeAcrossLevels(t *testing.T) {
+	dir := t.TempDir()
+	_ = testutil.WriteTempJSON(t, dir, "base.json", `{"tags":["base"]}`)
+	_ = testutil.WriteTempJSON(t, dir, "middle.json", `{
+  "$extends":["base.json"],
+  "tags":["$super","middle"]
+}`)
+	child := testutil.WriteTempJSON(t, dir, "child.json", `{
+  "$extends":["middle.json"],
+  "tags":["$super","child"]
+}`)
+
+	result, err := LoadAndResolveInheritances(filepath.Dir(child), filepath.Base(child), []string{})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	want := []any{"base", "middle", "child"}
+	if !reflect.DeepEqual(result.Obj["tags"], want) {
+		t.Fatalf("got %v, want %v", result.Obj["tags"], want)
+	}
+}
+
+func TestLoadAndResolveInheritances_DanglingArrayMarkerIsAnError(t *testing.T) {
+	dir := t.TempDir()
+	child := testutil.WriteTempJSON(t, dir, "child.json", `{"items":["$super","child"]}`)
+
+	_, err := LoadAndResolveInheritances(filepath.Dir(child), filepath.Base(child), []string{})
+	if err == nil || !strings.Contains(err.Error(), "dangling array merge token") {
+		t.Fatalf("error = %v, want dangling array merge token", err)
+	}
+}
+
+func TestLoadAndResolveInheritances_ReservedArrayMarkerValidation(t *testing.T) {
+	tests := []struct {
+		name    string
+		value   string
+		wantErr string
+	}{
+		{name: "unknown optional spelling", value: `["$super?", "child"]`, wantErr: "unknown $super-family token"},
+		{name: "unknown function spelling", value: `["$super*(name)"]`, wantErr: "unknown $super-family token"},
+		{name: "identifier literal", value: `["$supervisor"]`, wantErr: ""},
+		{name: "raw escape", value: `["raw:$super"]`, wantErr: ""},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			dir := t.TempDir()
+			child := testutil.WriteTempJSON(t, dir, "child.json", fmt.Sprintf(`{"items":%s}`, tt.value))
+			_, err := LoadAndResolveInheritances(filepath.Dir(child), filepath.Base(child), []string{})
+			if tt.wantErr == "" {
+				if err != nil {
+					t.Fatalf("unexpected error: %v", err)
+				}
+				return
+			}
+			if err == nil || !strings.Contains(err.Error(), tt.wantErr) {
+				t.Fatalf("error = %v, want substring %q", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func TestLoadAndResolveInheritances_MarkedArrayRequiresArrayParent(t *testing.T) {
+	dir := t.TempDir()
+	_ = testutil.WriteTempJSON(t, dir, "parent.json", `{"items":{"name":"parent"}}`)
+	child := testutil.WriteTempJSON(t, dir, "child.json", `{"$extends":["parent.json"],"items":["$super","child"]}`)
+
+	_, err := LoadAndResolveInheritances(filepath.Dir(child), filepath.Base(child), []string{})
+	if err == nil || !strings.Contains(err.Error(), "explicit array merge requires an inherited array") {
+		t.Fatalf("error = %v, want inherited-array mismatch", err)
+	}
+}
+
+func TestLoadAndResolveInheritances_DoubleMarkedArraysAreAnError(t *testing.T) {
+	dir := t.TempDir()
+	_ = testutil.WriteTempJSON(t, dir, "parent.json", `{"items":["$super*",{"name":"parent"}]}`)
+	child := testutil.WriteTempJSON(t, dir, "child.json", `{"$extends":["parent.json"],"items":["$super*",{"name":"child"}]}`)
+
+	_, err := LoadAndResolveInheritances(filepath.Dir(child), filepath.Base(child), []string{})
+	if err == nil || !strings.Contains(err.Error(), "marked arrays cannot be merged") {
+		t.Fatalf("error = %v, want double-marked array error", err)
+	}
+}

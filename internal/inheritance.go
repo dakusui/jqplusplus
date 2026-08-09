@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"unicode"
 )
 
 // LoadAndResolveInheritances loads a JSON file, resolves filelevel, and returns the merged result as a map.
@@ -21,7 +22,15 @@ func LoadAndResolveInheritances(baseDir string, filename string, searchPaths []s
 		}
 	}()
 
-	return NewNodePoolWithBaseSearchPaths(baseDir, sessionDirectory, searchPaths).ReadNodeEntryValue(baseDir, filename, []*JqModule{})
+	pool := NewNodePoolWithBaseSearchPaths(baseDir, sessionDirectory, searchPaths)
+	result, err := pool.ReadNodeEntryValue(baseDir, filename, []*JqModule{})
+	if err != nil {
+		return nil, err
+	}
+	if err := validateMergeIntents(result.Obj); err != nil {
+		return nil, err
+	}
+	return result, nil
 }
 
 // LoadAndResolveInheritancesRecursively loads a JSON file, resolves $extends or $includes recursively, and merges parents.
@@ -164,14 +173,20 @@ func resolveInheritances(obj map[string]any, compilerOptions []*JqModule, nodepo
 			if i == 0 {
 				mergedParents = nodeEntryValue.Obj
 			} else {
-				mergedParents = mergeObjects(mergedParents, nodeEntryValue.Obj)
+				mergedParents, err = mergeObjectsWithError(mergedParents, nodeEntryValue.Obj)
+				if err != nil {
+					return nil, err
+				}
 			}
 			tmpCompilerOptions = append(tmpCompilerOptions, nodeEntryValue.CompilerOptions...)
 		}
 		if !mergeType.IsOrderReversed() {
-			obj = mergeObjects(mergedParents, obj)
+			obj, err = mergeObjectsWithError(mergedParents, obj)
 		} else {
-			obj = mergeObjects(obj, mergedParents)
+			obj, err = mergeObjectsWithError(obj, mergedParents)
+		}
+		if err != nil {
+			return nil, err
 		}
 		delete(obj, mergeType.String())
 	}
@@ -318,4 +333,58 @@ func toPathExpression(nodepath []any) string {
 		return fmt.Sprintf("%v", nodepath)
 	}
 	return np
+}
+
+// validateMergeIntents is deliberately run only after the complete
+// top-level inheritance walk. Parent files may legitimately carry a marked
+// array until a later $extends/$includes merge supplies the inherited value.
+func validateMergeIntents(root map[string]any) error {
+	return validateMergeIntentsAtPath(root, nil)
+}
+
+func validateMergeIntentsAtPath(value any, path []any) error {
+	switch current := value.(type) {
+	case map[string]any:
+		for key, child := range current {
+			if err := validateMergeIntentsAtPath(child, appendPath(path, key)); err != nil {
+				return err
+			}
+		}
+	case []any:
+		if _, err := inspectArrayMarker(current); err != nil {
+			return fmt.Errorf("invalid array merge marker at %s: %w", toPathExpression(path), err)
+		}
+		for i, child := range current {
+			if marker, ok := child.(string); ok {
+				switch marker {
+				case arraySpliceToken, arrayPairToken:
+					return fmt.Errorf("dangling array merge token %q at %s", marker, toPathExpression(appendPath(path, i)))
+				default:
+					if unknownSuperToken(marker) {
+						return fmt.Errorf("unknown $super-family token %q at %s", marker, toPathExpression(appendPath(path, i)))
+					}
+				}
+			}
+			if err := validateMergeIntentsAtPath(child, appendPath(path, i)); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func appendPath(path []any, segment any) []any {
+	result := make([]any, len(path), len(path)+1)
+	copy(result, path)
+	return append(result, segment)
+}
+
+func unknownSuperToken(value string) bool {
+	if !strings.HasPrefix(value, arraySpliceToken) || len(value) == len(arraySpliceToken) {
+		return false
+	}
+	for _, r := range value[len(arraySpliceToken):] {
+		return !(unicode.IsLetter(r) || unicode.IsDigit(r) || r == '_')
+	}
+	return false
 }

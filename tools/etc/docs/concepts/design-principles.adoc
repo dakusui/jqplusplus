@@ -46,5 +46,5 @@ This principle rests on the distinction between _overriding_ and _merging_:
 * A *merge* combines the inherited value with the child value.
   Merging is only meaningful within a kind, so requesting it across kinds is a contradiction to be reported, not a replacement to be performed silently.
 
-Today the only merge the engine performs is between two objects; every other combination during inheritance is an override.
-Future constructs that extend merging to arrays and atoms are bound by this principle: they merge within a kind and report an error across kinds.
+Ordinary inheritance still treats arrays and atoms as overrides. The explicit `"$super*"` array operation is the exception: it requests a same-kind pairwise merge at its marked site, recursively applying object, array, and atom rules while rejecting cross-kind pairs.
+The sibling `"$super"` operation is a splice rather than a pairwise merge, but it also requires an inherited array and preserves array kind throughout composition.

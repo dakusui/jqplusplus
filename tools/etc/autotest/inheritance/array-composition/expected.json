@@ -1,0 +1,12 @@
+{
+  "append": ["base", "child"],
+  "prepend": ["child", "base"],
+  "wrap": ["before", "base", "after"],
+  "pair": ["prefix", {"name":"child", "keep":true}, "parent-tail"],
+  "mixins": ["base", "first", "second"],
+  "raw": ["$super"],
+  "evalProduced": ["$super"],
+  "node": {
+    "items": [{"name":"node-child", "keep":true}, "parent-tail"]
+  }
+}

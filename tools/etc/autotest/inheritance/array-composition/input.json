@@ -1,0 +1,14 @@
+{
+  "$extends": ["base.json"],
+  "$includes": ["first.json", "second.json"],
+  "append": ["$super", "child"],
+  "prepend": ["child", "$super"],
+  "wrap": ["before", "$super", "after"],
+  "pair": ["prefix", "$super*", {"name":"child"}],
+  "raw": ["raw:$super"],
+  "evalProduced": "eval:array:[\"$super\"]",
+  "node": {
+    "$extends": ["node-base.json"],
+    "items": ["$super*", {"name":"node-child"}]
+  }
+}

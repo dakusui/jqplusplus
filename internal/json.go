@@ -207,35 +207,272 @@ func valueToAny(v hocon.Value) any {
 	}
 }
 
-// mergeObjects merges parent and child objects, with child values taking precedence.
+// mergeObjects merges parent and child objects during inheritance resolution.
+// Array composition is opt-in at each child array through $super/$super*.
 func mergeObjects(parent, child map[string]any) map[string]any {
-	return MergeObjects(parent, child, MergePolicyDefault)
-}
-
-func MergeObjects(a, b map[string]interface{}, policy MergePolicy) map[string]interface{} {
-	result := make(map[string]interface{})
-	for k, v := range a {
-		result[k] = v
-	}
-	for k, v := range b {
-		if av, ok := result[k].(map[string]interface{}); ok {
-			if bv, ok := v.(map[string]interface{}); ok {
-				result[k] = MergeObjects(av, bv, policy)
-				continue
-			}
-		}
-		result[k] = v
+	result, err := mergeObjectsWithError(parent, child)
+	if err != nil {
+		panic(err)
 	}
 	return result
+}
+
+func mergeObjectsWithError(parent, child map[string]any) (map[string]any, error) {
+	return mergeObjectsWithPolicy(parent, child, MergePolicyInheritance)
+}
+
+// MergeObjects recursively merges object values. With the default policy,
+// arrays are replaced wholesale, preserving jq++'s historical behavior. The
+// inheritance policy additionally recognizes the explicit array markers.
+//
+// MergeObjects keeps its original no-error API for callers that use the
+// ordinary merge policy. Invalid explicit inheritance operations are reported
+// by the inheritance resolver through mergeObjectsWithPolicy instead.
+func MergeObjects(a, b map[string]interface{}, policy MergePolicy) map[string]interface{} {
+	result, err := mergeObjectsWithPolicy(a, b, policy)
+	if err != nil {
+		panic(err)
+	}
+	return result
+}
+
+func mergeObjectsWithPolicy(parent, child map[string]any, policy MergePolicy) (map[string]any, error) {
+	result := make(map[string]any, len(parent)+len(child))
+	for k, v := range parent {
+		result[k] = v
+	}
+	for k, v := range child {
+		pv, exists := result[k]
+		if !exists {
+			if policy == MergePolicyInheritance {
+				result[k] = copyMarkedArray(v)
+			} else {
+				result[k] = v
+			}
+			continue
+		}
+
+		merged, err := mergeValuesWithPolicy(pv, v, policy)
+		if err != nil {
+			return nil, err
+		}
+		result[k] = merged
+	}
+	return result, nil
 }
 
 // MergePolicy defines the policy for merging objects.
 type MergePolicy int
 
 const (
+	// MergePolicyDefault replaces arrays wholesale.
 	MergePolicyDefault MergePolicy = iota
-	// Add more policies as needed
+	// MergePolicyInheritance enables explicit $super/$super* array operations.
+	MergePolicyInheritance
 )
+
+const (
+	arrayMarkerNone = iota
+	arrayMarkerSplice
+	arrayMarkerPairwise
+)
+
+const (
+	arraySpliceToken = "$super"
+	arrayPairToken   = "$super*"
+)
+
+type arrayMarkerInfo struct {
+	kind  int
+	index int
+}
+
+func inspectArrayMarker(array []any) (arrayMarkerInfo, error) {
+	info := arrayMarkerInfo{kind: arrayMarkerNone, index: -1}
+	for i, value := range array {
+		marker, ok := value.(string)
+		if !ok {
+			continue
+		}
+		switch marker {
+		case arraySpliceToken:
+			if info.kind == arrayMarkerPairwise {
+				return arrayMarkerInfo{}, fmt.Errorf("array cannot mix %q and %q", arraySpliceToken, arrayPairToken)
+			}
+			info.kind = arrayMarkerSplice
+		case arrayPairToken:
+			if info.kind == arrayMarkerSplice {
+				return arrayMarkerInfo{}, fmt.Errorf("array cannot mix %q and %q", arraySpliceToken, arrayPairToken)
+			}
+			if info.kind == arrayMarkerPairwise {
+				return arrayMarkerInfo{}, fmt.Errorf("array can contain only one %q marker", arrayPairToken)
+			}
+			info.kind = arrayMarkerPairwise
+			info.index = i
+		}
+	}
+	return info, nil
+}
+
+func copyMarkedArray(value any) any {
+	array, ok := value.([]any)
+	if !ok {
+		return value
+	}
+	info, err := inspectArrayMarker(array)
+	if err != nil {
+		return value
+	}
+	if info.kind == arrayMarkerNone {
+		return value
+	}
+	return DeepCopy(array)
+}
+
+func mergeValuesWithPolicy(parent, child any, policy MergePolicy) (any, error) {
+	parentObject, parentIsObject := parent.(map[string]any)
+	childObject, childIsObject := child.(map[string]any)
+	if parentIsObject && childIsObject {
+		return mergeObjectsWithPolicy(parentObject, childObject, policy)
+	}
+
+	parentArray, parentIsArray := parent.([]any)
+	childArray, childIsArray := child.([]any)
+	if parentIsArray && childIsArray {
+		if policy != MergePolicyInheritance {
+			return child, nil
+		}
+		return mergeInheritanceArrays(parentArray, childArray)
+	}
+	if policy == MergePolicyInheritance && childIsArray {
+		childInfo, err := inspectArrayMarker(childArray)
+		if err != nil {
+			return nil, err
+		}
+		if childInfo.kind != arrayMarkerNone {
+			return nil, fmt.Errorf("explicit array merge requires an inherited array, got %s", jsonMergeKind(parent))
+		}
+	}
+	return child, nil
+}
+
+func mergeInheritanceArrays(parent, child []any) ([]any, error) {
+	childInfo, err := inspectArrayMarker(child)
+	if err != nil {
+		return nil, err
+	}
+	if childInfo.kind == arrayMarkerNone {
+		// The marker is opt-in at the child site; an unmarked child array keeps
+		// the original replacement behavior even when the parent was marked.
+		return child, nil
+	}
+
+	parentInfo, err := inspectArrayMarker(parent)
+	if err != nil {
+		return nil, err
+	}
+	if childInfo.kind == arrayMarkerPairwise && parentInfo.kind != arrayMarkerNone {
+		return nil, fmt.Errorf("marked arrays cannot be merged: parent and child both contain an explicit array marker")
+	}
+	if childInfo.kind == arrayMarkerSplice && parentInfo.kind == arrayMarkerPairwise {
+		return nil, fmt.Errorf("marked arrays cannot be merged: $super cannot compose with $super*")
+	}
+
+	switch childInfo.kind {
+	case arrayMarkerSplice:
+		result := make([]any, 0, len(parent)+len(child)-1)
+		for _, value := range child {
+			if marker, ok := value.(string); ok && marker == arraySpliceToken {
+				for _, inherited := range parent {
+					result = append(result, DeepCopy(inherited))
+				}
+				continue
+			}
+			result = append(result, DeepCopy(value))
+		}
+		return result, nil
+	case arrayMarkerPairwise:
+		prefix := child[:childInfo.index]
+		queue := child[childInfo.index+1:]
+		result := make([]any, 0, len(prefix)+maxInt(len(parent), len(queue)))
+		for _, value := range prefix {
+			result = append(result, DeepCopy(value))
+		}
+		paired := minInt(len(parent), len(queue))
+		for i := 0; i < paired; i++ {
+			merged, err := mergePairwiseValues(parent[i], queue[i])
+			if err != nil {
+				return nil, fmt.Errorf("array pair at index %d: %w", i, err)
+			}
+			result = append(result, merged)
+		}
+		for _, value := range parent[paired:] {
+			result = append(result, DeepCopy(value))
+		}
+		for _, value := range queue[paired:] {
+			result = append(result, DeepCopy(value))
+		}
+		return result, nil
+	default:
+		panic("unknown array marker")
+	}
+}
+
+func mergePairwiseValues(parent, child any) (any, error) {
+	parentObject, parentIsObject := parent.(map[string]any)
+	childObject, childIsObject := child.(map[string]any)
+	if parentIsObject && childIsObject {
+		// Strictness applies to the paired values themselves. Once an object
+		// pair is entered, its fields use the language's ordinary merge rules.
+		return mergeObjectsWithPolicy(parentObject, childObject, MergePolicyInheritance)
+	}
+
+	parentArray, parentIsArray := parent.([]any)
+	childArray, childIsArray := child.([]any)
+	if parentIsArray && childIsArray {
+		childInfo, err := inspectArrayMarker(childArray)
+		if err != nil {
+			return nil, err
+		}
+		if childInfo.kind == arrayMarkerNone {
+			return DeepCopy(childArray), nil
+		}
+		return mergeInheritanceArrays(parentArray, childArray)
+	}
+
+	parentKind := jsonMergeKind(parent)
+	childKind := jsonMergeKind(child)
+	if parentKind != childKind {
+		return nil, fmt.Errorf("cannot merge %s with %s", parentKind, childKind)
+	}
+	// Atom pairs are deliberately child-wins, including null.
+	return DeepCopy(child), nil
+}
+
+func jsonMergeKind(value any) string {
+	switch value.(type) {
+	case map[string]any:
+		return "object"
+	case []any:
+		return "array"
+	default:
+		return "atom"
+	}
+}
+
+func minInt(a, b int) int {
+	if a < b {
+		return a
+	}
+	return b
+}
+
+func maxInt(a, b int) int {
+	if a > b {
+		return a
+	}
+	return b
+}
 
 // PathArrayToPathExpression converts a "path array" to a "path expression" string.
 func PathArrayToPathExpression(pathArray []any) (string, error) {

@@ -172,6 +172,38 @@ The full priority order from highest to lowest is:
 
   $includes (later entries) → $includes (earlier entries) → current object's own fields → $extends (earlier entries) → $extends (later entries)
 
+=== Explicit Inherited Array Composition
+
+Arrays replace inherited arrays by default. To combine an array explicitly, place one of the following exact tokens directly in the child array:
+
+`"$super"` splices the inherited array at its position. The position determines the operation:
+
+[source,json]
+----
+{
+  "$extends": ["base.json"],
+  "tags": ["$super", "child"]
+}
+----
+
+With `base.json` containing `{"tags":["base"]}`, the result is `{"tags":["base","child"]}`. Put the token last to prepend, or surround it with values to wrap the inherited elements. Multiple `$super` tokens are allowed.
+
+`"$super*"` begins an index-wise pairwise merge. Values before the token are a literal prefix; values after it are paired with inherited elements by index:
+
+[source,json]
+----
+{
+  "$extends": ["base.json"],
+  "items": ["new-first", "$super*", {}, {"enabled":true}, "new-tail"]
+}
+----
+
+An empty object `{}` keeps an inherited object element unchanged. Object pairs merge recursively, marked array pairs recurse into array composition, and atom pairs use the child value. Cross-kind pairs are errors. Inherited elements that have no child queue partner remain after the paired region; extra child queue elements become a literal tail.
+
+Only direct array elements are markers. An unmarked array still replaces the inherited array, and a marked array whose inherited key is absent remains an unresolved delta and causes an error at the end of structural composition. `$super*` may appear only once and marked pairwise arrays cannot be composed with another marked array.
+
+The marker namespace is validated. `"$super?"` and `"$super*(name)"` are unknown tokens, while `"$supervisor"` is an ordinary literal. Prefix an intentional literal with `raw:`, for example `"raw:$super"`; the `raw:` prefix is removed during value-side evaluation.
+
 *Tip — building a custom DSL with $includes and JF_PATH*
 
 Because `$includes` fragments override the current object's own fields, and because files are resolved via `JF_PATH`, you can use the two features together to build a lightweight domain-specific configuration language where platform-level fragments inject mandatory values.

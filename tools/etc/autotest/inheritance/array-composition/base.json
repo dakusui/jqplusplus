@@ -1,0 +1,8 @@
+{
+  "append": ["base"],
+  "prepend": ["base"],
+  "wrap": ["base"],
+  "pair": [{"name":"base", "keep":true}, "parent-tail"],
+  "mixins": ["base"],
+  "raw": ["base"]
+}
