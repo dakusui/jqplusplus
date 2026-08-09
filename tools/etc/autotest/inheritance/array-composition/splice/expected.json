@@ -1,0 +1,8 @@
+{
+  "append": ["p1", "p2", "after"],
+  "prepend": ["before", "p1", "p2"],
+  "wrap": ["before", "p1", "p2", "after"],
+  "multiple": ["p1", "p2", "middle", "p1", "p2"],
+  "replace": ["child"],
+  "escaped": ["$super", "$super*", "$supervisor"]
+}

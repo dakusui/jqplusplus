@@ -1,0 +1,4 @@
+{
+  "$extends": ["first.json"],
+  "tags": ["$super", "second"]
+}

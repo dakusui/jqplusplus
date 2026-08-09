@@ -1,0 +1,7 @@
+{
+  "append": ["p1", "p2"],
+  "prepend": ["p1", "p2"],
+  "wrap": ["p1", "p2"],
+  "multiple": ["p1", "p2"],
+  "replace": ["parent"]
+}

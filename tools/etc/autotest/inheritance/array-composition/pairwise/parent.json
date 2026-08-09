@@ -1,0 +1,10 @@
+{
+  "values": [
+    {"inherited": true},
+    ["inherited-array"],
+    "inherited-atom",
+    {"kept": true},
+    "inherited-tail"
+  ],
+  "childExtras": ["inherited"]
+}

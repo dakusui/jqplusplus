@@ -1,0 +1,12 @@
+{
+  "$extends": ["parent.json"],
+  "values": [
+    "literal-prefix",
+    "$super*",
+    {"child": true},
+    ["child-array"],
+    "child-atom",
+    {}
+  ],
+  "childExtras": ["$super*", "override", "child-tail"]
+}

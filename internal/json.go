@@ -208,25 +208,33 @@ func valueToAny(v hocon.Value) any {
 }
 
 // mergeObjects merges parent and child objects, with child values taking precedence.
-func mergeObjects(parent, child map[string]any) map[string]any {
+func mergeObjects(parent, child map[string]any) (map[string]any, error) {
 	return MergeObjects(parent, child, MergePolicyDefault)
 }
 
-func MergeObjects(a, b map[string]interface{}, policy MergePolicy) map[string]interface{} {
+// MergeObjects recursively merges object values. Arrays continue to override by
+// default, but a child array containing an array-composition token is composed
+// with the inherited array.
+func MergeObjects(a, b map[string]interface{}, policy MergePolicy) (map[string]interface{}, error) {
 	result := make(map[string]interface{})
 	for k, v := range a {
 		result[k] = v
 	}
 	for k, v := range b {
-		if av, ok := result[k].(map[string]interface{}); ok {
-			if bv, ok := v.(map[string]interface{}); ok {
-				result[k] = MergeObjects(av, bv, policy)
-				continue
-			}
+		inherited, present := result[k]
+		if !present {
+			// A marked array is an unresolved delta until an ancestor supplies the
+			// key. Keep it intact so it can compose in a later inheritance merge.
+			result[k] = v
+			continue
 		}
-		result[k] = v
+		merged, err := mergeValues(inherited, v, policy)
+		if err != nil {
+			return nil, fmt.Errorf("at key %q: %w", k, err)
+		}
+		result[k] = merged
 	}
-	return result
+	return result, nil
 }
 
 // MergePolicy defines the policy for merging objects.

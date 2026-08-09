@@ -1,0 +1,3 @@
+{
+  "$extends": ["second.json", "base.json"]
+}

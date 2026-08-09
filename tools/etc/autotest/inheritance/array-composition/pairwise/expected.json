@@ -1,0 +1,11 @@
+{
+  "values": [
+    "literal-prefix",
+    {"inherited": true, "child": true},
+    ["child-array"],
+    "child-atom",
+    {"kept": true},
+    "inherited-tail"
+  ],
+  "childExtras": ["override", "child-tail"]
+}

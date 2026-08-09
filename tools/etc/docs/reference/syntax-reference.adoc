@@ -193,6 +193,98 @@ Switching environments is a matter of changing `JF_PATH`—the configuration fil
 This pattern lets teams publish versioned "standard" fragments that any project can `$includes` without copying content.
 The result is a small but coherent DSL: every configuration file speaks the same vocabulary of shared fragments, and individual files only spell out what makes them different.
 
+==== Array composition with $super and $super*
+
+Arrays replace inherited arrays by default.
+To compose a child array with the lower-priority array at the same key, place `$super` or `$super*` directly in the child array.
+The same rules apply to file-level and node-level inheritance, with both `$extends` and `$includes`.
+
+*`$super` — positional splice*
+
+`"$super"` is replaced by every element of the inherited array at that position.
+Its position expresses append, prepend, or wrapping without separate directives:
+
+[source,json]
+----
+// inherited: ["parent-1", "parent-2"]
+["$super", "after"]             // append
+["before", "$super"]            // prepend
+["before", "$super", "after"]  // wrap
+["$super", "again", "$super"]  // splice twice
+----
+
+Each occurrence splices independently.
+Two `$super` deltas can meet during multi-level inheritance; their still-unresolved tokens are retained so the deltas compose associatively.
+This makes reusable `$includes` fragments possible:
+
+[source,json]
+----
+// policy.json
+{"tags": ["$super", "mandated"]}
+
+// service.json
+{"$includes": ["policy.json"], "tags": ["service"]}
+
+// result
+{"tags": ["service", "mandated"]}
+----
+
+*`$super{asterisk}` — positional pairwise merge*
+
+Elements before `"$super*"` form a literal prefix.
+Elements after it form a queue that is paired with the inherited array from index zero.
+Each pair is merged with the child on the right, and unpaired elements from either side are retained in their original order.
+
+[source,json]
+----
+// inherited
+[{"name": "one", "enabled": false}, {"name": "two"}]
+
+// child
+["prefix", "$super*", {"enabled": true}, {}, "tail"]
+
+// result
+["prefix", {"name": "one", "enabled": true}, {"name": "two"}, "tail"]
+----
+
+An empty object (`{}`) therefore acts as a keep-inherited pad when its paired inherited element is also an object.
+The pair rules are:
+
+[cols="1,2", options="header"]
+|===
+|Pair |Result
+
+|Object and object
+|Recursive object merge; the child object's fields take precedence.
+
+|Array and array
+|The child array replaces the inherited array unless the child array is itself marked, in which case the marker is applied recursively.
+
+|Atom and atom
+|The child atom wins. Strings, numbers, booleans, and `null` are atoms.
+
+|Different kinds
+|Configuration error.
+|===
+
+Exactly one `$super*` may appear in an array.
+`$super` and `$super*` cannot be mixed in the same array.
+In this version, a `$super*` delta cannot meet another marked array; only `$super`-with-`$super` delta composition is supported.
+
+*Resolution and errors*
+
+The inherited value must be an array when either token is applied.
+If the inherited key is absent, the marked array is carried forward as an unresolved delta so another inheritance merge can supply it.
+If it is still unresolved after all file- and node-level inheritance, evaluation fails instead of silently treating the inherited array as empty.
+
+Tokens affect only the array in which they are direct elements.
+A token inside a nested array does not splice elements from the outer array; it must be resolved through a merge of that nested array or escaped as a literal.
+
+The `$super` token family is reserved and validated.
+An unrecognised extension beginning with `$super` plus a non-identifier character—such as `$super?`, `$super**`, `$super later`, or `$super*(name)`—is a configuration error.
+Strings with an identifier suffix, such as `$supervisor` and `$super_user`, remain ordinary literals.
+Use `raw:$super` or `raw:$super*` when the exact token text is intended as output data.
+
 ==== $local
 
 Defines named local objects that can be referenced within the same file.

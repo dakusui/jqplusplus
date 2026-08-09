@@ -21,7 +21,14 @@ func LoadAndResolveInheritances(baseDir string, filename string, searchPaths []s
 		}
 	}()
 
-	return NewNodePoolWithBaseSearchPaths(baseDir, sessionDirectory, searchPaths).ReadNodeEntryValue(baseDir, filename, []*JqModule{})
+	ret, err := NewNodePoolWithBaseSearchPaths(baseDir, sessionDirectory, searchPaths).ReadNodeEntryValue(baseDir, filename, []*JqModule{})
+	if err != nil {
+		return nil, err
+	}
+	if err := GroundArrayCompositions(ret.Obj); err != nil {
+		return nil, fmt.Errorf("failed to ground array composition: %w", err)
+	}
+	return ret, nil
 }
 
 // LoadAndResolveInheritancesRecursively loads a JSON file, resolves $extends or $includes recursively, and merges parents.
@@ -164,14 +171,20 @@ func resolveInheritances(obj map[string]any, compilerOptions []*JqModule, nodepo
 			if i == 0 {
 				mergedParents = nodeEntryValue.Obj
 			} else {
-				mergedParents = mergeObjects(mergedParents, nodeEntryValue.Obj)
+				mergedParents, err = mergeObjects(mergedParents, nodeEntryValue.Obj)
+				if err != nil {
+					return nil, err
+				}
 			}
 			tmpCompilerOptions = append(tmpCompilerOptions, nodeEntryValue.CompilerOptions...)
 		}
 		if !mergeType.IsOrderReversed() {
-			obj = mergeObjects(mergedParents, obj)
+			obj, err = mergeObjects(mergedParents, obj)
 		} else {
-			obj = mergeObjects(obj, mergedParents)
+			obj, err = mergeObjects(obj, mergedParents)
+		}
+		if err != nil {
+			return nil, err
 		}
 		delete(obj, mergeType.String())
 	}
