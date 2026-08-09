@@ -1,0 +1,9 @@
+{
+  "$extends": [
+    "mid.json"
+  ],
+  "key": [
+    "$super",
+    "c"
+  ]
+}

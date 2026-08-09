@@ -1,0 +1,13 @@
+{
+  "servers": [
+    {
+      "host": "a.example.com",
+      "port": 80,
+      "tls": false
+    },
+    {
+      "host": "b.example.com",
+      "port": 80
+    }
+  ]
+}

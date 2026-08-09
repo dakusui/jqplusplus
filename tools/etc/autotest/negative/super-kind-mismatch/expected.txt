@@ -1,0 +1,1 @@
+a merge is only defined between values of the same kind

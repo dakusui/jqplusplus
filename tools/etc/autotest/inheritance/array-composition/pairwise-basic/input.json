@@ -1,0 +1,14 @@
+{
+  "$extends": [
+    "parent.json"
+  ],
+  "servers": [
+    {
+      "host": "new.example.com"
+    },
+    "$super*",
+    {
+      "tls": true
+    }
+  ]
+}

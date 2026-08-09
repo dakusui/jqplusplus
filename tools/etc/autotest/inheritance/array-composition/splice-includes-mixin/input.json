@@ -1,0 +1,9 @@
+{
+  "$includes": [
+    "fragment.json"
+  ],
+  "tags": [
+    "app-a",
+    "app-b"
+  ]
+}
