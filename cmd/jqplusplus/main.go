@@ -222,6 +222,11 @@ func processNodeEntryKey(nodeEntryKey internal.NodeEntryKey) (string, error) {
 		return "", err
 	}
 	obj := nodeEntryValue.Obj
+	// Ground array-composition deltas: tokens that survived every merge can
+	// never be resolved and are reported before evaluation begins.
+	if err := internal.ValidateArrayComposition(obj); err != nil {
+		return "", err
+	}
 	{
 		invocationSpec := internal.NewInvocationSpecBuilder().AddModules(nodeEntryValue.CompilerOptions...).Build()
 		obj, err = internal.ProcessKeySide(obj, 7, *invocationSpec, nodeEntryKey.BaseDir(), internal.SearchPaths())

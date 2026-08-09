@@ -208,25 +208,57 @@ func valueToAny(v hocon.Value) any {
 }
 
 // mergeObjects merges parent and child objects, with child values taking precedence.
-func mergeObjects(parent, child map[string]any) map[string]any {
+func mergeObjects(parent, child map[string]any) (map[string]any, error) {
 	return MergeObjects(parent, child, MergePolicyDefault)
 }
 
-func MergeObjects(a, b map[string]interface{}, policy MergePolicy) map[string]interface{} {
+// MergeObjects merges two objects with the child's values taking precedence.
+// Keys whose values are both objects merge recursively. A child array that
+// contains composition tokens ($super / $super*) composes with the inherited
+// array (issue #74); an unmarked child array — like every other value —
+// overrides the inherited value wholesale.
+func MergeObjects(a, b map[string]interface{}, policy MergePolicy) (map[string]interface{}, error) {
+	return mergeObjectsAtPath(a, b, policy, "")
+}
+
+func mergeObjectsAtPath(a, b map[string]interface{}, policy MergePolicy, path string) (map[string]interface{}, error) {
 	result := make(map[string]interface{})
 	for k, v := range a {
 		result[k] = v
 	}
 	for k, v := range b {
+		childPath := path + "." + k
 		if av, ok := result[k].(map[string]interface{}); ok {
 			if bv, ok := v.(map[string]interface{}); ok {
-				result[k] = MergeObjects(av, bv, policy)
+				m, err := mergeObjectsAtPath(av, bv, policy, childPath)
+				if err != nil {
+					return nil, err
+				}
+				result[k] = m
 				continue
 			}
 		}
+		if bv, ok := v.([]any); ok && containsSuperToken(bv) {
+			if existing, present := result[k]; present {
+				av, ok := existing.([]any)
+				if !ok {
+					return nil, fmt.Errorf("at %s: cannot compose array with inherited %s: a merge is only defined between values of the same kind", childPath, jsonTypeName(existing))
+				}
+				composed, err := composeArrays(av, bv, childPath)
+				if err != nil {
+					return nil, err
+				}
+				result[k] = composed
+				continue
+			}
+			// No inherited value here: carry the array with its tokens
+			// unresolved, so that a later merge — for example the file that
+			// $includes this one — can still compose with it. Tokens that
+			// survive to the top level are reported by ValidateArrayComposition.
+		}
 		result[k] = v
 	}
-	return result
+	return result, nil
 }
 
 // MergePolicy defines the policy for merging objects.
