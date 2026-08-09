@@ -1,6 +1,6 @@
 == Design Principles
 
-JSON{plus}{plus} was designed around three principles.
+JSON{plus}{plus} was designed around four principles.
 
 === Principle 1 — Completeness and Compatibility
 
@@ -30,3 +30,21 @@ JSON{plus}{plus} introduces explicit constructs for expressing structural reuse.
 
 * *Structural composition* constructs (`$extends`, `$includes`) let configurations combine documents directly, describing relationships in the data structure itself rather than through external tooling.
 * *Expression evaluation* (`eval:`) lets configurations compute values dynamically from the composed result.
+
+=== Principle 4 — Same-Kind Merge
+
+**A merge is defined only between two values of the same kind:**
+When jq{plus}{plus} combines two values by merging, both values must be of the same kind: object with object, array with array, or atom with atom.
+Strings, numbers, booleans, and `null` are all atoms.
+jq{plus}{plus} never merges values across kinds.
+Where a construct requests a merge and the operand kinds differ, jq{plus}{plus} reports a configuration error rather than guessing an outcome.
+
+This principle rests on the distinction between _overriding_ and _merging_:
+
+* An *override* replaces the inherited value entirely.
+  Writing a key in a child object means "override"; no kind constraint applies, and the child value wins regardless of its type.
+* A *merge* combines the inherited value with the child value.
+  Merging is only meaningful within a kind, so requesting it across kinds is a contradiction to be reported, not a replacement to be performed silently.
+
+Today the only merge the engine performs is between two objects; every other combination during inheritance is an override.
+Future constructs that extend merging to arrays and atoms are bound by this principle: they merge within a kind and report an error across kinds.
