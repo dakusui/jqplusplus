@@ -127,7 +127,7 @@ How each key is combined depends on the type of its value:
 ====
 Array replacement is the current behavior.
 We are considering enhancing the syntax so that a child can explicitly *append*, *prepend*, or *merge* an array with the one inherited from its ancestors, instead of always replacing it.
-This is a future consideration and not yet supported.
+This is a future consideration and not yet supported; see https://github.com/dakusui/jqplusplus/issues/74[issue #74] for the tracking discussion.
 ====
 
 Given `$extends: [A, B]`, A is merged over B first, then the current object is merged over that result, giving the priority order: current object → A → B.
