@@ -1,0 +1,4 @@
+{
+  "$includes": ["mixin.json"],
+  "tags": ["local"]
+}

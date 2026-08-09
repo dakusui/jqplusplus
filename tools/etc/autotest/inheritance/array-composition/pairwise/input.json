@@ -1,0 +1,4 @@
+{
+  "$extends": ["parent.json"],
+  "rules": ["first", "$super*", {"enabled": false}, {}, {"name": "third"}]
+}

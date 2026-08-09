@@ -1,0 +1,3 @@
+ERROR:
+cannot pairwise merge object with atom
+negative/array-composition/cross-kind-pair/input.json

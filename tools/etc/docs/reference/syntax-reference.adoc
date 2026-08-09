@@ -193,6 +193,53 @@ Switching environments is a matter of changing `JF_PATH`—the configuration fil
 This pattern lets teams publish versioned "standard" fragments that any project can `$includes` without copying content.
 The result is a small but coherent DSL: every configuration file speaks the same vocabulary of shared fragments, and individual files only spell out what makes them different.
 
+==== Array composition: `$super` and `$super*`
+
+Arrays normally follow override semantics: a child array replaces the inherited array in its entirety.
+Use an exact `$super` or `$super*` string as a *direct element* of a child array to opt in at that location.
+The tokens work with both `$extends` and `$includes`, at file and node level.
+
+*`$super` — splice the inherited array*
+
+Each `$super` is replaced with the complete inherited array. Its position expresses append, prepend, or wrapping, and multiple occurrences are allowed.
+
+[source,json]
+----
+// parent.json
+{"tags": ["base"]}
+
+// child.json
+{
+  "$extends": ["parent.json"],
+  "tags": ["before", "$super", "after"]
+}
+// => {"tags": ["before", "base", "after"]}
+----
+
+*`$super*` — positional pairwise merge*
+
+`$super*` may occur once. Values before it are a literal prefix. Values after it are paired with inherited elements in order; parent or child extras are kept, with parent extras first.
+For each pair, two objects merge recursively, two arrays use this same opt-in rule recursively, and two atoms use the child value. Any cross-kind pair is an error. An empty object (`{}`) therefore keeps an inherited object element unchanged.
+
+[source,json]
+----
+// parent.json
+{"rules": [{"name": "one", "enabled": true}, {"name": "two"}]}
+
+// child.json
+{
+  "$extends": ["parent.json"],
+  "rules": ["first", "$super*", {"enabled": false}, {}, {"name": "third"}]
+}
+// => {"rules": ["first", {"name": "one", "enabled": false}, {"name": "two"}, {"name": "third"}]}
+----
+
+*Resolution and errors*
+
+A marked array whose parent does not define that key remains an unresolved delta, so mixin fragments can add to the arrays of their includers. The top-level result is checked after node-level inheritance; a token that remains unresolved is a configuration error. A marked array also errors if its inherited value is not an array, if `$super` and `$super*` are mixed, or if two marked arrays meet.
+
+The `$super` family is reserved inside array values. `$super?`, pass:[<code>$super**</code>], and other spellings where the character after `$super` is not an identifier character are rejected as unknown tokens. Strings such as `$supervisor` and `$superuser_home` remain ordinary literals. Use `raw:$super` or pass:[<code>raw:$super*</code>] for literal token strings; `raw:` is removed later during value evaluation.
+
 ==== $local
 
 Defines named local objects that can be referenced within the same file.

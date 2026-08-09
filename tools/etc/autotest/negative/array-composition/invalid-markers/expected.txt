@@ -1,0 +1,3 @@
+ERROR:
+cannot mix \\$super and \\$super\\*
+negative/array-composition/invalid-markers/input.json

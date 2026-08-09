@@ -1,0 +1,3 @@
+ERROR:
+unknown array composition token "\\$super\\?"
+negative/array-composition/unknown-token/input.json

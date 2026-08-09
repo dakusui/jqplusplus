@@ -1,0 +1,3 @@
+ERROR:
+only one \\$super\\*
+negative/array-composition/duplicate-pairwise/input.json

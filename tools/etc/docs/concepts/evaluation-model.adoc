@@ -115,22 +115,24 @@ How each key is combined depends on the type of its value:
 |Recursive merge — parent and child objects are combined key by key using this same rule.
 
 |Array
-|Replaced entirely — the child array overrides the parent; arrays are never merged element-wise.
+|Replaced entirely by default. A child array can opt in to composition with a direct `$super` or `$super*` element.
 
 |Scalar (string, number, boolean, null)
 |Replaced entirely — the child value overrides the parent value.
 |===
 
-"Recursive" therefore applies only to nested objects; arrays and scalars are always replaced wholesale, never merged.
-In jq{plus}{plus} terminology these wholesale replacements are _overrides_: the only _merge_ the engine performs is between two objects.
+"Recursive" therefore applies automatically only to nested objects; unmarked arrays and scalars are replaced wholesale.
+In jq{plus}{plus} terminology these wholesale replacements are _overrides_.
 This is the link:design-principles.html[same-kind merge principle].
 
-[NOTE]
-====
-Array replacement is the current behavior.
-We are considering enhancing the syntax so that a child can explicitly *append*, *prepend*, or *merge* an array with the one inherited from its ancestors, instead of always replacing it.
-This is a future consideration and not yet supported; see https://github.com/dakusui/jqplusplus/issues/74[issue #74] for the tracking discussion.
-====
+*Explicit array composition*
+
+An unmarked child array still replaces the inherited array. To opt in, use one of these exact strings as a direct child-array element:
+
+* `$super` splices every inherited element at its position. `["$super", "local"]` appends and `["local", "$super"]` prepends; multiple occurrences are allowed.
+* `$super*` occurs once and starts positional, pairwise merging. Elements before it are a literal prefix; elements after it are paired with inherited elements by index. Object pairs are deeply merged, array pairs recurse only when the child array is itself marked, and atom pairs use the child value. Unpaired inherited elements remain before unpaired child elements.
+
+Composition tokens are resolved for both `$extends` and `$includes`, at file and node level. A token that has no inherited array may pass through an intermediate fragment as a delta, but it is an error if still unresolved after node-level inheritance. Cross-kind pairs, a non-array inherited value, mixed `$super` / `$super*` markers, and two marked arrays meeting are also errors. See link:../reference/syntax-reference.html#array-composition-super-and-super[Array composition] for complete syntax and escaping rules.
 
 Given `$extends: [A, B]`, A is merged over B first, then the current object is merged over that result, giving the priority order: current object → A → B.
 
@@ -218,6 +220,6 @@ The full search path at any point is: current file's base directory + local node
 - Keys present only in the child appear in the result with their child values.
 - Keys present in both: if both values are objects, they are merged recursively using the same rule; otherwise the child value replaces the parent value entirely.
 
-This means arrays are **not** merged—a child array replaces the parent array completely.
-Only nested objects receive the recursive treatment.
-This follows the link:design-principles.html[same-kind merge principle]: merging is defined only between values of the same kind, and every cross-kind combination is an override that replaces the value rather than a merge.
+This means unmarked arrays are **not** merged—a child array replaces the parent array completely.
+Only nested objects receive recursive treatment automatically. A child array can explicitly request splice or positional pairwise composition with `$super` or `$super*`; see link:../reference/syntax-reference.html#array-composition-super-and-super[Array composition].
+This follows the link:design-principles.html[same-kind merge principle]: explicit pairwise merges are defined only between values of the same kind, while ordinary inheritance remains an override.

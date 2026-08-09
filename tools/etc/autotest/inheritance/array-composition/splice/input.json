@@ -1,0 +1,4 @@
+{
+  "$extends": ["parent.json"],
+  "items": ["before", "$super", "middle", "$super", "after"]
+}

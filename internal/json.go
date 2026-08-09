@@ -207,26 +207,59 @@ func valueToAny(v hocon.Value) any {
 	}
 }
 
-// mergeObjects merges parent and child objects, with child values taking precedence.
-func mergeObjects(parent, child map[string]any) map[string]any {
-	return MergeObjects(parent, child, MergePolicyDefault)
+// mergeObjects merges parent and child objects during inheritance resolution.
+// It enables the array-composition syntax and can therefore report a
+// configuration error.
+func mergeObjects(parent, child map[string]any) (map[string]any, error) {
+	return mergeObjectsWithPolicy(parent, child, MergePolicyArrayComposition)
 }
 
+// MergeObjects merges objects according to policy. It is retained for callers
+// that need the legacy, non-failing object-merge behaviour. Inheritance uses
+// mergeObjects above so that invalid array-composition requests are returned as
+// ordinary configuration errors instead of panics.
 func MergeObjects(a, b map[string]interface{}, policy MergePolicy) map[string]interface{} {
-	result := make(map[string]interface{})
-	for k, v := range a {
-		result[k] = v
-	}
-	for k, v := range b {
-		if av, ok := result[k].(map[string]interface{}); ok {
-			if bv, ok := v.(map[string]interface{}); ok {
-				result[k] = MergeObjects(av, bv, policy)
-				continue
-			}
-		}
-		result[k] = v
+	result, err := mergeObjectsWithPolicy(a, b, policy)
+	if err != nil {
+		panic(err)
 	}
 	return result
+}
+
+func mergeObjectsWithPolicy(parent, child map[string]any, policy MergePolicy) (map[string]any, error) {
+	result := make(map[string]any, len(parent)+len(child))
+	for k, v := range parent {
+		result[k] = v
+	}
+	for k, childValue := range child {
+		parentValue, parentHasKey := result[k]
+		if !parentHasKey {
+			// A marked array without a parent remains a delta. The final
+			// grounding pass decides whether it was eventually resolved.
+			result[k] = childValue
+			continue
+		}
+		mergedValue, err := mergeValues(parentValue, childValue, policy)
+		if err != nil {
+			return nil, fmt.Errorf("key %q: %w", k, err)
+		}
+		result[k] = mergedValue
+	}
+	return result, nil
+}
+
+func mergeValues(parent, child any, policy MergePolicy) (any, error) {
+	if parentObject, parentIsObject := parent.(map[string]any); parentIsObject {
+		if childObject, childIsObject := child.(map[string]any); childIsObject {
+			return mergeObjectsWithPolicy(parentObject, childObject, policy)
+		}
+	}
+	if policy == MergePolicyArrayComposition {
+		if childArray, childIsArray := child.([]any); childIsArray {
+			return mergeArrayComposition(parent, childArray, policy)
+		}
+	}
+	return child, nil
 }
 
 // MergePolicy defines the policy for merging objects.
@@ -234,7 +267,8 @@ type MergePolicy int
 
 const (
 	MergePolicyDefault MergePolicy = iota
-	// Add more policies as needed
+	// MergePolicyArrayComposition interprets $super and $super* in child arrays.
+	MergePolicyArrayComposition
 )
 
 // PathArrayToPathExpression converts a "path array" to a "path expression" string.
