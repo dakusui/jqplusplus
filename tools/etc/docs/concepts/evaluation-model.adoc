@@ -122,6 +122,8 @@ How each key is combined depends on the type of its value:
 |===
 
 "Recursive" therefore applies only to nested objects; arrays and scalars are always replaced wholesale, never merged.
+In jq{plus}{plus} terminology these wholesale replacements are _overrides_: the only _merge_ the engine performs is between two objects.
+This is the link:design-principles.html[same-kind merge principle].
 
 [NOTE]
 ====
@@ -218,3 +220,4 @@ The full search path at any point is: current file's base directory + local node
 
 This means arrays are **not** merged—a child array replaces the parent array completely.
 Only nested objects receive the recursive treatment.
+This follows the link:design-principles.html[same-kind merge principle]: merging is defined only between values of the same kind, and every cross-kind combination is an override that replaces the value rather than a merge.
