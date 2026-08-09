@@ -115,22 +115,30 @@ How each key is combined depends on the type of its value:
 |Recursive merge — parent and child objects are combined key by key using this same rule.
 
 |Array
-|Replaced entirely — the child array overrides the parent; arrays are never merged element-wise.
+|Replaced entirely — the child array overrides the parent — unless the child array requests composition with `$super` or `$super*` (see _Array composition_ below).
 
 |Scalar (string, number, boolean, null)
 |Replaced entirely — the child value overrides the parent value.
 |===
 
-"Recursive" therefore applies only to nested objects; arrays and scalars are always replaced wholesale, never merged.
-In jq{plus}{plus} terminology these wholesale replacements are _overrides_: the only _merge_ the engine performs is between two objects.
+"Recursive" therefore applies only to nested objects; without composition tokens, arrays and scalars are always replaced wholesale, never merged.
+In jq{plus}{plus} terminology these wholesale replacements are _overrides_: the engine only performs a _merge_ where both values are objects, or where an array explicitly requests composition.
 This is the link:design-principles.html[same-kind merge principle].
 
-[NOTE]
-====
-Array replacement is the current behavior.
-We are considering enhancing the syntax so that a child can explicitly *append*, *prepend*, or *merge* an array with the one inherited from its ancestors, instead of always replacing it.
-This is a future consideration and not yet supported; see https://github.com/dakusui/jqplusplus/issues/74[issue #74] for the tracking discussion.
-====
+*Array composition*
+
+A child array may opt out of replacement by containing one of two composition tokens as direct string elements (see the link:../reference/syntax-reference.html[Syntax Reference] for the full rules and examples):
+
+* `"$super"` splices the inherited array's elements, verbatim, at the position where it appears.
+  Position encodes the operation: `["$super", "x"]` appends, `["x", "$super"]` prepends, and multiple occurrences are allowed.
+* `"$super*"` switches from literal prefix to index-wise merging: elements before the token are kept as-is, and each element after it merges with the inherited element at the same index under the same-kind merge principle.
+  Unpaired elements survive on both sides.
+
+If the inherited value exists but is not an array, composition is a configuration error.
+If no inherited value exists, the array is carried unresolved so that a later merge — for example the file that `$includes` the current one — can still compose with it.
+Tokens that survive the entire composition are reported as errors before evaluation begins; nothing unresolved ever reaches the output.
+Strings that begin with `$super` followed by a symbol character are reserved for future composition syntax and are likewise rejected.
+A literal `"$super"` element can always be written as `"raw:$super"`.
 
 Given `$extends: [A, B]`, A is merged over B first, then the current object is merged over that result, giving the priority order: current object → A → B.
 
@@ -160,6 +168,8 @@ These are resolved in _outermost-first_ order: a node at depth 1 is processed be
 
 The same merge engine, search path, caching, and circular-reference detection used in stage 3 apply here too.
 Node-level inheritance therefore has exactly the same semantics as file-level inheritance; only the scope differs.
+
+After node-level inheritance completes, the fully composed top-level object is validated: any array-composition token that is still unresolved, and any unknown token in the reserved `$super` name space, is reported as a configuration error before evaluation begins.
 
 ==== Stage 5 — Key-side evaluation
 
@@ -216,8 +226,8 @@ The full search path at any point is: current file's base directory + local node
 
 - Keys present only in the parent appear in the result with their parent values.
 - Keys present only in the child appear in the result with their child values.
-- Keys present in both: if both values are objects, they are merged recursively using the same rule; otherwise the child value replaces the parent value entirely.
+- Keys present in both: if both values are objects, they are merged recursively using the same rule; if the child value is an array containing composition tokens (`$super` / `$super*`), the arrays compose as described in Stage 2; otherwise the child value replaces the parent value entirely.
 
-This means arrays are **not** merged—a child array replaces the parent array completely.
-Only nested objects receive the recursive treatment.
+This means arrays are **not** merged by default—a child array replaces the parent array completely unless it requests composition.
+Only nested objects receive the recursive treatment automatically.
 This follows the link:design-principles.html[same-kind merge principle]: merging is defined only between values of the same kind, and every cross-kind combination is an override that replaces the value rather than a merge.

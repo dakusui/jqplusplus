@@ -37,6 +37,14 @@ This is the opposite precedence direction from `$extends`.
 Priority is: last fragment -> ... -> first fragment -> current object.
 If both `$extends` and `$includes` are present, `$includes` wins over the combined result.
 
+|`"$super"` / `"$super*"` (array elements)
+|Array composition
+|Inside an array that overrides an inherited array, `"$super"` splices the inherited elements at its position, and `"$super*"` merges the elements that follow it index-wise with the inherited ones.
+An array without these tokens replaces the inherited array entirely.
+|Tokens are recognized only as direct string elements of the array.
+Strings starting with `$super` followed by a symbol character are reserved.
+Escape a literal with `raw:`.
+
 |`$local`
 |Local node definitions
 |Defines reusable named objects inside the current file.
@@ -192,6 +200,98 @@ Switching environments is a matter of changing `JF_PATH`—the configuration fil
 
 This pattern lets teams publish versioned "standard" fragments that any project can `$includes` without copying content.
 The result is a small but coherent DSL: every configuration file speaks the same vocabulary of shared fragments, and individual files only spell out what makes them different.
+
+==== Array composition: `$super` and `$super*`
+
+By default, an array in a child object replaces the inherited array entirely.
+Two composition tokens, written as direct string elements of the child array, let the child combine its array with the inherited one instead.
+Both follow the link:../concepts/design-principles.html[same-kind merge principle]: a merge is only defined between values of the same kind, and requesting one across kinds is a configuration error.
+
+*Splicing with `"$super"`*
+
+`"$super"` expands to the inherited array's elements, verbatim, at the position where it appears.
+Position encodes the operation: `["$super", "x"]` appends, `["x", "$super"]` prepends, `["a", "$super", "b"]` wraps, and multiple occurrences splice at each.
+
+Given a parent definition:
+
+[source,json]
+----
+{ "key": ["p0", "p1"] }
+----
+
+the following child:
+
+[source,json]
+----
+{
+  "$extends": ["parent.json"],
+  "key": ["head", "$super", "tail"]
+}
+----
+
+produces:
+
+[source,json]
+----
+{ "key": ["head", "p0", "p1", "tail"] }
+----
+
+The same works in the `$includes` direction: a fragment containing `"tags": ["$super", "mandated"]` appends `"mandated"` to the `tags` of whichever file includes it.
+
+*Pairwise merging with `"$super*"`*
+
+`"$super*"` divides the child array in two: elements before the token are kept as a literal prefix, and each element after it merges index-wise with the inherited element at the same position.
+Object pairs merge deeply, atom pairs take the child value, and cross-kind pairs are configuration errors.
+Unpaired elements survive on both sides: the inherited extras follow the merged region in order, and extra child elements become a literal tail.
+An empty object `{}` keeps the inherited element at that position unchanged.
+
+Given a parent definition:
+
+[source,json]
+----
+{
+  "servers": [
+    { "host": "a.example.com", "port": 80, "tls": false },
+    { "host": "b.example.com", "port": 80 }
+  ]
+}
+----
+
+the following child:
+
+[source,json]
+----
+{
+  "$extends": ["parent.json"],
+  "servers": [
+    { "host": "new.example.com" },
+    "$super*",
+    { "tls": true }
+  ]
+}
+----
+
+produces:
+
+[source,json]
+----
+{
+  "servers": [
+    { "host": "new.example.com" },
+    { "host": "a.example.com", "port": 80, "tls": true },
+    { "host": "b.example.com", "port": 80 }
+  ]
+}
+----
+
+*Constraints and errors*
+
+* `"$super*"` may appear at most once per array, and cannot be mixed with `"$super"` in the same array.
+* If the inherited value exists but is not an array, composition is a configuration error.
+* If no inherited value exists, the array is carried unresolved so a later merge can still compose with it; tokens that survive the entire composition are reported as errors before evaluation begins.
+* Strings that begin with `$super` followed by a symbol character (for example `"$super?"`) are reserved for future syntax and are rejected as unknown tokens.
+  Strings where `$super` is followed by an identifier character (for example `"$supervisor"`) are ordinary literals.
+* A literal `"$super"` element can always be written as `"raw:$super"`; the `raw:` prefix is removed during value-side evaluation.
 
 ==== $local
 
