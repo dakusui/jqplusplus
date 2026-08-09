@@ -1,0 +1,3 @@
+ERROR:
+cannot merge two marked arrays
+negative/array-composition/two-marked-arrays/input.json

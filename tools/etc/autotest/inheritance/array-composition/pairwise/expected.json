@@ -1,0 +1,3 @@
+{
+  "rules": ["first", {"name": "one", "enabled": false}, {"name": "two"}, {"name": "third"}]
+}

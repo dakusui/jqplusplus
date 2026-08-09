@@ -1,0 +1,3 @@
+ERROR:
+\\$super requires an inherited array
+negative/array-composition/non-array-parent/input.json

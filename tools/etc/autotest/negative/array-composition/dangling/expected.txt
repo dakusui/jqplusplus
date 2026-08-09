@@ -1,0 +1,3 @@
+ERROR:
+unresolved array composition token "\\$super"
+negative/array-composition/dangling/input.json

@@ -1,0 +1,6 @@
+{
+  "section": {
+    "$extends": ["parent.json"],
+    "items": ["child", "$super"]
+  }
+}
