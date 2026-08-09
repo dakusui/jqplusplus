@@ -509,7 +509,7 @@ body {font-family: Arial;}
 <h2 id="_design_principles">Design Principles</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>JSON++ was designed around three principles.</p>
+<p>JSON++ was designed around four principles.</p>
 </div>
 <div class="sect2">
 <h3 id="_principle_1_completeness_and_compatibility">Principle 1 — Completeness and Compatibility</h3>
@@ -554,6 +554,35 @@ In practice this means that JSON++ concepts naturally extend to JSON-compatible 
 <p><strong>Expression evaluation</strong> (<code>eval:</code>) lets configurations compute values dynamically from the composed result.</p>
 </li>
 </ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_principle_4_same_kind_merge">Principle 4 — Same-Kind Merge</h3>
+<div class="paragraph">
+<p><strong>A merge is defined only between two values of the same kind:</strong>
+When jq++ combines two values by merging, both values must be of the same kind: object with object, array with array, or atom with atom.
+Strings, numbers, booleans, and <code>null</code> are all atoms.
+jq++ never merges values across kinds.
+Where a construct requests a merge and the operand kinds differ, jq++ reports a configuration error rather than guessing an outcome.</p>
+</div>
+<div class="paragraph">
+<p>This principle rests on the distinction between <em>overriding</em> and <em>merging</em>:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>An <strong>override</strong> replaces the inherited value entirely.
+Writing a key in a child object means "override"; no kind constraint applies, and the child value wins regardless of its type.</p>
+</li>
+<li>
+<p>A <strong>merge</strong> combines the inherited value with the child value.
+Merging is only meaningful within a kind, so requesting it across kinds is a contradiction to be reported, not a replacement to be performed silently.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Today the only merge the engine performs is between two objects; every other combination during inheritance is an override.
+Future constructs that extend merging to arrays and atoms are bound by this principle: they merge within a kind and report an error across kinds.</p>
 </div>
 </div>
 </div>
@@ -653,7 +682,9 @@ How each key is combined depends on the type of its value:</p>
 </tbody>
 </table>
 <div class="paragraph">
-<p>"Recursive" therefore applies only to nested objects; arrays and scalars are always replaced wholesale, never merged.</p>
+<p>"Recursive" therefore applies only to nested objects; arrays and scalars are always replaced wholesale, never merged.
+In jq++ terminology these wholesale replacements are <em>overrides</em>: the only <em>merge</em> the engine performs is between two objects.
+This is the <a href="design-principles.html">same-kind merge principle</a>.</p>
 </div>
 <div class="admonitionblock note">
 <table>
@@ -808,7 +839,8 @@ The full search path at any point is: current file’s base directory + local no
 </div>
 <div class="paragraph">
 <p>This means arrays are <strong>not</strong> merged—a child array replaces the parent array completely.
-Only nested objects receive the recursive treatment.</p>
+Only nested objects receive the recursive treatment.
+This follows the <a href="design-principles.html">same-kind merge principle</a>: merging is defined only between values of the same kind, and every cross-kind combination is an override that replaces the value rather than a merge.</p>
 </div>
 </div>
 </div>
