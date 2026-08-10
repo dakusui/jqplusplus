@@ -236,7 +236,7 @@ For each pair, two objects merge recursively, two arrays use this same opt-in ru
 
 *Resolution and errors*
 
-A marked array whose parent does not define that key remains an unresolved delta, so mixin fragments can add to the arrays of their includers. The top-level result is checked after node-level inheritance; a token that remains unresolved is a configuration error. A marked array also errors if its inherited value is not an array, if `$super` and `$super*` are mixed, or if two marked arrays meet.
+A marked array whose parent does not define that key remains an unresolved delta, so mixin fragments can add to the arrays of their includers. `$super` splice deltas compose associatively, but an unresolved `$super*` pairwise delta cannot meet another marked array. The top-level result is checked after node-level inheritance; a token that remains unresolved is a configuration error. A marked array also errors if its inherited value is not an array or if `$super` and `$super*` are mixed.
 
 The `$super` family is reserved inside array values. `$super?`, pass:[<code>$super**</code>], and other spellings where the character after `$super` is not an identifier character are rejected as unknown tokens. Strings such as `$supervisor` and `$superuser_home` remain ordinary literals. Use `raw:$super` or pass:[<code>raw:$super*</code>] for literal token strings; `raw:` is removed later during value evaluation.
 

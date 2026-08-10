@@ -1,4 +1,4 @@
 {
   "$extends": ["parent.json"],
-  "items": ["$super", "child"]
+  "items": ["$super", {"child": true}]
 }

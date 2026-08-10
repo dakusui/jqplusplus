@@ -71,8 +71,13 @@ func mergeArrayComposition(parent any, child []any, policy MergePolicy) ([]any, 
 	if err != nil {
 		return nil, err
 	}
-	if parentMarker != arrayCompositionNone {
-		return nil, fmt.Errorf("cannot merge two marked arrays (%s and %s)", compositionTokenName(parentMarker), compositionTokenName(childMarker))
+	// Splice deltas compose: inserting one unresolved $super array into
+	// another preserves a single unresolved splice position for a later
+	// concrete ancestor. Pairwise deltas do not have that property, so any
+	// encounter that includes $super* is rejected before it can be grounded.
+	if parentMarker == arrayCompositionPairwise ||
+		(childMarker == arrayCompositionPairwise && parentMarker != arrayCompositionNone) {
+		return nil, fmt.Errorf("cannot compose marked arrays (%s and %s)", compositionTokenName(parentMarker), compositionTokenName(childMarker))
 	}
 
 	switch childMarker {

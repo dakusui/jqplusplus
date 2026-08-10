@@ -50,14 +50,15 @@ func TestArrayComposition_SpliceDeltaSurvivesIncludes(t *testing.T) {
 func TestArrayComposition_SpliceDeltaComposesAcrossInheritance(t *testing.T) {
 	dir := t.TempDir()
 	_ = testutil.WriteTempJSON(t, dir, "base.json", `{"items": ["base"]}`)
-	_ = testutil.WriteTempJSON(t, dir, "middle.json", `{"$extends": ["base.json"], "items": ["$super", "middle"]}`)
-	child := testutil.WriteTempJSON(t, dir, "child.json", `{"$extends": ["middle.json"], "items": ["$super", "child"]}`)
+	_ = testutil.WriteTempJSON(t, dir, "first.json", `{"items": ["first", "$super"]}`)
+	_ = testutil.WriteTempJSON(t, dir, "second.json", `{"$extends": ["first.json"], "items": ["$super", "second"]}`)
+	child := testutil.WriteTempJSON(t, dir, "child.json", `{"$extends": ["second.json", "base.json"]}`)
 
 	result, err := LoadAndResolveInheritances(filepath.Dir(child), filepath.Base(child), nil)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	expected := map[string]any{"items": []any{"base", "middle", "child"}}
+	expected := map[string]any{"items": []any{"first", "base", "second"}}
 	if !reflect.DeepEqual(result.Obj, expected) {
 		t.Errorf("expected %#v, got %#v", expected, result.Obj)
 	}
@@ -209,10 +210,22 @@ func TestArrayComposition_ValidationErrors(t *testing.T) {
 			contains: "cannot pairwise merge object with atom",
 		},
 		{
-			name:     "two marked arrays",
+			name:     "pairwise delta under splice delta",
 			parent:   `{"items": ["$super", "parent"]}`,
-			child:    `{"$extends": ["parent.json"], "items": ["$super", "child"]}`,
-			contains: "cannot merge two marked arrays",
+			child:    `{"$extends": ["parent.json"], "items": ["$super*", {"child": true}]}`,
+			contains: "cannot compose marked arrays",
+		},
+		{
+			name:     "splice delta under pairwise delta",
+			parent:   `{"items": ["$super*", {"parent": true}]}`,
+			child:    `{"$extends": ["parent.json"], "items": ["$super", {"child": true}]}`,
+			contains: "cannot compose marked arrays",
+		},
+		{
+			name:     "two pairwise deltas",
+			parent:   `{"items": ["$super*", {"parent": true}]}`,
+			child:    `{"$extends": ["parent.json"], "items": ["$super*", {"child": true}]}`,
+			contains: "cannot compose marked arrays",
 		},
 	}
 
