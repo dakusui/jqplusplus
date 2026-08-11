@@ -1,0 +1,1 @@
+inherited value must be an array
