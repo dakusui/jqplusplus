@@ -256,23 +256,51 @@ func mergeInheritanceValues(parent, child any) (any, error) {
 		return mergeObjectsForInheritance(parentObject, childObject)
 	}
 	childArray, childIsArray := child.([]any)
-	if !childIsArray || !containsSuper(childArray) {
+	if !childIsArray {
 		return child, nil
+	}
+	markers := arrayMarkers(childArray)
+	if !markers.hasSuper && markers.superStarCount == 0 {
+		return child, nil
+	}
+	if markers.hasSuper && markers.superStarCount != 0 {
+		return nil, fmt.Errorf("cannot mix $super and $super* in the same array")
+	}
+	if markers.superStarCount > 1 {
+		return nil, fmt.Errorf("$super* may appear only once in an array")
 	}
 	parentArray, parentIsArray := parent.([]any)
 	if !parentIsArray {
-		return nil, fmt.Errorf("$super requires an inherited array, got %s", valueKind(parent))
+		return nil, fmt.Errorf("array marker requires an inherited array, got %s", valueKind(parent))
+	}
+	parentMarkers := arrayMarkers(parentArray)
+	if markers.superStarCount != 0 && (parentMarkers.hasSuper || parentMarkers.superStarCount != 0) {
+		return nil, fmt.Errorf("cannot compose $super* with a marked inherited array")
+	}
+	if markers.superStarCount != 0 {
+		return pairSuper(parentArray, childArray, markers.superStarIndex)
 	}
 	return spliceSuper(parentArray, childArray)
 }
 
-func containsSuper(array []any) bool {
-	for _, value := range array {
-		if value == "$super" {
-			return true
+type superMarkers struct {
+	hasSuper       bool
+	superStarCount int
+	superStarIndex int
+}
+
+func arrayMarkers(array []any) superMarkers {
+	markers := superMarkers{superStarIndex: -1}
+	for index, value := range array {
+		switch value {
+		case "$super":
+			markers.hasSuper = true
+		case "$super*":
+			markers.superStarCount++
+			markers.superStarIndex = index
 		}
 	}
-	return false
+	return markers
 }
 
 func spliceSuper(parent, child []any) ([]any, error) {
@@ -285,6 +313,39 @@ func spliceSuper(parent, child []any) ([]any, error) {
 		result = append(result, value)
 	}
 	return result, nil
+}
+
+func pairSuper(parent, child []any, markerIndex int) ([]any, error) {
+	prefix := child[:markerIndex]
+	queue := child[markerIndex+1:]
+	result := make([]any, 0, len(prefix)+max(len(parent), len(queue)))
+	result = append(result, prefix...)
+	pairedLength := min(len(parent), len(queue))
+	for index := 0; index < pairedLength; index++ {
+		merged, err := mergePairedValues(parent[index], queue[index])
+		if err != nil {
+			return nil, fmt.Errorf("$super* pair %d: %w", index, err)
+		}
+		result = append(result, merged)
+	}
+	result = append(result, parent[pairedLength:]...)
+	result = append(result, queue[pairedLength:]...)
+	return result, nil
+}
+
+func mergePairedValues(parent, child any) (any, error) {
+	parentKind, childKind := valueKind(parent), valueKind(child)
+	if parentKind != childKind {
+		return nil, fmt.Errorf("cannot pair %s with %s", parentKind, childKind)
+	}
+	switch parentKind {
+	case "object":
+		return mergeObjectsForInheritance(parent.(map[string]any), child.(map[string]any))
+	case "array":
+		return mergeInheritanceValues(parent, child)
+	default:
+		return child, nil
+	}
 }
 
 func valueKind(value any) string {
