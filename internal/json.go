@@ -240,9 +240,9 @@ func mergeObjectsAtPath(a, b map[string]interface{}, policy MergePolicy, path st
 			if inherited, present := result[k]; present {
 				parentArray, ok := inherited.([]any)
 				if !ok {
-					return nil, fmt.Errorf("at %s: cannot compose an array with inherited %s", childPath, jsonTypeName(inherited))
+					return nil, fmt.Errorf("at %s: cannot compose an array with inherited %s: a merge is only defined between values of the same kind", childPath, jsonTypeName(inherited))
 				}
-				composed, err := spliceSuperArray(parentArray, childArray)
+				composed, err := composeSuperArray(parentArray, childArray, childPath)
 				if err != nil {
 					return nil, fmt.Errorf("at %s: %w", childPath, err)
 				}
