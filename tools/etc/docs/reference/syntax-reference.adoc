@@ -37,6 +37,11 @@ This is the opposite precedence direction from `$extends`.
 Priority is: last fragment -> ... -> first fragment -> current object.
 If both `$extends` and `$includes` are present, `$includes` wins over the combined result.
 
+|`"$super"` / `"$super*"` (array elements)
+|Array composition
+|A marker in a child array explicitly combines it with the inherited array. `"$super"` splices inherited elements at its position; `"$super*"` pairs following elements index-wise.
+|An unmarked array still replaces the inherited array. Markers are valid only as direct array elements; use `raw:` for a literal.
+
 |`$local`
 |Local node definitions
 |Defines reusable named objects inside the current file.
@@ -192,6 +197,50 @@ Switching environments is a matter of changing `JF_PATH`—the configuration fil
 
 This pattern lets teams publish versioned "standard" fragments that any project can `$includes` without copying content.
 The result is a small but coherent DSL: every configuration file speaks the same vocabulary of shared fragments, and individual files only spell out what makes them different.
+
+==== Array composition: `$super` and `$super*`
+
+By default, an array in a child object replaces the inherited array entirely.
+A link:../concepts/terminology.html#array-composition[marker] as a direct element of the child array opts into array composition instead.
+
+*Splicing with `"$super"`*
+
+`"$super"` substitutes the inherited elements at its position. Its position therefore encodes append, prepend, or wrap, and it may occur more than once.
+
+[source,json]
+----
+// inherited: ["x", "y"]
+{ "tags": ["before", "$super", "after"] }
+// result:    ["before", "x", "y", "after"]
+----
+
+*Pairing with `"$super*"`*
+
+`"$super*"` divides the child array into a literal prefix and a queue. Queue element _i_ pairs with inherited element _i_. Object pairs merge deeply, atom pairs use the child value, and an array pair replaces with the child array unless that child array is itself marked. Cross-kind pairs are errors. Unpaired elements on both sides remain in the result; `{}` is the object-pair pad that retains an inherited element unchanged.
+
+[source,json]
+----
+// inherited: [ {"name":"a", "tls":false}, {"name":"b"} ]
+{
+  "servers": [
+    {"name":"new"},
+    "$super*",
+    {"tls":true},
+    {}
+  ]
+}
+// result: [ {"name":"new"}, {"name":"a", "tls":true}, {"name":"b"} ]
+----
+
+*Deltas and errors*
+
+When no inherited array exists, a marked array remains a pending delta. This allows a `$includes` fragment such as `{"tags":["$super","platform"]}` to compose when the including document later supplies `tags`.
+Grounding rejects a marker that remains pending in the final top-level object.
+
+`"$super*"` may occur at most once in an array, and it cannot be mixed with `"$super"`.
+A splice delta can compose with another splice delta, but any composition involving a pairing delta is an error.
+Exact marker strings outside a direct array element are out of context; `$super` followed by a non-identifier character is an unknown marker.
+`"$supervisor"` is an ordinary string, while `"raw:$super"` is the literal marker string.
 
 ==== $local
 

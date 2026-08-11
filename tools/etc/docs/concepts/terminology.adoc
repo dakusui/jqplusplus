@@ -26,6 +26,28 @@ Structural reuse
 _Structural composition_ is the subset of structural reuse that combines configuration documents structurally.
 JSON{plus}{plus} provides two structural-composition constructs: *inheritance* (`$extends`) and *inclusion* (`$includes`).
 
+=== Array Composition
+
+_Array composition_ is an opt-in structural-composition operation that combines a child array with its *inherited array* instead of replacing it.
+An unmarked array retains the ordinary replacement behaviour.
+
+*Marker*:: One of the exact strings `"$super"` or `"$super*"` when it is a direct element of an array value.
+  A marker in an object key, a scalar value, a nested inner array, or a filename slot is out of context.
+*Marked array*:: An array containing a marker as a direct element.
+  An array with no marker is an _unmarked array_.
+*Inherited array*:: The array value at the same key in an already-resolved parent for `$extends`, or in the fragment applied by `$includes`.
+*Delta*:: A marked array before a merge binds its marker to an inherited array.
+  For example, `["$super", "a"]` is the pending expression `$super + ["a"]`, not a final value.
+*Splice*:: The operation of `"$super"`: it substitutes the inherited array's elements at the marker's position.
+*Prefix*:: In a `"$super*"` array, the literal elements before the marker.
+*Queue*:: In a `"$super*"` array, the elements after the marker; queue element _i_ pairs with inherited element _i_.
+*Pairing*:: The index-wise operation of `"$super*"` that combines queue and inherited elements.
+*Kind*:: One of _object_, _array_, or _atom_. Strings, numbers, booleans, and `null` are atoms.
+*Grounding*:: The final validation pass over the top-level object, after inheritance and before key-side evaluation.
+  It rejects markers that composition did not resolve.
+*Override* and *merge*:: An _override_ replaces the inherited value entirely; a _merge_ combines it with the inherited value.
+  A merge is defined only within one kind; see the link:design-principles.html[same-kind merge principle].
+
 === Inheritance (`$extends`)
 
 *Inheritance* is the mechanism by which an object declares that it is a specialisation of one or more parent objects.

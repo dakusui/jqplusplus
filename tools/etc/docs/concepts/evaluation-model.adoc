@@ -115,22 +115,25 @@ How each key is combined depends on the type of its value:
 |Recursive merge — parent and child objects are combined key by key using this same rule.
 
 |Array
-|Replaced entirely — the child array overrides the parent; arrays are never merged element-wise.
+|Replaced entirely — unless the child array is a link:terminology.html#array-composition[marked array] that explicitly requests composition with `"$super"` or `"$super*"`.
 
 |Scalar (string, number, boolean, null)
 |Replaced entirely — the child value overrides the parent value.
 |===
 
-"Recursive" therefore applies only to nested objects; arrays and scalars are always replaced wholesale, never merged.
-In jq{plus}{plus} terminology these wholesale replacements are _overrides_: the only _merge_ the engine performs is between two objects.
+"Recursive" therefore applies only to nested objects; unmarked arrays and scalars are replaced wholesale, never merged.
+In jq{plus}{plus} terminology these wholesale replacements are _overrides_: the engine performs a _merge_ only for object pairs or when a marked array requests composition.
 This is the link:design-principles.html[same-kind merge principle].
 
-[NOTE]
-====
-Array replacement is the current behavior.
-We are considering enhancing the syntax so that a child can explicitly *append*, *prepend*, or *merge* an array with the one inherited from its ancestors, instead of always replacing it.
-This is a future consideration and not yet supported; see https://github.com/dakusui/jqplusplus/issues/74[issue #74] for the tracking discussion.
-====
+*Array composition*
+
+A child may use a marker as a direct element of its array to combine it with the inherited array. `"$super"` is a *splice*: it substitutes the inherited elements at its position, so it can append, prepend, or wrap them. Multiple splice markers are allowed.
+
+`"$super*"` starts *pairing*: the elements before it are a literal prefix, and the elements after it form a queue that pairs index-wise with inherited elements. Object pairs merge deeply, atom pairs use the queue value, and array pairs replace with the queue value unless that value is itself marked and therefore composes recursively. A cross-kind pair is a configuration error. Unpaired elements on either side survive, and `{}` is a useful pad for retaining an inherited object unchanged.
+
+If an inherited array is absent, the marked array remains a pending link:terminology.html#array-composition[delta] until a later merge binds it. This preserves the composition intent of cached `$includes` fragments. A splice delta may compose with another splice delta. If either side of a composition is a `"$super*"` delta, jq{plus}{plus} reports an error because pairing cannot be represented faithfully by one flat marked array.
+
+After inheritance, link:terminology.html#array-composition[grounding] rejects any unresolved marker. It also rejects marker-family strings outside a direct array element and unknown `$super` spellings such as `"$super?"`. A literal is written with the `raw:` escape, for example `"raw:$super"`.
 
 Given `$extends: [A, B]`, A is merged over B first, then the current object is merged over that result, giving the priority order: current object → A → B.
 
@@ -160,6 +163,8 @@ These are resolved in _outermost-first_ order: a node at depth 1 is processed be
 
 The same merge engine, search path, caching, and circular-reference detection used in stage 3 apply here too.
 Node-level inheritance therefore has exactly the same semantics as file-level inheritance; only the scope differs.
+
+After node-level inheritance, grounding validates the top-level object before key-side evaluation. This keeps pending deltas in cached files available to their including document while ensuring that no unresolved marker reaches the output.
 
 ==== Stage 5 — Key-side evaluation
 
@@ -216,8 +221,8 @@ The full search path at any point is: current file's base directory + local node
 
 - Keys present only in the parent appear in the result with their parent values.
 - Keys present only in the child appear in the result with their child values.
-- Keys present in both: if both values are objects, they are merged recursively using the same rule; otherwise the child value replaces the parent value entirely.
+- Keys present in both: if both values are objects, they are merged recursively using the same rule; if the child is a marked array, its marker composes it with the inherited array; otherwise the child value replaces the parent value entirely.
 
-This means arrays are **not** merged—a child array replaces the parent array completely.
-Only nested objects receive the recursive treatment.
+This means arrays are **not** merged by default—an unmarked child array replaces the parent array completely.
+Only nested objects receive the recursive treatment automatically.
 This follows the link:design-principles.html[same-kind merge principle]: merging is defined only between values of the same kind, and every cross-kind combination is an override that replaces the value rather than a merge.
