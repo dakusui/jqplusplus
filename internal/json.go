@@ -237,23 +237,36 @@ func mergeInheritedValue(parent, child any) (any, error) {
 		}
 	}
 	childArray, ok := child.([]any)
-	if !ok || !containsSuperMarker(childArray) {
+	if !ok {
+		return child, nil
+	}
+	childComposition, err := parseArrayComposition(childArray)
+	if err != nil {
+		return nil, err
+	}
+	if childComposition.mode == arrayCompositionNone {
 		return child, nil
 	}
 	parentArray, ok := parent.([]any)
 	if !ok {
-		return nil, fmt.Errorf("array composition: \"$super\" requires an inherited array")
+		return nil, fmt.Errorf("array composition: %q requires an inherited array", childComposition.marker())
 	}
-	return spliceSuper(parentArray, childArray), nil
-}
-
-func containsSuperMarker(values []any) bool {
-	for _, value := range values {
-		if value == "$super" {
-			return true
-		}
+	parentComposition, err := parseArrayComposition(parentArray)
+	if err != nil {
+		return nil, err
 	}
-	return false
+	if parentComposition.mode != arrayCompositionNone &&
+		(childComposition.mode == arrayCompositionPair || parentComposition.mode == arrayCompositionPair) {
+		return nil, fmt.Errorf("array composition: cannot compose a \"$super*\" delta with a marked inherited array")
+	}
+	switch childComposition.mode {
+	case arrayCompositionSplice:
+		return spliceSuper(parentArray, childArray), nil
+	case arrayCompositionPair:
+		return pairSuper(parentArray, childArray, childComposition.index)
+	default:
+		return child, nil
+	}
 }
 
 // spliceSuper returns a fresh slice so that a cached inherited array is never
