@@ -27,7 +27,9 @@ func LoadAndResolveInheritances(baseDir string, filename string, searchPaths []s
 // LoadAndResolveInheritancesRecursively loads a JSON file, resolves $extends or $includes recursively, and merges parents.
 func LoadAndResolveInheritancesRecursively(baseDir string, targetFile string, nodepool NodePool) (*NodeEntryValue, error) {
 	var optional bool
-	if strings.HasSuffix(targetFile, "?") {
+	if strings.HasPrefix(targetFile, prefixRaw) {
+		targetFile = strings.TrimPrefix(targetFile, prefixRaw)
+	} else if strings.HasSuffix(targetFile, "?") {
 		optional = true
 		targetFile = targetFile[:len(targetFile)-1]
 	}
@@ -194,8 +196,10 @@ func parseInheritsField(val any, inherits InheritType) ([]string, error) {
 			if !ok {
 				return nil, fmt.Errorf("%s array must contain only strings: %v", inherits.String(), v)
 			}
-			if err := validateMarkerOutsideArray(str); err != nil {
-				return nil, err
+			if !isRawString(str) {
+				if err := validateMarkerOutsideArray(str); err != nil {
+					return nil, err
+				}
 			}
 			result = Insert(result, 0, str)
 		}
