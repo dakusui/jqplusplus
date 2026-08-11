@@ -229,6 +229,138 @@ func MergeObjects(a, b map[string]interface{}, policy MergePolicy) map[string]in
 	return result
 }
 
+func mergeObjectsForInheritance(parent, child map[string]any) (map[string]any, error) {
+	result := make(map[string]any, len(parent)+len(child))
+	for k, v := range parent {
+		result[k] = v
+	}
+	for k, childValue := range child {
+		parentValue, exists := result[k]
+		if !exists {
+			result[k] = childValue
+			continue
+		}
+		merged, err := mergeInheritanceValues(parentValue, childValue)
+		if err != nil {
+			return nil, fmt.Errorf("%q: %w", k, err)
+		}
+		result[k] = merged
+	}
+	return result, nil
+}
+
+func mergeInheritanceValues(parent, child any) (any, error) {
+	parentObject, parentIsObject := parent.(map[string]any)
+	childObject, childIsObject := child.(map[string]any)
+	if parentIsObject && childIsObject {
+		return mergeObjectsForInheritance(parentObject, childObject)
+	}
+	childArray, childIsArray := child.([]any)
+	if !childIsArray || !containsSuper(childArray) {
+		return child, nil
+	}
+	parentArray, parentIsArray := parent.([]any)
+	if !parentIsArray {
+		return nil, fmt.Errorf("$super requires an inherited array, got %s", valueKind(parent))
+	}
+	return spliceSuper(parentArray, childArray)
+}
+
+func containsSuper(array []any) bool {
+	for _, value := range array {
+		if value == "$super" {
+			return true
+		}
+	}
+	return false
+}
+
+func spliceSuper(parent, child []any) ([]any, error) {
+	result := make([]any, 0, len(parent)+len(child))
+	for _, value := range child {
+		if value == "$super" {
+			result = append(result, parent...)
+			continue
+		}
+		result = append(result, value)
+	}
+	return result, nil
+}
+
+func valueKind(value any) string {
+	switch value.(type) {
+	case map[string]any:
+		return "object"
+	case []any:
+		return "array"
+	default:
+		return "atom"
+	}
+}
+
+// ValidateMarkersAreGrounded validates the reserved $super namespace on the
+// rendered top-level object. Cached inheritance fragments deliberately bypass
+// this check so that an unresolved delta can be composed by its consumer.
+func ValidateMarkersAreGrounded(obj map[string]any) error {
+	return validateMarkerValue(obj, false, false)
+}
+
+func validateMarkerValue(value any, directArrayElement, markerArray bool) error {
+	switch x := value.(type) {
+	case map[string]any:
+		for key, child := range x {
+			if err := validateMarkerString(key, false); err != nil {
+				return err
+			}
+			if err := validateMarkerValue(child, false, true); err != nil {
+				return err
+			}
+		}
+	case []any:
+		for _, child := range x {
+			if err := validateMarkerValue(child, true, markerArray); err != nil {
+				return err
+			}
+		}
+	case string:
+		if err := validateMarkerString(x, directArrayElement && markerArray); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func validateMarkerString(value string, validMarkerPosition bool) error {
+	if strings.HasPrefix(value, "raw:") || strings.HasPrefix(value, "eval:") {
+		return nil
+	}
+	if value == "$super" || value == "$super*" {
+		if validMarkerPosition {
+			return fmt.Errorf("unresolved marker %q", value)
+		}
+		return fmt.Errorf("marker %q is out of context", value)
+	}
+	if strings.HasPrefix(value, "$super") {
+		rest := value[len("$super"):]
+		if rest != "" {
+			r, _ := utf8DecodeRuneInString(rest)
+			if !isMarkerIdentifier(r) {
+				return fmt.Errorf("unknown marker %q", value)
+			}
+		}
+	}
+	return nil
+}
+
+func isMarkerIdentifier(r rune) bool { return r == '_' || unicode.IsLetter(r) || unicode.IsDigit(r) }
+
+func utf8DecodeRuneInString(value string) (rune, int) {
+	for _, r := range value {
+		return r, len(string(r))
+	}
+	return 0, 0
+}
+
 // MergePolicy defines the policy for merging objects.
 type MergePolicy int
 
