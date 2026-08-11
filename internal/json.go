@@ -231,10 +231,7 @@ func mergeObjectsForInheritance(parent, child map[string]any) (map[string]any, e
 				continue
 			}
 		}
-		if childArray, ok := childValue.([]any); ok && containsMarker(childArray, "$super") {
-			if containsMarker(childArray, "$super*") {
-				return nil, fmt.Errorf("cannot mix $super and $super* in one array")
-			}
+		if childArray, ok := childValue.([]any); ok && hasArrayMarker(childArray) {
 			if !exists {
 				// A delta carries until a later inheritance step provides a value.
 				result[k] = childArray
@@ -242,9 +239,13 @@ func mergeObjectsForInheritance(parent, child map[string]any) (map[string]any, e
 			}
 			parentArray, ok := parentValue.([]any)
 			if !ok {
-				return nil, fmt.Errorf("%s: inherited value must be an array for $super", k)
+				return nil, fmt.Errorf("%s: inherited value must be an array for array composition", k)
 			}
-			result[k] = spliceSuper(parentArray, childArray)
+			merged, err := mergeArrayComposition(parentArray, childArray)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", k, err)
+			}
+			result[k] = merged
 			continue
 		}
 		result[k] = childValue
@@ -261,6 +262,41 @@ func containsMarker(values []any, marker string) bool {
 	return false
 }
 
+func hasArrayMarker(values []any) bool {
+	return containsMarker(values, "$super") || containsMarker(values, "$super*")
+}
+
+func mergeArrayComposition(inherited, child []any) ([]any, error) {
+	hasSuper := containsMarker(child, "$super")
+	starCount := 0
+	for _, value := range child {
+		if value == "$super*" {
+			starCount++
+		}
+	}
+	if hasSuper && starCount > 0 {
+		return nil, fmt.Errorf("cannot mix $super and $super* in one array")
+	}
+	if starCount > 1 {
+		return nil, fmt.Errorf("$super* may appear only once in an array")
+	}
+	if hasSuper {
+		if hasArrayMarker(inherited) {
+			if containsMarker(inherited, "$super*") {
+				return nil, fmt.Errorf("cannot compose $super with $super*")
+			}
+		}
+		return spliceSuper(inherited, child), nil
+	}
+	if starCount == 1 {
+		if hasArrayMarker(inherited) {
+			return nil, fmt.Errorf("cannot compose $super* with a marked array")
+		}
+		return pairSuper(inherited, child)
+	}
+	return child, nil
+}
+
 func spliceSuper(inherited, child []any) []any {
 	result := make([]any, 0, len(inherited)+len(child)-1)
 	for _, value := range child {
@@ -271,6 +307,66 @@ func spliceSuper(inherited, child []any) []any {
 		result = append(result, value)
 	}
 	return result
+}
+
+func pairSuper(inherited, child []any) ([]any, error) {
+	markerIndex := 0
+	for child[markerIndex] != "$super*" {
+		markerIndex++
+	}
+	prefix := child[:markerIndex]
+	queue := child[markerIndex+1:]
+	result := make([]any, 0, len(prefix)+max(len(inherited), len(queue)))
+	result = append(result, prefix...)
+	paired := min(len(inherited), len(queue))
+	for i := 0; i < paired; i++ {
+		value, err := mergeArrayPair(inherited[i], queue[i])
+		if err != nil {
+			return nil, err
+		}
+		result = append(result, value)
+	}
+	result = append(result, inherited[paired:]...)
+	result = append(result, queue[paired:]...)
+	return result, nil
+}
+
+func mergeArrayPair(inherited, queued any) (any, error) {
+	switch inherited := inherited.(type) {
+	case map[string]any:
+		queuedObject, ok := queued.(map[string]any)
+		if !ok {
+			return nil, fmt.Errorf("cross-kind array pair: object and %s", valueKind(queued))
+		}
+		return mergeObjectsForInheritance(inherited, queuedObject)
+	case []any:
+		queuedArray, ok := queued.([]any)
+		if !ok {
+			return nil, fmt.Errorf("cross-kind array pair: array and %s", valueKind(queued))
+		}
+		if hasArrayMarker(queuedArray) {
+			return mergeArrayComposition(inherited, queuedArray)
+		}
+		return queuedArray, nil
+	default:
+		switch queued.(type) {
+		case map[string]any, []any:
+			return nil, fmt.Errorf("cross-kind array pair: atom and %s", valueKind(queued))
+		default:
+			return queued, nil
+		}
+	}
+}
+
+func valueKind(value any) string {
+	switch value.(type) {
+	case map[string]any:
+		return "object"
+	case []any:
+		return "array"
+	default:
+		return "atom"
+	}
 }
 
 // GroundArrayMarkers verifies that all composition markers in a final document
