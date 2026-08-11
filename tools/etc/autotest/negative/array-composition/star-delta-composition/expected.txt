@@ -1,1 +1,1 @@
-cannot compose.*\$super\*
+cannot compose.*[$]super[*]
