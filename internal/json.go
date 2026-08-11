@@ -208,8 +208,72 @@ func valueToAny(v hocon.Value) any {
 }
 
 // mergeObjects merges parent and child objects, with child values taking precedence.
-func mergeObjects(parent, child map[string]any) map[string]any {
-	return MergeObjects(parent, child, MergePolicyDefault)
+// Unlike MergeObjects, it also resolves a child's $super array marker and can
+// therefore report a configuration error.
+func mergeObjects(parent, child map[string]any) (map[string]any, error) {
+	result := make(map[string]any, len(parent)+len(child))
+	for k, v := range parent {
+		result[k] = v
+	}
+	for k, childValue := range child {
+		parentValue, exists := result[k]
+		if !exists {
+			result[k] = childValue
+			continue
+		}
+		merged, err := mergeInheritedValue(parentValue, childValue)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", k, err)
+		}
+		result[k] = merged
+	}
+	return result, nil
+}
+
+func mergeInheritedValue(parent, child any) (any, error) {
+	if parentObject, ok := parent.(map[string]any); ok {
+		if childObject, ok := child.(map[string]any); ok {
+			return mergeObjects(parentObject, childObject)
+		}
+	}
+	childArray, ok := child.([]any)
+	if !ok || !containsSuperMarker(childArray) {
+		return child, nil
+	}
+	parentArray, ok := parent.([]any)
+	if !ok {
+		return nil, fmt.Errorf("array composition: \"$super\" requires an inherited array")
+	}
+	return spliceSuper(parentArray, childArray), nil
+}
+
+func containsSuperMarker(values []any) bool {
+	for _, value := range values {
+		if value == "$super" {
+			return true
+		}
+	}
+	return false
+}
+
+// spliceSuper returns a fresh slice so that a cached inherited array is never
+// mutated while resolving another document.
+func spliceSuper(inherited, delta []any) []any {
+	markerCount := 0
+	for _, value := range delta {
+		if value == "$super" {
+			markerCount++
+		}
+	}
+	result := make([]any, 0, len(delta)-markerCount+len(inherited)*markerCount)
+	for _, value := range delta {
+		if value == "$super" {
+			result = append(result, inherited...)
+			continue
+		}
+		result = append(result, value)
+	}
+	return result
 }
 
 func MergeObjects(a, b map[string]interface{}, policy MergePolicy) map[string]interface{} {

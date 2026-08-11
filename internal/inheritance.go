@@ -164,14 +164,20 @@ func resolveInheritances(obj map[string]any, compilerOptions []*JqModule, nodepo
 			if i == 0 {
 				mergedParents = nodeEntryValue.Obj
 			} else {
-				mergedParents = mergeObjects(mergedParents, nodeEntryValue.Obj)
+				mergedParents, err = mergeObjects(mergedParents, nodeEntryValue.Obj)
+				if err != nil {
+					return nil, err
+				}
 			}
 			tmpCompilerOptions = append(tmpCompilerOptions, nodeEntryValue.CompilerOptions...)
 		}
 		if !mergeType.IsOrderReversed() {
-			obj = mergeObjects(mergedParents, obj)
+			obj, err = mergeObjects(mergedParents, obj)
 		} else {
-			obj = mergeObjects(obj, mergedParents)
+			obj, err = mergeObjects(obj, mergedParents)
+		}
+		if err != nil {
+			return nil, err
 		}
 		delete(obj, mergeType.String())
 	}
@@ -187,6 +193,9 @@ func parseInheritsField(val any, inherits InheritType) ([]string, error) {
 			str, ok := item.(string)
 			if !ok {
 				return nil, fmt.Errorf("%s array must contain only strings: %v", inherits.String(), v)
+			}
+			if err := validateMarkerOutsideArray(str); err != nil {
+				return nil, err
 			}
 			result = Insert(result, 0, str)
 		}

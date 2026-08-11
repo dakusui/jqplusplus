@@ -222,6 +222,9 @@ func processNodeEntryKey(nodeEntryKey internal.NodeEntryKey) (string, error) {
 		return "", err
 	}
 	obj := nodeEntryValue.Obj
+	if err := internal.GroundArrayComposition(obj); err != nil {
+		return "", err
+	}
 	{
 		invocationSpec := internal.NewInvocationSpecBuilder().AddModules(nodeEntryValue.CompilerOptions...).Build()
 		obj, err = internal.ProcessKeySide(obj, 7, *invocationSpec, nodeEntryKey.BaseDir(), internal.SearchPaths())

@@ -96,7 +96,10 @@ func TestMergeObjects_DeepMerge(t *testing.T) {
 		},
 		"c": 3,
 	}
-	result := mergeObjects(parent, child)
+	result, err := mergeObjects(parent, child)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
 	if !reflect.DeepEqual(result, expected) {
 		t.Errorf("expected %v, got %v", expected, result)
 	}
