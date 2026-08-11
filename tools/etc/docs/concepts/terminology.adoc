@@ -94,6 +94,26 @@ In practice, jq{plus}{plus} keeps inheritance-time control keywords in the `$...
 
 [source,json]
 ----
+
+=== Array Composition
+
+A *marker* is either the exact string `$super` or `$super*` used as a direct
+element of an array that is being inherited. A *marked array* contains a
+marker; an unmarked array does not. A marked array is a *delta*: it describes
+how to compose with the *inherited array* at the same key instead of being a
+literal replacement.
+
+`$super` is a *splice*: each occurrence is replaced by all inherited elements.
+`$super*` is a *pairing* delimiter: its *prefix* (elements before it) is
+literal, and each element in its *queue* (elements after it) is paired with the
+inherited element at the same index. A paired object is deep-merged, a paired
+array is replaced unless its queue value is itself marked, and a paired atom is
+replaced. A pair of different *kinds* (object, array, or atom) is an error.
+
+*Grounding* is the final validation step after inheritance and before key-side
+evaluation. It rejects a marker that remains unresolved, a marker outside its
+array-element position, and unknown `$super` family spellings. `raw:` escapes a
+literal marker-family string in either a value or a key.
 {
   "message":      "raw:eval:this is not an expression",
   "raw:$extends": "this key appears verbatim in the output"
