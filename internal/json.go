@@ -208,25 +208,52 @@ func valueToAny(v hocon.Value) any {
 }
 
 // mergeObjects merges parent and child objects, with child values taking precedence.
-func mergeObjects(parent, child map[string]any) map[string]any {
+func mergeObjects(parent, child map[string]any) (map[string]any, error) {
 	return MergeObjects(parent, child, MergePolicyDefault)
 }
 
-func MergeObjects(a, b map[string]interface{}, policy MergePolicy) map[string]interface{} {
+// MergeObjects merges two objects with the child's values taking precedence.
+// A child array containing "$super" explicitly composes with its inherited
+// array; an unmarked child array retains ordinary replacement semantics.
+func MergeObjects(a, b map[string]interface{}, policy MergePolicy) (map[string]interface{}, error) {
+	return mergeObjectsAtPath(a, b, policy, "")
+}
+
+func mergeObjectsAtPath(a, b map[string]interface{}, policy MergePolicy, path string) (map[string]interface{}, error) {
 	result := make(map[string]interface{})
 	for k, v := range a {
 		result[k] = v
 	}
 	for k, v := range b {
+		childPath := path + "." + k
 		if av, ok := result[k].(map[string]interface{}); ok {
 			if bv, ok := v.(map[string]interface{}); ok {
-				result[k] = MergeObjects(av, bv, policy)
+				merged, err := mergeObjectsAtPath(av, bv, policy, childPath)
+				if err != nil {
+					return nil, err
+				}
+				result[k] = merged
 				continue
 			}
 		}
+		if childArray, ok := v.([]any); ok && containsSuperToken(childArray) {
+			if inherited, present := result[k]; present {
+				parentArray, ok := inherited.([]any)
+				if !ok {
+					return nil, fmt.Errorf("at %s: cannot compose an array with inherited %s", childPath, jsonTypeName(inherited))
+				}
+				composed, err := spliceSuperArray(parentArray, childArray)
+				if err != nil {
+					return nil, fmt.Errorf("at %s: %w", childPath, err)
+				}
+				result[k] = composed
+				continue
+			}
+			// The marker remains pending until a later inheritance merge binds it.
+		}
 		result[k] = v
 	}
-	return result
+	return result, nil
 }
 
 // MergePolicy defines the policy for merging objects.
