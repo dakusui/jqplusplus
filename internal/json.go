@@ -212,6 +212,136 @@ func mergeObjects(parent, child map[string]any) map[string]any {
 	return MergeObjects(parent, child, MergePolicyDefault)
 }
 
+// mergeObjectsForInheritance merges a parent object with a child object and
+// resolves array-composition markers that occur in the child.
+func mergeObjectsForInheritance(parent, child map[string]any) (map[string]any, error) {
+	result := make(map[string]any, len(parent)+len(child))
+	for k, v := range parent {
+		result[k] = v
+	}
+	for k, childValue := range child {
+		parentValue, exists := result[k]
+		if parentObject, ok := parentValue.(map[string]any); ok {
+			if childObject, ok := childValue.(map[string]any); ok {
+				merged, err := mergeObjectsForInheritance(parentObject, childObject)
+				if err != nil {
+					return nil, err
+				}
+				result[k] = merged
+				continue
+			}
+		}
+		if childArray, ok := childValue.([]any); ok && containsMarker(childArray, "$super") {
+			if containsMarker(childArray, "$super*") {
+				return nil, fmt.Errorf("cannot mix $super and $super* in one array")
+			}
+			if !exists {
+				// A delta carries until a later inheritance step provides a value.
+				result[k] = childArray
+				continue
+			}
+			parentArray, ok := parentValue.([]any)
+			if !ok {
+				return nil, fmt.Errorf("%s: inherited value must be an array for $super", k)
+			}
+			result[k] = spliceSuper(parentArray, childArray)
+			continue
+		}
+		result[k] = childValue
+	}
+	return result, nil
+}
+
+func containsMarker(values []any, marker string) bool {
+	for _, value := range values {
+		if value == marker {
+			return true
+		}
+	}
+	return false
+}
+
+func spliceSuper(inherited, child []any) []any {
+	result := make([]any, 0, len(inherited)+len(child)-1)
+	for _, value := range child {
+		if value == "$super" {
+			result = append(result, inherited...)
+			continue
+		}
+		result = append(result, value)
+	}
+	return result
+}
+
+// GroundArrayMarkers verifies that all composition markers in a final document
+// have either been resolved or escaped with raw:. It must be called only for
+// the top-level rendered document, never for cached inherited fragments.
+func GroundArrayMarkers(obj map[string]any) error {
+	return groundObject(obj)
+}
+
+func groundObject(obj map[string]any) error {
+	for key, value := range obj {
+		if err := validateMarkerString(key, false); err != nil {
+			return err
+		}
+		if err := groundValue(value, false); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func groundValue(value any, nestedArray bool) error {
+	switch value := value.(type) {
+	case map[string]any:
+		return groundObject(value)
+	case []any:
+		for _, element := range value {
+			if stringValue, ok := element.(string); ok {
+				if err := validateMarkerString(stringValue, !nestedArray); err != nil {
+					return err
+				}
+				if stringValue == "$super" || stringValue == "$super*" {
+					return fmt.Errorf("unresolved marker %q", stringValue)
+				}
+			}
+			if err := groundValue(element, true); err != nil {
+				return err
+			}
+		}
+	case string:
+		return validateMarkerString(value, false)
+	}
+	return nil
+}
+
+func validateMarkerString(value string, arrayElement bool) error {
+	if strings.HasPrefix(value, "raw:") {
+		return nil
+	}
+	if value == "$super" || value == "$super*" {
+		if !arrayElement {
+			return fmt.Errorf("out-of-context marker %q", value)
+		}
+		return nil
+	}
+	if strings.HasPrefix(value, "$super") {
+		suffix := value[len("$super"):]
+		if suffix != "" && !startsIdentifier(suffix) {
+			return fmt.Errorf("unknown marker %q", value)
+		}
+	}
+	return nil
+}
+
+func startsIdentifier(value string) bool {
+	for _, r := range value {
+		return unicode.IsLetter(r) || unicode.IsDigit(r) || r == '_'
+	}
+	return false
+}
+
 func MergeObjects(a, b map[string]interface{}, policy MergePolicy) map[string]interface{} {
 	result := make(map[string]interface{})
 	for k, v := range a {
