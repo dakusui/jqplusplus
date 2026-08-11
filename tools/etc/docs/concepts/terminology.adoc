@@ -94,6 +94,19 @@ In practice, jq{plus}{plus} keeps inheritance-time control keywords in the `$...
 
 [source,json]
 ----
+
+=== Array Composition Markers
+
+An *array composition marker* is either `"$super"` or `"$super*"` as a direct element of an array value that overrides an inherited array.
+A *marked array* contains one of these markers; an unmarked array keeps the ordinary replacement behaviour.
+
+`"$super"` is a *splice marker*: it substitutes the inherited array's elements at its position.
+`"$super*"` is an *element-wise composition marker*: elements before it are the literal *prefix*, while elements after it form a *queue* that is paired, by index, with inherited elements.
+The paired values must have the same *kind* (object, array, or atom); object pairs merge recursively and same-kind arrays or atoms are replaced by the queue value.
+
+A marked array with no inherited value is a *delta*: it remains pending until a later inheritance or inclusion merge supplies the inherited array.
+At the top-level render boundary, any pending marker is an error.
+Use `raw:$super` or `raw:$super*` for a literal string.
 {
   "message":      "raw:eval:this is not an expression",
   "raw:$extends": "this key appears verbatim in the output"
