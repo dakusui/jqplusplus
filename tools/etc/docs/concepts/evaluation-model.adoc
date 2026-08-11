@@ -115,22 +115,31 @@ How each key is combined depends on the type of its value:
 |Recursive merge — parent and child objects are combined key by key using this same rule.
 
 |Array
-|Replaced entirely — the child array overrides the parent; arrays are never merged element-wise.
+|An unmarked child array replaces the inherited array.
+A marked child array requests link:terminology.html[array composition]: `$super` splices inherited elements at each marker, and `$super*` pairs following elements with inherited elements by index.
 
 |Scalar (string, number, boolean, null)
 |Replaced entirely — the child value overrides the parent value.
 |===
 
-"Recursive" therefore applies only to nested objects; arrays and scalars are always replaced wholesale, never merged.
-In jq{plus}{plus} terminology these wholesale replacements are _overrides_: the only _merge_ the engine performs is between two objects.
-This is the link:design-principles.html[same-kind merge principle].
+The default remains an override: arrays and scalars are replaced wholesale unless the child array explicitly contains a marker.
+This preserves the link:design-principles.html[same-kind merge principle]: `$super*` pairs only values of the same kind, reporting a configuration error for a cross-kind pair.
 
-[NOTE]
-====
-Array replacement is the current behavior.
-We are considering enhancing the syntax so that a child can explicitly *append*, *prepend*, or *merge* an array with the one inherited from its ancestors, instead of always replacing it.
-This is a future consideration and not yet supported; see https://github.com/dakusui/jqplusplus/issues/74[issue #74] for the tracking discussion.
-====
+`$super` splices the inherited elements at its position, so `["$super", "a"]`, `["a", "$super"]`, and `["a", "$super", "b"]` append, prepend, and wrap respectively.
+Multiple `$super` markers are allowed.
+
+`$super*` may occur once.
+Its prefix remains literal; each queue element after the marker pairs with the inherited element at the same index.
+Paired objects merge recursively, paired arrays replace unless the queue array is itself marked, and paired atoms are replaced by the queue atom.
+Unpaired inherited elements or queue elements remain after the paired portion.
+
+A marker is meaningful only as a direct array element.
+`raw:` is the escape for a literal marker-family string, including a key or inheritance filename.
+At a merge step with no inherited array, a marked array remains a pending delta so that cached fragments can contribute it to a later `$extends` or `$includes` merge.
+Grounding after node-level inheritance rejects any marker that remains unresolved.
+
+The two markers cannot be mixed in an array, and a delta involving `$super*` cannot compose with another marked array.
+This restriction makes the result independent of how a configuration happens to be split into fragments.
 
 Given `$extends: [A, B]`, A is merged over B first, then the current object is merged over that result, giving the priority order: current object → A → B.
 
@@ -161,7 +170,13 @@ These are resolved in _outermost-first_ order: a node at depth 1 is processed be
 The same merge engine, search path, caching, and circular-reference detection used in stage 3 apply here too.
 Node-level inheritance therefore has exactly the same semantics as file-level inheritance; only the scope differs.
 
-==== Stage 5 — Key-side evaluation
+==== Stage 5 — Grounding
+
+Grounding validates the top-level object after all inheritance is resolved and before key-side evaluation.
+It reports unresolved markers, marker-family strings outside direct array elements, and unknown marker spellings.
+It deliberately runs after inheritance so that cached fragments can retain their pending deltas.
+
+==== Stage 6 — Key-side evaluation
 
 All keys in the resolved object that start with `eval:` or `raw:` are processed.
 
@@ -173,7 +188,7 @@ All keys in the resolved object that start with `eval:` or `raw:` are processed.
 Key evaluation may produce new `eval:` or `raw:` keys.
 The stage therefore runs in a loop, decrementing a time-to-live counter (starting at 7) on each pass, until no more such keys remain or the counter reaches zero (which causes a panic indicating a likely infinite loop in the configuration).
 
-==== Stage 6 — Value-side evaluation
+==== Stage 7 — Value-side evaluation
 
 All string values in the object that start with `eval:` or `raw:` are evaluated.
 
@@ -186,7 +201,7 @@ The stage therefore loops, decrementing its own time-to-live counter (starting a
 
 Circular references within expressions—where evaluating value A leads back to value A—are detected via a visited-path map that is threaded through the evaluation call chain, and reported as errors immediately.
 
-==== Stage 7 — Output
+==== Stage 8 — Output
 
 The fully resolved `map[string]any` object is serialised to JSON with two-space indentation and written to standard output.
 When multiple input files are provided on the command line, each is processed independently and its output is written in order.
@@ -202,6 +217,7 @@ Its two main responsibilities are:
 *Caching.*
 A `NodeEntryKey` (base directory + filename) maps to a `NodeEntryValue` (resolved object + accumulated jq modules).
 The first time a file is requested, it is fully resolved through stages 1–4 and the result is stored.
+Pending array-composition deltas are deliberately retained in the stored result until an including or inheriting object supplies an inherited array.
 Subsequent requests for the same file return the cached result directly, avoiding redundant work and ensuring consistent results when the same file is extended from multiple places.
 
 *Search path management.*
@@ -216,8 +232,8 @@ The full search path at any point is: current file's base directory + local node
 
 - Keys present only in the parent appear in the result with their parent values.
 - Keys present only in the child appear in the result with their child values.
-- Keys present in both: if both values are objects, they are merged recursively using the same rule; otherwise the child value replaces the parent value entirely.
+- Keys present in both: if both values are objects, they are merged recursively using the same rule. Otherwise the child value replaces the parent value, except when a marked child array explicitly requests array composition.
 
-This means arrays are **not** merged—a child array replaces the parent array completely.
-Only nested objects receive the recursive treatment.
-This follows the link:design-principles.html[same-kind merge principle]: merging is defined only between values of the same kind, and every cross-kind combination is an override that replaces the value rather than a merge.
+An unmarked child array is not merged; it replaces the parent array completely.
+A marked child array uses the array-composition rules above.
+This follows the link:design-principles.html[same-kind merge principle]: every cross-kind pairing is a configuration error, while ordinary key overrides remain valid regardless of kind.

@@ -70,6 +70,36 @@ The full priority order from highest to lowest is:
 
   $includes (later entries) → $includes (earlier entries) → current object → $extends (earlier entries) → $extends (later entries)
 
+=== Array Composition
+
+_Array composition_ is the opt-in structural-composition operation that combines a child array with the array at the same key in the inherited object.
+An array without a marker remains an ordinary override and replaces the inherited array.
+
+A *marker* is one of the exact strings `$super` or `$super*` used as a direct element of an array.
+A *marked array* contains a marker; an *unmarked array* does not.
+An *inherited array* is the array found at the same key in the already-resolved parent or included fragment.
+
+A marked array is a *delta*: it carries a pending array-composition operation until it meets an inherited array.
+If no inherited array is available at a merge step, the delta is preserved for a later merge.
+
+`$super` performs a *splice*, replacing each occurrence with all elements of the inherited array.
+It can therefore append, prepend, or wrap inherited elements.
+
+`$super*` performs *pairing* and may appear once in a marked array.
+The *prefix* is the literal portion before `$super*`; the *queue* is the portion after it.
+Queue element _i_ pairs with inherited element _i_; paired objects merge recursively, paired arrays replace unless the queue array is itself marked, and paired atoms are replaced by the queue atom.
+Unpaired elements on either side remain in the result.
+
+The *kind* of a value is object, array, or atom; strings, numbers, booleans, and `null` are atoms.
+Pairing values of different kinds is a configuration error.
+
+*Grounding* is the validation pass after file-level and node-level inheritance and before key-side evaluation.
+It rejects any marker that remained unresolved, marker-family strings outside a direct array-element position, and unsupported marker spellings such as `$super?`.
+Use `raw:` to emit a literal marker-family string or to use a marker-looking inheritance filename.
+
+An *override* replaces an inherited value entirely; writing a key requests an override regardless of kind.
+A *merge* combines values, and is defined only within a kind under the link:design-principles.html[same-kind merge principle].
+
 === Expression Evaluation (`eval:`)
 
 *Expression evaluation* is the mechanism by which string values or keys prefixed with `eval:` are replaced by the result of evaluating the suffix as a jq expression.
@@ -89,7 +119,7 @@ When a key expression evaluates to an array of strings, one key–value pair is 
 === Escaping Meta Keywords (`raw:`)
 
 *Escaping* is the mechanism by which a string value or key prefixed with `raw:` is passed through to the output with the prefix stripped, without any evaluation.
-This is the guaranteed way to preserve a value or key that would otherwise be interpreted as an `eval:` expression or as a JSON{plus}{plus} reserved keyword such as `$extends`, `$includes`, or `$local`.
+This is the guaranteed way to preserve a value or key that would otherwise be interpreted as an `eval:` expression or as a JSON{plus}{plus} reserved keyword such as `$extends`, `$includes`, `$local`, `$super`, or `$super*`.
 In practice, jq{plus}{plus} keeps inheritance-time control keywords in the `$...` namespace and treats new keyword families as a major-version compatibility concern, so accidental collisions should remain rare.
 
 [source,json]
