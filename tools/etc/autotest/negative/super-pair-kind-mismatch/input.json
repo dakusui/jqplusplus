@@ -1,0 +1,11 @@
+{
+  "$extends": [
+    "parent.json"
+  ],
+  "ports": [
+    "$super*",
+    {
+      "port": 8080
+    }
+  ]
+}

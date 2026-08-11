@@ -1,0 +1,11 @@
+{
+  "node": {
+    "$extends": [
+      "nparent.json"
+    ],
+    "list": [
+      "$super",
+      "x"
+    ]
+  }
+}

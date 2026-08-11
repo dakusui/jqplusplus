@@ -1,0 +1,9 @@
+{
+  "$extends": [
+    "marked.json"
+  ],
+  "key": [
+    "$super*",
+    "b"
+  ]
+}
