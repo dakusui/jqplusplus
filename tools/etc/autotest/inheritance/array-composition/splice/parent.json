@@ -1,0 +1,7 @@
+{
+  "append": ["x", "y"],
+  "prepend": ["x", "y"],
+  "wrap": ["x", "y"],
+  "multiple": ["x", "y"],
+  "replace": ["x", "y"]
+}

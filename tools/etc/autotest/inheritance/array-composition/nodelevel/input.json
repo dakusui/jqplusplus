@@ -1,0 +1,6 @@
+{
+  "child": {
+    "$extends": ["parent.json"],
+    "tags": ["$super", "a"]
+  }
+}

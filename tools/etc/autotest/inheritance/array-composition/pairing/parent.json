@@ -1,0 +1,9 @@
+{
+  "services": [
+    {"name": "p0", "opts": {"old": true}},
+    {"name": "p1"},
+    {"name": "p2", "port": 80}
+  ],
+  "arrays": [["p"], ["q"]],
+  "atoms": [1, 2]
+}

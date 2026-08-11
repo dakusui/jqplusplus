@@ -1,0 +1,13 @@
+{
+  "$extends": ["parent.json"],
+  "services": [
+    "first",
+    "$super*",
+    {"tls": true},
+    {},
+    {"port": 9999},
+    "last"
+  ],
+  "arrays": ["$super*", ["x"], ["y"]],
+  "atoms": ["$super*", 9, 8]
+}

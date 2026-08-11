@@ -1,0 +1,1 @@
+array composition: element 0 pairs atom with array

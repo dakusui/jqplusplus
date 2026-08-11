@@ -1,0 +1,4 @@
+{
+  "$includes": ["m2.json"],
+  "tags": ["base"]
+}

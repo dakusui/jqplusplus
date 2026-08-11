@@ -1,0 +1,8 @@
+{
+  "$extends": ["parent.json"],
+  "append": ["$super", "a"],
+  "prepend": ["a", "$super"],
+  "wrap": ["a", "$super", "b"],
+  "multiple": ["$super", "a", "$super"],
+  "replace": ["a"]
+}

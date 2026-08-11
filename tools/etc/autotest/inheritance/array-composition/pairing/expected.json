@@ -1,0 +1,11 @@
+{
+  "services": [
+    "first",
+    {"name": "p0", "opts": {"old": true}, "tls": true},
+    {"name": "p1"},
+    {"name": "p2", "port": 9999},
+    "last"
+  ],
+  "arrays": [["x"], ["y"]],
+  "atoms": [9, 8]
+}

@@ -1,0 +1,4 @@
+{
+  "literalValues": ["$super", "$super*"],
+  "$super": "literal key"
+}
