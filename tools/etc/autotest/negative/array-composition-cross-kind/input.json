@@ -1,0 +1,1 @@
+{"$extends":["parent.json"],"items":["$super*","wrong-kind"]}
