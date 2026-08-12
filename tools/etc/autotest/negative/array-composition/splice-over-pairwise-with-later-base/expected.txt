@@ -1,0 +1,2 @@
+array composition
+cannot splice into an inherited pairwise delta

@@ -1,0 +1,2 @@
+array composition
+cannot appear in the same array

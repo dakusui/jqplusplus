@@ -1,0 +1,10 @@
+{
+  "$extends": ["parent.json"],
+  "steps": [
+    {"run": "setup"},
+    "$super*",
+    {"run": "build", "cache": true},
+    {},
+    {"run": "deploy"}
+  ]
+}

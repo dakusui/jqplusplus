@@ -1,0 +1,4 @@
+{
+  "$extends": ["pair-delta.json"],
+  "items": ["$super*", {"b": 2}]
+}

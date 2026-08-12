@@ -104,7 +104,7 @@ If a file that is already being resolved appears again in the chain, an error is
 
 *Merge semantics*
 
-`mergeObjects(parent, child)` combines two objects, with the child's values taking precedence.
+`MergeNodes(parent, child)` combines two objects, with the child's values taking precedence.
 How each key is combined depends on the type of its value:
 
 [cols="1,2", options="header"]
@@ -115,21 +115,21 @@ How each key is combined depends on the type of its value:
 |Recursive merge — parent and child objects are combined key by key using this same rule.
 
 |Array
-|Replaced entirely — the child array overrides the parent; arrays are never merged element-wise.
+|Replaced entirely by default — the child array overrides the parent.
+A child array carrying an link:../reference/syntax-reference.html[array composition] token (`"$super"` or `"$super*"`) instead splices or pairwise-merges the inherited elements; this is opt-in per array.
 
 |Scalar (string, number, boolean, null)
 |Replaced entirely — the child value overrides the parent value.
 |===
 
-"Recursive" therefore applies only to nested objects; arrays and scalars are always replaced wholesale, never merged.
-In jq{plus}{plus} terminology these wholesale replacements are _overrides_: the only _merge_ the engine performs is between two objects.
+"Recursive" therefore applies to nested objects and, when explicitly requested with a token, to arrays; scalars and unmarked arrays are always replaced wholesale.
+In jq{plus}{plus} terminology these wholesale replacements are _overrides_: the merges the engine performs are between two objects and, opt-in, between two arrays.
 This is the link:design-principles.html[same-kind merge principle].
 
 [NOTE]
 ====
-Array replacement is the current behavior.
-We are considering enhancing the syntax so that a child can explicitly *append*, *prepend*, or *merge* an array with the one inherited from its ancestors, instead of always replacing it.
-This is a future consideration and not yet supported; see https://github.com/dakusui/jqplusplus/issues/74[issue #74] for the tracking discussion.
+Array composition was introduced by https://github.com/dakusui/jqplusplus/issues/74[issue #74].
+A marked array whose inherited key is absent carries as an unresolved _delta_; a token still unresolved after stage 4 is reported as a configuration error by the final validation sweep described below.
 ====
 
 Given `$extends: [A, B]`, A is merged over B first, then the current object is merged over that result, giving the priority order: current object → A → B.
@@ -160,6 +160,17 @@ These are resolved in _outermost-first_ order: a node at depth 1 is processed be
 
 The same merge engine, search path, caching, and circular-reference detection used in stage 3 apply here too.
 Node-level inheritance therefore has exactly the same semantics as file-level inheritance; only the scope differs.
+
+*Final validation sweep*
+
+Once file-level and node-level inheritance are both settled for the top-level object — and before key-side evaluation begins — jq{plus}{plus} walks the entire result once and validates array composition:
+
+- Any remaining `"$super"` / `"$super*"` token is _dangling merge intent_: nothing is left for it to compose with, so it is reported as a configuration error rather than silently splicing nothing.
+- Any other array string element extending `$super` with a non-identifier character (such as `"$super?"`) is an unknown token in the reserved namespace and is likewise an error.
+
+The sweep runs on the top-level object only.
+Per-file cached resolutions in the node pool keep their tokens, so deltas survive into later merges — this is what allows an `$includes` fragment to carry `["$super", ...]` and append to whatever includes it.
+The sweep visits object keys in sorted order, so the first reported error is deterministic.
 
 ==== Stage 5 — Key-side evaluation
 
@@ -212,12 +223,12 @@ The full search path at any point is: current file's base directory + local node
 
 === Merge Object Semantics
 
-`mergeObjects(parent, child)` performs a deep merge:
+`MergeNodes(parent, child)` performs a deep merge:
 
 - Keys present only in the parent appear in the result with their parent values.
 - Keys present only in the child appear in the result with their child values.
-- Keys present in both: if both values are objects, they are merged recursively using the same rule; otherwise the child value replaces the parent value entirely.
+- Keys present in both: if both values are objects, they are merged recursively using the same rule; if both values are arrays and the child array carries an array composition token, they are composed; otherwise the child value replaces the parent value entirely.
 
-This means arrays are **not** merged—a child array replaces the parent array completely.
-Only nested objects receive the recursive treatment.
-This follows the link:design-principles.html[same-kind merge principle]: merging is defined only between values of the same kind, and every cross-kind combination is an override that replaces the value rather than a merge.
+By default arrays are therefore **not** merged—a child array replaces the parent array completely unless the child array opts in with a token.
+This follows the link:design-principles.html[same-kind merge principle]: merging is defined only between values of the same kind, and — absent explicit merge intent — every cross-kind combination is an override that replaces the value rather than a merge.
+Where a token requests a merge and the inherited value is of a different kind, jq{plus}{plus} reports a configuration error.

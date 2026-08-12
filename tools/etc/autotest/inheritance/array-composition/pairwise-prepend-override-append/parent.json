@@ -1,0 +1,6 @@
+{
+  "steps": [
+    {"run": "build"},
+    {"run": "test"}
+  ]
+}

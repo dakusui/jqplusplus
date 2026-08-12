@@ -1,0 +1,4 @@
+{
+  "tags": ["$super", "$super*"],
+  "names": ["$supervisor", "$superuser_home"]
+}

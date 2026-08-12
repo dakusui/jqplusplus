@@ -1,0 +1,5 @@
+{
+  "$extends": ["parent.json"],
+  "tags": ["raw:$super", "raw:$super*"],
+  "names": ["$supervisor", "$superuser_home"]
+}

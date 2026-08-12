@@ -4,6 +4,7 @@ JSON{plus}{plus} provides *structural reuse* mechanisms that allow configuration
 Structural reuse consists of *structural composition* (`$extends` and `$includes`) and *expression evaluation* (`eval:`).
 
 This page focuses on *structural composition*: the two constructs that combine configuration documents — *inheritance* (`$extends`) and *inclusion* (`$includes`).
+Within both constructs, *array composition* (`"$super"` / `"$super*"` array elements) lets a child array combine with the inherited array instead of replacing it.
 
 For precise definitions and precedence rules see the link:../concepts/terminology.html[Terminology] page.
 For the full syntax of each construct see the link:../reference/syntax-reference.html[Syntax Reference].

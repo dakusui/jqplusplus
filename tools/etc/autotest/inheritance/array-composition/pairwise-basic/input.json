@@ -1,0 +1,4 @@
+{
+  "$extends": ["parent.json"],
+  "servers": ["$super*", {"port": 8080}, {"replicas": 2}]
+}

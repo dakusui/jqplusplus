@@ -1,0 +1,4 @@
+{
+  "$extends": ["delta-a.json"],
+  "items": ["$super", "c"]
+}

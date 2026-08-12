@@ -70,6 +70,30 @@ The full priority order from highest to lowest is:
 
   $includes (later entries) → $includes (earlier entries) → current object → $extends (earlier entries) → $extends (later entries)
 
+=== Array Composition (`$super`, `$super*`)
+
+*Array composition* is the mechanism by which a child array explicitly combines with the array inherited under the same key, instead of replacing it (the default).
+It is requested with a *token*: a direct string element of the array that is exactly `"$super"` or `"$super*"`.
+An array containing a token is a *marked* array.
+Because a marked array describes a change relative to the inherited array rather than a complete value, it is called a *delta*.
+
+* *Splice* (`"$super"`): the inherited array's elements replace the token, verbatim, at its position.
+* *Pairwise merge* (`"$super*"`): elements after the token are merged index-wise with the inherited elements; elements before the token are a literal prefix.
+
+*Grounding* is the resolution of a delta against a plain (unmarked) inherited array.
+When the inherited object does not define the key, the delta *carries* unchanged into further composition.
+A token that is still unresolved after all structural composition is settled is *dangling merge intent* and is reported as a configuration error by the *final validation sweep* — the walk over the fully composed top-level object that also enforces the reserved `$super` token namespace.
+
+[source,json]
+----
+{
+  "$extends": ["base.json"],
+  "tags": ["$super", "added-after-the-inherited-tags"]
+}
+----
+
+See the link:../reference/syntax-reference.html[Syntax Reference] for the full rules.
+
 === Expression Evaluation (`eval:`)
 
 *Expression evaluation* is the mechanism by which string values or keys prefixed with `eval:` are replaced by the result of evaluating the suffix as a jq expression.
@@ -89,7 +113,7 @@ When a key expression evaluates to an array of strings, one key–value pair is 
 === Escaping Meta Keywords (`raw:`)
 
 *Escaping* is the mechanism by which a string value or key prefixed with `raw:` is passed through to the output with the prefix stripped, without any evaluation.
-This is the guaranteed way to preserve a value or key that would otherwise be interpreted as an `eval:` expression or as a JSON{plus}{plus} reserved keyword such as `$extends`, `$includes`, or `$local`.
+This is the guaranteed way to preserve a value or key that would otherwise be interpreted as an `eval:` expression, as a JSON{plus}{plus} reserved keyword such as `$extends`, `$includes`, or `$local`, or as an array composition token such as `$super`.
 In practice, jq{plus}{plus} keeps inheritance-time control keywords in the `$...` namespace and treats new keyword families as a major-version compatibility concern, so accidental collisions should remain rare.
 
 [source,json]

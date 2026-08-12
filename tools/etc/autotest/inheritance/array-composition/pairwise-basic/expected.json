@@ -1,0 +1,6 @@
+{
+  "servers": [
+    {"name": "web", "port": 8080},
+    {"name": "db", "port": 5432, "replicas": 2}
+  ]
+}

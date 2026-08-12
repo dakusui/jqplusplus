@@ -21,7 +21,17 @@ func LoadAndResolveInheritances(baseDir string, filename string, searchPaths []s
 		}
 	}()
 
-	return NewNodePoolWithBaseSearchPaths(baseDir, sessionDirectory, searchPaths).ReadNodeEntryValue(baseDir, filename, []*JqModule{})
+	nodeEntryValue, err := NewNodePoolWithBaseSearchPaths(baseDir, sessionDirectory, searchPaths).ReadNodeEntryValue(baseDir, filename, []*JqModule{})
+	if err != nil {
+		return nil, err
+	}
+	// Final validation sweep: all inheritance is settled, so any array
+	// composition token still present is dangling merge intent, and unknown
+	// tokens in the reserved namespace are reported here as well.
+	if err := ValidateArrayCompositions(nodeEntryValue.Obj); err != nil {
+		return nil, err
+	}
+	return nodeEntryValue, nil
 }
 
 // LoadAndResolveInheritancesRecursively loads a JSON file, resolves $extends or $includes recursively, and merges parents.
@@ -164,14 +174,20 @@ func resolveInheritances(obj map[string]any, compilerOptions []*JqModule, nodepo
 			if i == 0 {
 				mergedParents = nodeEntryValue.Obj
 			} else {
-				mergedParents = mergeObjects(mergedParents, nodeEntryValue.Obj)
+				mergedParents, err = MergeNodes(mergedParents, nodeEntryValue.Obj)
+				if err != nil {
+					return nil, fmt.Errorf("%v: parent: %v", err, parent)
+				}
 			}
 			tmpCompilerOptions = append(tmpCompilerOptions, nodeEntryValue.CompilerOptions...)
 		}
 		if !mergeType.IsOrderReversed() {
-			obj = mergeObjects(mergedParents, obj)
+			obj, err = MergeNodes(mergedParents, obj)
 		} else {
-			obj = mergeObjects(obj, mergedParents)
+			obj, err = MergeNodes(obj, mergedParents)
+		}
+		if err != nil {
+			return nil, err
 		}
 		delete(obj, mergeType.String())
 	}

@@ -1,0 +1,3 @@
+array composition
+unknown token
+namespace is reserved

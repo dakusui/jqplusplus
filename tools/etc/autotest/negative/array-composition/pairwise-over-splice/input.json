@@ -1,0 +1,4 @@
+{
+  "$extends": ["splice-delta.json"],
+  "items": ["$super*", "p"]
+}

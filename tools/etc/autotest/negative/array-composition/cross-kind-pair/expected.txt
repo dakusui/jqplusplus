@@ -1,0 +1,3 @@
+array composition
+cannot merge object with atom
+same-kind merge principle

@@ -1,0 +1,2 @@
+array composition
+requires the inherited value to be an array, but got object

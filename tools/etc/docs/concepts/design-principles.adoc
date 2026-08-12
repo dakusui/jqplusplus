@@ -46,5 +46,6 @@ This principle rests on the distinction between _overriding_ and _merging_:
 * A *merge* combines the inherited value with the child value.
   Merging is only meaningful within a kind, so requesting it across kinds is a contradiction to be reported, not a replacement to be performed silently.
 
-Today the only merge the engine performs is between two objects; every other combination during inheritance is an override.
-Future constructs that extend merging to arrays and atoms are bound by this principle: they merge within a kind and report an error across kinds.
+The engine performs two merges: between two objects (always), and between two arrays when the child array explicitly requests link:../reference/syntax-reference.html[array composition] with a `"$super"` or `"$super*"` token; every other combination during inheritance is an override.
+Array composition is bound by this principle: within a pairwise merge, object pairs merge, array pairs compose or replace, atom pairs let the child win, and every cross-kind pair is reported as a configuration error.
+Future constructs that extend merging further are bound the same way: they merge within a kind and report an error across kinds.footnote:[Compatible extensions come from the error space: spellings such as `"$super?"` are reserved and rejected today, so assigning them meaning later changes no accepted document. New members of an enforced token family are therefore minor-version additions, while new keyword families remain major-version events.]

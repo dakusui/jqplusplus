@@ -1,0 +1,2 @@
+array composition
+cannot pairwise-merge with an inherited marked array

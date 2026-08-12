@@ -44,6 +44,16 @@ Each local node is materialized into a temporary session-local file and can then
 |`$local` is removed from the final output.
 Local nodes are visible within the composed subtree of the defining file.
 
+|`"$super"` and `"$super*"` (array elements)
+|Array composition
+|By default a child array replaces the inherited array wholesale.
+A child array containing the token `"$super"` as a direct element splices the inherited array's elements at the token's position.
+A child array containing `"$super*"` merges the elements after the token index-wise with the inherited elements; elements before the token are a literal prefix.
+|Opt-in per array; unmarked arrays keep the replace-wholesale default.
+A marked array whose inherited key is absent carries unchanged into further composition; a token still unresolved after all inheritance is settled is a configuration error.
+`"$super*"` cannot meet another marked array; `"$super"` deltas compose.
+Escape with `raw:`.
+
 |`"eval:<jq-expr>"` and `"eval:<type>:<jq-expr>"`
 |Expression evaluation
 |A string value starting with `eval:` is compiled as a jq expression and evaluated against the fully composed JSON object.
@@ -223,6 +233,111 @@ Local nodes are materialized as temporary files during evaluation and removed fr
 Local names are referenced in `$extends` or `$includes` by their bare name (without a file extension).
 The `$local` key itself is removed from the output.
 
+[#array-composition]
+==== Array composition ($super and $super*)
+
+By default, when a child object and an inherited object both define an array under the same key, the child array replaces the inherited array wholesale.
+*Array composition* is the opt-in mechanism that combines the two arrays instead.
+It is expressed by two *tokens*, recognized only as direct string elements of an array during inheritance merge (`$extends` / `$includes`, file-level and node-level):
+
+[cols="1,3", options="header"]
+|===
+|Token |Meaning at its position
+
+|`"$super"`
+|*Splice* — the inherited array's elements replace the token, verbatim.
+
+|`"$super*"`
+|*Pairwise merge* — elements before the token are a literal prefix; elements after the token are merged index-wise with the inherited elements.
+|===
+
+An array containing a token is called a *delta*.
+Resolving a delta against a plain (unmarked) inherited array is called *grounding*.
+
+*Splice ($super)*
+
+The token's position encodes the operation: append, prepend, or wrap.
+Multiple `"$super"` elements are allowed; the inherited elements are spliced at each.
+
+[source,json]
+----
+{"tags": ["$super", "x"]}
+{"tags": ["x", "$super"]}
+{"tags": ["a", "$super", "b"]}
+----
+
+Given an inherited `tags: [1, 2]`, these produce `[1, 2, "x"]`, `["x", 1, 2]`, and `["a", 1, 2, "b"]` respectively.
+
+Only the exact string `"$super"` as a direct element is a token.
+A token inside a nested inner array is inert: it does not splice across depths, and if it can never be resolved it is reported by the final validation sweep (see _Resolution_).
+
+Splice deltas *compose*: when a splice delta inherits from another splice delta, the inherited delta's elements — including its own unresolved token — are spliced in, and the combined delta carries on.
+This makes splice composition associative and is what makes `$includes` mixins work: a fragment declaring `"tags": ["$super", "mandated"]` appends `"mandated"` to whatever includes it.
+
+*Pairwise merge ($super*)*
+
+At most one `"$super*"` token may appear in an array, and it cannot be combined with `"$super"` in the same array.
+
+[source,json]
+----
+{"key": ["new1", "$super*", {"a": 1}, {}, "new2"]}
+----
+
+Given an inherited `key: [p0, p1]`, the result is `["new1", merge(p0, {"a": 1}), p1, "new2"]`:
+
+- Elements before the token are prepended as-is.
+- Element _i_ after the token is merged with inherited element _i_.
+- Unpaired elements survive on both sides: inherited extras follow the merged region in order, and extra child elements become a literal tail.
+- `{}` is the "keep this inherited element as-is" pad (for object elements only).
+
+Each merged pair follows the link:../concepts/design-principles.html[same-kind merge principle]:
+
+[cols="1,2", options="header"]
+|===
+|Pair |Behavior
+
+|object × object
+|Recursive merge, exactly as in ordinary object inheritance.
+
+|array × array
+|The child element replaces the inherited element, unless the child element is itself a marked array — then it composes recursively.
+
+|atom × atom
+|The child element wins.
+Strings, numbers, booleans, and `null` are atoms.
+
+|any cross-kind pair
+|Configuration error.
+|===
+
+A pairwise delta does *not* compose with another marked array: when a `"$super*"`-marked array meets an inherited marked array of either kind, or a `"$super"`-marked array meets an inherited pairwise delta, jq{plus}{plus} reports a configuration error.
+Only splice deltas compose with each other.
+
+*Resolution*
+
+When the inherited object does not define the key at all, the delta *carries* unchanged into further composition; this is not an error at merge time.
+After all inheritance (file-level and node-level) is settled and before key-side evaluation, a *final validation sweep* walks the whole result:
+
+- Any remaining `"$super"` / `"$super*"` token is a configuration error — it can never be resolved anymore.
+This surfaces key typos, forgotten `$extends`, and parents skipped via the optional-file `?` marker instead of silently splicing nothing.
+- When the inherited value for a marked array's key is present but is not an array, that is a configuration error at merge time (same-kind merge principle).
+- An unmarked child array replaces the inherited value whatever it is, exactly as before; array composition changes nothing unless a token is written.
+
+*Reserved token namespace*
+
+In the final validation sweep, every array string element starting with `$super` is classified:
+
+1. Exactly `"$super"` or `"$super*"` — a token.
+2. `$super` followed by a non-identifier character (for example `"$super?"`, `"$super*(name)"`, `"$super x"`) — an *unknown token* configuration error.
+These spellings are reserved so that future members of the token family can be added without changing the meaning of any accepted document.
+3. `$super` followed by an identifier character (letter, digit, or `_`, for example `"$supervisor"`) — an ordinary literal, untouched.
+
+*Escaping*
+
+`raw:` is the escape for intentional literals: `"raw:$super"` survives composition and the validation sweep untouched and evaluates to the literal string `"$super"` in the output.
+Strings produced by `eval:` are not affected by array composition, because expression evaluation runs after the validation sweep.
+Object keys are out of scope; only array elements are classified.
+
 === Expression Evaluation
 
 String values (and string keys) that begin with `eval:` or `raw:` receive special treatment.
@@ -356,7 +471,7 @@ Output:
 
 *Tip — escaping reserved keywords*
 
-`raw:` is the formal, guaranteed way to produce a literal key (or value) that would otherwise match a JSON{plus}{plus} control prefix such as `eval:` or a reserved keyword such as `$extends`, `$includes`, or `$local`.
+`raw:` is the formal, guaranteed way to produce a literal key (or value) that would otherwise match a JSON{plus}{plus} control prefix such as `eval:`, a reserved keyword such as `$extends`, `$includes`, or `$local`, or an <<array-composition,array composition>> token such as `$super`.
 Because these strings are interpreted by jq{plus}{plus} during evaluation, prefixing with `raw:` is the portability-safe way to ensure they survive unchanged in the final JSON.
 
 In practice, jq{plus}{plus} keeps inheritance-time control keywords in the `$...` namespace, and introducing new reserved prefixes or new keyword families is treated as a major-version compatibility change.

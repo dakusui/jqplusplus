@@ -1,0 +1,8 @@
+{
+  "steps": [
+    {"run": "setup"},
+    {"run": "build", "cache": true},
+    {"run": "test"},
+    {"run": "deploy"}
+  ]
+}
