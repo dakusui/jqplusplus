@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="generator" content="Asciidoctor 2.0.26">
-<title>jq++: JSON with structural reuse and expression evaluation</title>
+<title>Development Workflow</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Open+Sans:300,300italic,400,400italic,600,600italic%7CNoto+Serif:400,400italic,700,700italic%7CDroid+Sans+Mono:400,700">
 <style>
 /*! Asciidoctor default stylesheet | MIT License | https://asciidoctor.org */
@@ -439,324 +439,271 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 <div id="toc" class="toc2">
 <div id="toctitle">Table of Contents</div>
 <ul class="sectlevel1">
-<li><a href="#_jq_json_with_structural_reuse_and_expression_evaluation">jq++: JSON with structural reuse and expression evaluation</a>
+<li><a href="#_development_workflow">Development Workflow</a>
 <ul class="sectlevel2">
-<li><a href="#_what_is_it_good_for">What is it good for?</a></li>
-<li><a href="#_expression_evaluation">Expression evaluation</a></li>
-<li><a href="#_yaml">YAML?</a></li>
-<li><a href="#_hocon">HOCON?</a></li>
+<li><a href="#_activities_and_artifacts">Activities and Artifacts</a></li>
+<li><a href="#_where_the_contract_lives">Where the Contract Lives</a></li>
+<li><a href="#_the_three_planning_artifacts">The Three Planning Artifacts</a></li>
+<li><a href="#_issues">Issues</a></li>
+<li><a href="#_pull_requests">Pull Requests</a></li>
+<li><a href="#_commands">Commands</a></li>
+<li><a href="#_notes_on_two_steps_that_are_easy_to_misread">Notes on Two Steps That Are Easy to Misread</a></li>
 </ul>
 </li>
-<li><a href="#_references">References</a></li>
 </ul>
 </div>
 </div>
 <div id="content">
 <div class="sect1">
-<h2 id="_jq_json_with_structural_reuse_and_expression_evaluation">jq++: JSON with structural reuse and expression evaluation</h2>
+<h2 id="_development_workflow">Development Workflow</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p><a href="https://github.com/dakusui/jqplusplus">jq++</a> is a tool that extends your JSON with <strong>structural reuse</strong>: structural composition (via <code>$extends</code> and <code>$includes</code>) and expression evaluation (via <code>eval:</code>).
-It productizes the ideas of <a href="https://github.com/dakusui/jq-front"> jq-front</a>, which was named after <strong>Cfront</strong><a href="#Cfront">[3]</a>—the classic C&#43;&#43;-to-C translator—and gives JSON a similar “front-end” power.</p>
+<p>This project uses <a href="https://github.com/Fission-AI/OpenSpec">OpenSpec</a> for spec-driven development.
+This page describes how OpenSpec, GitHub issues, and pull requests fit together.</p>
 </div>
 <div class="paragraph">
-<p>Despite criticism of JSON<a href="#json">[6]</a> as a format for configuration<a href="#cr">[4]</a>, JSON has clear strengths: broad tool support, a good balance between machine and human readability, and simple, unambiguous syntax.</p>
-</div>
-<div class="paragraph">
-<p>Where JSON falls short is in <strong>structure</strong>.
-When you need many similar but slightly different configurations, redundancy is hard to remove because JSON does not define relationships between files or between nodes inside a file.<sup class="footnote">[<a id="_footnoteref_1" class="footnote" href="#_footnotedef_1" title="View footnote.">1</a>]</sup></p>
+<p>It documents how the project is <em>built</em>.
+For documentation of the JSON&#43;&#43; language itself, see the concepts and manual pages.</p>
 </div>
 <div class="sect2">
-<h3 id="_what_is_it_good_for">What is it good for?</h3>
-<div class="paragraph">
-<p>Have you ever had to maintain configuration files that are almost the same, but not quite?</p>
-</div>
-<table class="tableblock frame-all grid-all stretch">
-<colgroup>
-<col style="width: 50%;">
-<col style="width: 50%;">
-</colgroup>
-<thead>
-<tr>
-<th class="tableblock halign-left valign-top">config for foo</th>
-<th class="tableblock halign-left valign-top">config for bar</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td class="tableblock halign-left valign-top"><div class="content"><div class="listingblock">
+<h3 id="_activities_and_artifacts">Activities and Artifacts</h3>
+<div class="imageblock">
 <div class="content">
-<pre class="highlight"><code class="language-json" data-lang="json">{
-  "foo_database": {
-    "server": {
-      "ip": "192.168.1.5",
-      "port": 2001
-    },
-    "db_name": "foo",
-    "user": {
-      "name": "root",
-      "password": "foo_root"
-    }
-  }
-}</code></pre>
-</div>
-</div></div></td>
-<td class="tableblock halign-left valign-top"><div class="content"><div class="listingblock">
-<div class="content">
-<pre class="highlight"><code class="language-json" data-lang="json">{
-  "bar_database": {
-    "server": {
-      "ip": "192.168.1.5",
-      "port": 2001
-    },
-    "db_name": "bar",
-    "user": {
-      "name": "root",
-      "password": "bar_root"
-    }
-  }
-}</code></pre>
-</div>
-</div></div></td>
-</tr>
-</tbody>
-</table>
-<div class="paragraph">
-<p>With jq++, you can define a single base JSON for the common parts:</p>
-</div>
-<div class="listingblock">
-<div class="title">database_default</div>
-<div class="content">
-<pre class="highlight"><code class="language-json" data-lang="json">{
-    "server": {
-      "ip": "192.168.1.5",
-      "port": 2001
-    },
-    "user": {
-      "name": "root"
-    }
-}</code></pre>
+<img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMTIwIDk2MCIgd2lkdGg9IjExMjAiIGhlaWdodD0iOTYwIiByb2xlPSJpbWciIGFyaWEtbGFiZWw9Ik9wZW5TcGVjIHdvcmtmbG93OiBhY3Rpdml0aWVzIGFuZCBhcnRpZmFjdHMiPgogIDx0aXRsZT5PcGVuU3BlYyB3b3JrZmxvdyDigJQgYWN0aXZpdGllcyBhbmQgYXJ0aWZhY3RzPC90aXRsZT4KICA8ZGVmcz4KICAgIDxtYXJrZXIgaWQ9ImoxIiB2aWV3Qm94PSIwIDAgMTAgMTAiIHJlZlg9IjkiIHJlZlk9IjUiIG1hcmtlcldpZHRoPSI3IiBtYXJrZXJIZWlnaHQ9IjciIG9yaWVudD0iYXV0by1zdGFydC1yZXZlcnNlIj4KICAgICAgPHBhdGggZD0iTTAsMCBMMTAsNSBMMCwxMCB6IiBmaWxsPSJ2YXIoLS1ib3JkZXItc3Ryb25nZXIpIi8+CiAgICA8L21hcmtlcj4KICAgIDxtYXJrZXIgaWQ9ImoyIiB2aWV3Qm94PSIwIDAgMTAgMTAiIHJlZlg9IjkiIHJlZlk9IjUiIG1hcmtlcldpZHRoPSI3IiBtYXJrZXJIZWlnaHQ9IjciIG9yaWVudD0iYXV0by1zdGFydC1yZXZlcnNlIj4KICAgICAgPHBhdGggZD0iTTAsMCBMMTAsNSBMMCwxMCB6IiBmaWxsPSJ2YXIoLS10ZXh0LWFjY2VudCkiLz4KICAgIDwvbWFya2VyPgogIDwvZGVmcz4KICA8c3R5bGU+CiAgICBzdmcgewogICAgICAtLXN1cmZhY2UtMDogI2ZmZmZmZjsKICAgICAgLS1zdXJmYWNlLTE6ICNmNWY3ZmE7CiAgICAgIC0tc3VyZmFjZS0yOiAjZmZmZmZmOwogICAgICAtLWJvcmRlcjogI2Q2ZGFlMTsKICAgICAgLS1ib3JkZXItc3Ryb25nOiAjYTliMWJkOwogICAgICAtLWJvcmRlci1zdHJvbmdlcjogIzc5ODM4ZjsKICAgICAgLS10ZXh0LXByaW1hcnk6ICMxYjFmMjQ7CiAgICAgIC0tdGV4dC1zZWNvbmRhcnk6ICM0MTRhNTQ7CiAgICAgIC0tdGV4dC1tdXRlZDogIzZiNzQ4MDsKICAgICAgLS10ZXh0LWFjY2VudDogIzFmNmZlYjsKICAgICAgLS1mb250LXNhbnM6IC1hcHBsZS1zeXN0ZW0sIEJsaW5rTWFjU3lzdGVtRm9udCwgIlNlZ29lIFVJIiwgSGVsdmV0aWNhLCBBcmlhbCwgc2Fucy1zZXJpZjsKICAgICAgLS1mb250LW1vbm86IHVpLW1vbm9zcGFjZSwgU0ZNb25vLVJlZ3VsYXIsICJTRiBNb25vIiwgTWVubG8sIENvbnNvbGFzLCBtb25vc3BhY2U7CiAgICAgIGZvbnQtZmFtaWx5OiB2YXIoLS1mb250LXNhbnMpOwogICAgICBiYWNrZ3JvdW5kOiB2YXIoLS1zdXJmYWNlLTApOwogICAgfQogICAgQG1lZGlhIChwcmVmZXJzLWNvbG9yLXNjaGVtZTogZGFyaykgewogICAgICBzdmcgewogICAgICAgIC0tc3VyZmFjZS0wOiAjMTQxODFkOwogICAgICAgIC0tc3VyZmFjZS0xOiAjMWIyMDI3OwogICAgICAgIC0tc3VyZmFjZS0yOiAjMjMyYTMzOwogICAgICAgIC0tYm9yZGVyOiAjMzMzYzQ3OwogICAgICAgIC0tYm9yZGVyLXN0cm9uZzogIzRiNTc2NTsKICAgICAgICAtLWJvcmRlci1zdHJvbmdlcjogIzhiOTVhMzsKICAgICAgICAtLXRleHQtcHJpbWFyeTogI2U4ZWNmMTsKICAgICAgICAtLXRleHQtc2Vjb25kYXJ5OiAjYzJjOWQyOwogICAgICAgIC0tdGV4dC1tdXRlZDogIzkwOTlhNTsKICAgICAgICAtLXRleHQtYWNjZW50OiAjNWFhMGZmOwogICAgICB9CiAgICB9CiAgICAuYXJ0IHsgZmlsbDogdmFyKC0tc3VyZmFjZS0yKTsgc3Ryb2tlOiB2YXIoLS1ib3JkZXItc3Ryb25nKTsgfQogICAgLmFjdCB7IGZpbGw6IHZhcigtLXN1cmZhY2UtMSk7IHN0cm9rZTogdmFyKC0tdGV4dC1hY2NlbnQpOyBzdHJva2Utd2lkdGg6IDEuNTsgfQogICAgLnQgICB7IGZvbnQtc2l6ZTogMTNweDsgZm9udC13ZWlnaHQ6IDYwMDsgZmlsbDogdmFyKC0tdGV4dC1wcmltYXJ5KTsgdGV4dC1hbmNob3I6IG1pZGRsZTsgfQogICAgLnN0ICB7IGZvbnQtc2l6ZTogOS41cHg7IGZvbnQtd2VpZ2h0OiA3MDA7IGZpbGw6IHZhcigtLXRleHQtYWNjZW50KTsgdGV4dC1hbmNob3I6IG1pZGRsZTsgbGV0dGVyLXNwYWNpbmc6IC4zcHg7IH0KICAgIC5zICAgeyBmb250LXNpemU6IDEwLjVweDsgZmlsbDogdmFyKC0tdGV4dC1tdXRlZCk7IHRleHQtYW5jaG9yOiBtaWRkbGU7IH0KICAgIC5yZCAgeyBmaWxsOiBub25lOyBzdHJva2U6IHZhcigtLWJvcmRlci1zdHJvbmdlcik7IHN0cm9rZS13aWR0aDogMS41OyBtYXJrZXItZW5kOiB1cmwoI2oxKTsgfQogICAgLndyICB7IGZpbGw6IG5vbmU7IHN0cm9rZTogdmFyKC0tdGV4dC1hY2NlbnQpOyBzdHJva2Utd2lkdGg6IDEuNTsgc3Ryb2tlLWRhc2hhcnJheTogNiA0OyBtYXJrZXItZW5kOiB1cmwoI2oyKTsgfQogICAgLmNoICB7IGZvbnQtc2l6ZTogMTIuNXB4OyBmb250LXdlaWdodDogNzAwOyBmaWxsOiB2YXIoLS10ZXh0LWFjY2VudCk7IGxldHRlci1zcGFjaW5nOiAuM3B4OyB9CiAgICAuY20gIHsgZm9udC1zaXplOiAxMC41cHg7IGZvbnQtZmFtaWx5OiB2YXIoLS1mb250LW1vbm8pOyBmaWxsOiB2YXIoLS10ZXh0LXByaW1hcnkpOyB9CiAgICAuY3MgIHsgZm9udC1zaXplOiAxMHB4OyBmaWxsOiB2YXIoLS10ZXh0LW11dGVkKTsgfQogICAgLmNiICB7IGZvbnQtc2l6ZTogMTFweDsgZm9udC13ZWlnaHQ6IDcwMDsgZmlsbDogdmFyKC0tdGV4dC1wcmltYXJ5KTsgfQogICAgLmdycCB7IGZpbGw6IG5vbmU7IHN0cm9rZTogdmFyKC0tdGV4dC1hY2NlbnQpOyBzdHJva2Utd2lkdGg6IDI7IH0KICAgIC5nbCAgeyBmb250LXNpemU6IDEycHg7IGZvbnQtd2VpZ2h0OiA3MDA7IGZpbGw6IHZhcigtLXRleHQtYWNjZW50KTsgbGV0dGVyLXNwYWNpbmc6IC40cHg7IH0KICAgIC5oZCAgeyBmb250LXNpemU6IDE1cHg7IGZvbnQtd2VpZ2h0OiA3MDA7IGZpbGw6IHZhcigtLXRleHQtcHJpbWFyeSk7IH0KICAgIC5sZyAgeyBmb250LXNpemU6IDEwcHg7IGZpbGw6IHZhcigtLXRleHQtc2Vjb25kYXJ5KTsgfQogICAgLmxnYyB7IGZvbnQtc2l6ZTogMTBweDsgZmlsbDogdmFyKC0tdGV4dC1wcmltYXJ5KTsgdGV4dC1hbmNob3I6IG1pZGRsZTsgfQogIDwvc3R5bGU+CgogIDxyZWN0IHg9IjAiIHk9IjAiIHdpZHRoPSIxMTIwIiBoZWlnaHQ9Ijk2MCIgZmlsbD0idmFyKC0tc3VyZmFjZS0wKSIvPgogIDx0ZXh0IHg9IjE2IiB5PSIyMiIgY2xhc3M9ImhkIj5PcGVuU3BlYyDigJQgYWN0aXZpdGllcyAob3ZhbHMpIGFuZCBhcnRpZmFjdHMgKGJveGVzKTwvdGV4dD4KCiAgPHJlY3QgeD0iMzAiIHk9IjYwIiB3aWR0aD0iMTQyIiBoZWlnaHQ9IjY0IiByeD0iNyIgZmlsbD0idmFyKC0tc3VyZmFjZS0yKSIgc3Ryb2tlPSJ2YXIoLS10ZXh0LW11dGVkKSIgc3Ryb2tlLWRhc2hhcnJheT0iMyAzIi8+CiAgPHRleHQgeD0iMTAxIiB5PSI4MCIgY2xhc3M9InN0Ij4mIzE3MTt2b2xhdGlsZSYjMTg3OzwvdGV4dD4KICA8dGV4dCB4PSIxMDEiIHk9Ijk3IiBjbGFzcz0idCI+bWVtb3J5PC90ZXh0PgogIDx0ZXh0IHg9IjEwMSIgeT0iMTEyIiBjbGFzcz0icyI+dW5kZXJzdGFuZGluZyBvZjwvdGV4dD4KICA8dGV4dCB4PSIxMDEiIHk9IjEyMyIgY2xhc3M9InMiPndoYXQgdG8gYnVpbGQ8L3RleHQ+CgogIDxlbGxpcHNlIGN4PSIxMDEiIGN5PSIxOTAiIHJ4PSI3MiIgcnk9IjI2IiBjbGFzcz0iYWN0Ii8+CiAgPHRleHQgeD0iMTAxIiB5PSIxOTUiIGNsYXNzPSJ0Ij5leHBsb3JlPC90ZXh0PgogIDxwYXRoIGQ9Ik0xMDEsMTY0IEwxMDEsMTMwIiBjbGFzcz0id3IiLz4KICA8cGF0aCBkPSJNMTAxLDIxNiBMMTAxLDI5NiIgY2xhc3M9InJkIi8+CgogIDxyZWN0IHg9IjMwIiB5PSIzMDIiIHdpZHRoPSIxNDIiIGhlaWdodD0iNTgiIHJ4PSI3IiBjbGFzcz0iYXJ0IiBzdHJva2UtZGFzaGFycmF5PSI1IDQiLz4KICA8dGV4dCB4PSIxMDEiIHk9IjMyMSIgY2xhc3M9InN0Ij4mIzE3MTtvcHRpb25hbCYjMTg3OzwvdGV4dD4KICA8dGV4dCB4PSIxMDEiIHk9IjMzOCIgY2xhc3M9InQiPkdpdEh1YiBJc3N1ZTwvdGV4dD4KICA8dGV4dCB4PSIxMDEiIHk9IjM1MyIgY2xhc3M9InMiPnRoZSBwYWluPC90ZXh0PgogIDxwYXRoIGQ9Ik0yMzYsMzIwIEwxNzgsMzIwIiBjbGFzcz0icmQiLz4KICA8cGF0aCBkPSJNMjM2LDkyIEwxNzgsOTIiIGNsYXNzPSJyZCIvPgogIDxwYXRoIGQ9Ik01ODAsODY0IEw1ODAsODk2IEwxOTAsODk2IEwxOTAsMzQ0IEwxNzgsMzQ0IiBjbGFzcz0id3IiLz4KCiAgPGcgdHJhbnNmb3JtPSJ0cmFuc2xhdGUoMTgwLDApIj4KICAgIDxyZWN0IHg9IjYwIiB5PSIxMDQiIHdpZHRoPSI1MjYiIGhlaWdodD0iNTE2IiByeD0iMTYiIGNsYXNzPSJncnAiLz4KICAgIDx0ZXh0IHg9Ijc0IiB5PSIxMjYiIGNsYXNzPSJnbCI+cHJvcG9zZTwvdGV4dD4KCiAgICA8cmVjdCB4PSIyMDAiIHk9IjQyIiB3aWR0aD0iMjQwIiBoZWlnaHQ9IjUwIiByeD0iNyIgY2xhc3M9ImFydCIvPgogICAgPHRleHQgeD0iMzIwIiB5PSI2NCIgY2xhc3M9InQiPm9wZW5zcGVjL3NwZWNzLzwvdGV4dD4KICAgIDx0ZXh0IHg9IjMyMCIgeT0iODEiIGNsYXNzPSJzIj5jdXJyZW50IHRydXRoIOKAlCBob3cgaXQgYmVoYXZlcyB0b2RheTwvdGV4dD4KCiAgICA8ZWxsaXBzZSBjeD0iMzIwIiBjeT0iMTUwIiByeD0iNzgiIHJ5PSIzMCIgY2xhc3M9ImFjdCIvPgogICAgPHRleHQgeD0iMzIwIiB5PSIxNDYiIGNsYXNzPSJzdCI+JiMxNzE7ZW50cnkgcG9pbnQmIzE4Nzs8L3RleHQ+CiAgICA8dGV4dCB4PSIzMjAiIHk9IjE2MyIgY2xhc3M9InQiPm5ldzwvdGV4dD4KICAgIDxwYXRoIGQ9Ik0zMjAsMTIwIEwzMjAsOTYiIGNsYXNzPSJyZCIvPgogICAgPHBhdGggZD0iTTMyMCwxODAgTDMyMCwyMDYiIGNsYXNzPSJ3ciIvPgoKICAgIDxyZWN0IHg9IjIxMCIgeT0iMjEyIiB3aWR0aD0iMjIwIiBoZWlnaHQ9IjQ2IiByeD0iNyIgY2xhc3M9ImFydCIvPgogICAgPHRleHQgeD0iMzIwIiB5PSIyMzIiIGNsYXNzPSJ0Ij5wcm9wb3NhbC5tZDwvdGV4dD4KICAgIDx0ZXh0IHg9IjMyMCIgeT0iMjQ4IiBjbGFzcz0icyI+d2h5ICsgc2NvcGU8L3RleHQ+CgogICAgPGVsbGlwc2UgY3g9IjE3NSIgY3k9IjMyMCIgcng9IjgwIiByeT0iMjYiIGNsYXNzPSJhY3QiLz4KICAgIDx0ZXh0IHg9IjE3NSIgeT0iMzI1IiBjbGFzcz0idCI+d3JpdGUgc3BlYzwvdGV4dD4KICAgIDxlbGxpcHNlIGN4PSI0NzAiIGN5PSIzMjAiIHJ4PSI4MCIgcnk9IjI2IiBjbGFzcz0iYWN0Ii8+CiAgICA8dGV4dCB4PSI0NzAiIHk9IjMyNSIgY2xhc3M9InQiPndyaXRlIGRlc2lnbjwvdGV4dD4KICAgIDxwYXRoIGQ9Ik0yMDUsMzAwIEwyNTgsMjYyIiBjbGFzcz0icmQiLz4KICAgIDxwYXRoIGQ9Ik00NDAsMzAwIEwzODcsMjYyIiBjbGFzcz0icmQiLz4KICAgIDxwYXRoIGQ9Ik0xNzUsMzQ2IEwxNzUsMzgwIiBjbGFzcz0id3IiLz4KICAgIDxwYXRoIGQ9Ik00NzAsMzQ2IEw0NzAsMzgwIiBjbGFzcz0id3IiLz4KCiAgICA8cmVjdCB4PSI3MCIgeT0iMzg2IiB3aWR0aD0iMjEwIiBoZWlnaHQ9IjUyIiByeD0iNyIgY2xhc3M9ImFydCIvPgogICAgPHRleHQgeD0iMTc1IiB5PSI0MDciIGNsYXNzPSJ0Ij5zcGVjcy8gZGVsdGE8L3RleHQ+CiAgICA8dGV4dCB4PSIxNzUiIHk9IjQyNCIgY2xhc3M9InMiPkFEREVEIC8gTU9ESUZJRUQgLyBSRU1PVkVEPC90ZXh0PgogICAgPHJlY3QgeD0iMzcwIiB5PSIzODYiIHdpZHRoPSIyMDAiIGhlaWdodD0iNTIiIHJ4PSI3IiBjbGFzcz0iYXJ0Ii8+CiAgICA8dGV4dCB4PSI0NzAiIHk9IjQwNyIgY2xhc3M9InQiPmRlc2lnbi5tZDwvdGV4dD4KICAgIDx0ZXh0IHg9IjQ3MCIgeT0iNDI0IiBjbGFzcz0icyI+aW50ZXJuYWwgYXBwcm9hY2g8L3RleHQ+CgogICAgPGVsbGlwc2UgY3g9IjMyMCIgY3k9IjQ5OCIgcng9Ijc4IiByeT0iMjYiIGNsYXNzPSJhY3QiLz4KICAgIDx0ZXh0IHg9IjMyMCIgeT0iNTAzIiBjbGFzcz0idCI+d3JpdGUgdGFza3M8L3RleHQ+CiAgICA8cGF0aCBkPSJNMjY4LDQ4NiBMMTk2LDQ0NiIgY2xhc3M9InJkIi8+CiAgICA8cGF0aCBkPSJNMzc0LDQ4NiBMNDQ4LDQ0NiIgY2xhc3M9InJkIi8+CiAgICA8cGF0aCBkPSJNMzIwLDUyNCBMMzIwLDU1NCIgY2xhc3M9IndyIi8+CgogICAgPHJlY3QgeD0iMjE1IiB5PSI1NjAiIHdpZHRoPSIyMTAiIGhlaWdodD0iNDYiIHJ4PSI3IiBjbGFzcz0iYXJ0Ii8+CiAgICA8dGV4dCB4PSIzMjAiIHk9IjU4MCIgY2xhc3M9InQiPnRhc2tzLm1kPC90ZXh0PgogICAgPHRleHQgeD0iMzIwIiB5PSI1OTYiIGNsYXNzPSJzIj4tIFsgXSBjaGVja2JveGVzPC90ZXh0PgoKICAgIDxlbGxpcHNlIGN4PSIzMjAiIGN5PSI2NjgiIHJ4PSI4OCIgcnk9IjI2IiBjbGFzcz0iYWN0Ii8+CiAgICA8dGV4dCB4PSIzMjAiIHk9IjY3MyIgY2xhc3M9InQiPmFwcGx5IChpbXBsZW1lbnQpPC90ZXh0PgogICAgPHBhdGggZD0iTTI5Niw2NDIgTDI5Niw2MTAiIGNsYXNzPSJyZCIvPgogICAgPHBhdGggZD0iTTM0OCw2NDIgTDM0OCw2MTAiIGNsYXNzPSJ3ciIvPgogICAgPHBhdGggZD0iTTQxMCw2NjQgTDQ2NCw2NjQiIGNsYXNzPSJ3ciIvPgogICAgPHJlY3QgeD0iNDcwIiB5PSI2NDIiIHdpZHRoPSIxNjAiIGhlaWdodD0iNDgiIHJ4PSI3IiBjbGFzcz0iYXJ0Ii8+CiAgICA8dGV4dCB4PSI1NTAiIHk9IjY2MiIgY2xhc3M9InQiPnNvdXJjZSBjb2RlPC90ZXh0PgogICAgPHRleHQgeD0iNTUwIiB5PSI2NzgiIGNsYXNzPSJzIj5pbnRlcm5hbC8sIGF1dG90ZXN0LzwvdGV4dD4KICAgIDxwYXRoIGQ9Ik0yMzIsNjcwIEw0NCw2NzAgTDQ0LDQyNCBMNjIsNDI0IiBjbGFzcz0icmQiLz4KCiAgICA8ZWxsaXBzZSBjeD0iMzIwIiBjeT0iNzUyIiByeD0iNzgiIHJ5PSIyNiIgY2xhc3M9ImFjdCIvPgogICAgPHRleHQgeD0iMzIwIiB5PSI3NTciIGNsYXNzPSJ0Ij52ZXJpZnk8L3RleHQ+CiAgICA8cGF0aCBkPSJNMjQyLDc1MiBMMzAsNzUyIEwzMCw0MTIgTDYyLDQxMiIgY2xhc3M9InJkIi8+CiAgICA8cGF0aCBkPSJNMzkyLDc0MCBMNTI0LDY5OCIgY2xhc3M9InJkIi8+CgogICAgPGVsbGlwc2UgY3g9IjQwMCIgY3k9IjgzOCIgcng9Ijc4IiByeT0iMjYiIGNsYXNzPSJhY3QiLz4KICAgIDx0ZXh0IHg9IjQwMCIgeT0iODQzIiBjbGFzcz0idCI+YXJjaGl2ZTwvdGV4dD4KICAgIDxwYXRoIGQ9Ik00MDAsODY0IEw0MDAsODgwIEwxNiw4ODAgTDE2LDQwMCBMNjIsNDAwIiBjbGFzcz0icmQiLz4KICAgIDxwYXRoIGQ9Ik0zMjIsODM4IEwzMDYsODM4IiBjbGFzcz0id3IiLz4KICAgIDxyZWN0IHg9IjEyMCIgeT0iODEyIiB3aWR0aD0iMTgwIiBoZWlnaHQ9IjUyIiByeD0iNyIgY2xhc3M9ImFydCIvPgogICAgPHRleHQgeD0iMjEwIiB5PSI4MzMiIGNsYXNzPSJ0Ij5jaGFuZ2VzL2FyY2hpdmUvPC90ZXh0PgogICAgPHRleHQgeD0iMjEwIiB5PSI4NDkiIGNsYXNzPSJzIj4mbHQ7ZGF0ZSZndDstJmx0O2NoYW5nZS1pZCZndDsvPC90ZXh0PgogICAgPHBhdGggZD0iTTQ3OCw4MzIgTDY1MCw4MzIgTDY1MCw2NyBMNDQ4LDY3IiBjbGFzcz0id3IiLz4KICA8L2c+CgogIDxyZWN0IHg9Ijg1MCIgeT0iMjk2IiB3aWR0aD0iMjUyIiBoZWlnaHQ9IjE0MiIgcng9IjgiIGZpbGw9InZhcigtLXN1cmZhY2UtMSkiIHN0cm9rZT0idmFyKC0tYm9yZGVyKSIvPgogIDxyZWN0IHg9Ijg1MCIgeT0iMjk2IiB3aWR0aD0iNCIgaGVpZ2h0PSIxNDIiIGZpbGw9InZhcigtLXRleHQtYWNjZW50KSIvPgogIDx0ZXh0IHg9Ijg2NiIgeT0iMzE5IiBjbGFzcz0iY2giPnByb3Bvc2U8L3RleHQ+CiAgPHRleHQgeD0iODY2IiB5PSIzNDIiIGNsYXNzPSJjbSI+L29wc3g6cHJvcG9zZTwvdGV4dD4KICA8dGV4dCB4PSI4NjYiIHk9IjM1NiIgY2xhc3M9ImNzIj5hbGwgZm91ciBhcnRpZmFjdHMgaW4gb25lIHNob3Q8L3RleHQ+CiAgPHRleHQgeD0iODY2IiB5PSIzNzYiIGNsYXNzPSJjbSI+L29wc3g6bmV3ICsgL29wc3g6Y29udGludWU8L3RleHQ+CiAgPHRleHQgeD0iODY2IiB5PSIzOTAiIGNsYXNzPSJjcyI+b25lIGFydGlmYWN0IGF0IGEgdGltZSAocmV2aWV3YWJsZSk8L3RleHQ+CiAgPHRleHQgeD0iODY2IiB5PSI0MTIiIGNsYXNzPSJjYiI+UFIgMSDigJQgcGxhbm5pbmcgb25seTwvdGV4dD4KICA8dGV4dCB4PSI4NjYiIHk9IjQyNyIgY2xhc3M9ImNzIj5tZXJnZWQgYmVmb3JlIGFueSBjb2RlIGlzIHdyaXR0ZW48L3RleHQ+CgogIDxyZWN0IHg9Ijg1MCIgeT0iNjA2IiB3aWR0aD0iMjUyIiBoZWlnaHQ9IjEyNiIgcng9IjgiIGZpbGw9InZhcigtLXN1cmZhY2UtMSkiIHN0cm9rZT0idmFyKC0tYm9yZGVyKSIvPgogIDxyZWN0IHg9Ijg1MCIgeT0iNjA2IiB3aWR0aD0iNCIgaGVpZ2h0PSIxMjYiIGZpbGw9InZhcigtLXRleHQtYWNjZW50KSIvPgogIDx0ZXh0IHg9Ijg2NiIgeT0iNjI5IiBjbGFzcz0iY2giPmFwcGx5PC90ZXh0PgogIDx0ZXh0IHg9Ijg2NiIgeT0iNjUyIiBjbGFzcz0iY20iPi9vcHN4OmFwcGx5PC90ZXh0PgogIDx0ZXh0IHg9Ijg2NiIgeT0iNjY2IiBjbGFzcz0iY3MiPmltcGxlbWVudCB0YXNrcywgdGljayB0aGUgYm94ZXM8L3RleHQ+CiAgPHRleHQgeD0iODY2IiB5PSI2ODYiIGNsYXNzPSJjbSI+L29wc3g6dmVyaWZ5PC90ZXh0PgogIDx0ZXh0IHg9Ijg2NiIgeT0iNzAwIiBjbGFzcz0iY3MiPmNvZGUgdnMgc3BlYyDigJQgcmVwb3J0cywgbmV2ZXIgYmxvY2tzPC90ZXh0PgogIDx0ZXh0IHg9Ijg2NiIgeT0iNzIyIiBjbGFzcz0iY2IiPlBSIDLigKZuIOKAlCBvbmUgcGVyIHBoYXNlLCBpbiBvcmRlcjwvdGV4dD4KCiAgPHJlY3QgeD0iODUwIiB5PSI3ODYiIHdpZHRoPSIyNTIiIGhlaWdodD0iMTEyIiByeD0iOCIgZmlsbD0idmFyKC0tc3VyZmFjZS0xKSIgc3Ryb2tlPSJ2YXIoLS1ib3JkZXIpIi8+CiAgPHJlY3QgeD0iODUwIiB5PSI3ODYiIHdpZHRoPSI0IiBoZWlnaHQ9IjExMiIgZmlsbD0idmFyKC0tdGV4dC1hY2NlbnQpIi8+CiAgPHRleHQgeD0iODY2IiB5PSI4MDkiIGNsYXNzPSJjaCI+YXJjaGl2ZTwvdGV4dD4KICA8dGV4dCB4PSI4NjYiIHk9IjgzMiIgY2xhc3M9ImNtIj4vb3BzeDphcmNoaXZlPC90ZXh0PgogIDx0ZXh0IHg9Ijg2NiIgeT0iODQ2IiBjbGFzcz0iY3MiPmRlbHRhIG1lcmdlZCBpbnRvIG9wZW5zcGVjL3NwZWNzLzwvdGV4dD4KICA8dGV4dCB4PSI4NjYiIHk9Ijg2OCIgY2xhc3M9ImNiIj5GaW5hbCBQUiDigJQgdHJ1dGggY2hhbmdlcyBoZXJlPC90ZXh0PgogIDx0ZXh0IHg9Ijg2NiIgeT0iODgzIiBjbGFzcz0iY3MiPmNsb3NlIHRoZSBpc3N1ZSB3aXRoIGEgcG9pbnRlcjwvdGV4dD4KCiAgPGVsbGlwc2UgY3g9IjYyIiBjeT0iOTMwIiByeD0iMzIiIHJ5PSIxMyIgY2xhc3M9ImFjdCIvPgogIDx0ZXh0IHg9IjYyIiB5PSI5MzQiIGNsYXNzPSJsZ2MiPmFjdGl2aXR5PC90ZXh0PgogIDxyZWN0IHg9IjEyMiIgeT0iOTE3IiB3aWR0aD0iNzAiIGhlaWdodD0iMjYiIHJ4PSI1IiBjbGFzcz0iYXJ0Ii8+CiAgPHRleHQgeD0iMTU3IiB5PSI5MzQiIGNsYXNzPSJsZ2MiPmFydGlmYWN0PC90ZXh0PgogIDxwYXRoIGQ9Ik0yMTYsOTMwIEwyNjgsOTMwIiBjbGFzcz0icmQiLz4KICA8dGV4dCB4PSIyOTgiIHk9IjkzNCIgY2xhc3M9ImxnIj5yZWFkczwvdGV4dD4KICA8cGF0aCBkPSJNMzQ4LDkzMCBMNDAwLDkzMCIgY2xhc3M9IndyIi8+CiAgPHRleHQgeD0iNDMwIiB5PSI5MzQiIGNsYXNzPSJsZyI+d3JpdGVzPC90ZXh0Pgo8L3N2Zz4K" alt="OpenSpec workflow" width="1120">
 </div>
 </div>
 <div class="paragraph">
-<p>Then reuse it from other files via <code>$extends</code>:</p>
-</div>
-<table class="tableblock frame-all grid-all stretch">
-<colgroup>
-<col style="width: 50%;">
-<col style="width: 50%;">
-</colgroup>
-<thead>
-<tr>
-<th class="tableblock halign-left valign-top">foo.json</th>
-<th class="tableblock halign-left valign-top">bar.json</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td class="tableblock halign-left valign-top"><div class="content"><div class="listingblock">
-<div class="content">
-<pre class="highlight"><code class="language-json" data-lang="json">{
-  "foo_database": {
-    "$extends": [ "database_default.json" ],
-    "db_name": "foo",
-    "user": {
-      "password": "foo_root"
-    }
-  }
-}</code></pre>
-</div>
-</div></div></td>
-<td class="tableblock halign-left valign-top"><div class="content"><div class="listingblock">
-<div class="content">
-<pre class="highlight"><code class="language-json" data-lang="json">{
-  "bar_database": {
-    "$extends": [ "database_default.json" ],
-    "db_name": "bar",
-    "user": {
-      "password": "bar_root"
-    }
-  }
-}</code></pre>
-</div>
-</div></div></td>
-</tr>
-</tbody>
-</table>
-<div class="paragraph">
-<p>Run <code>jq foo.json` and you get the expanded “config for foo” from the first table; `jq bar.json</code> gives you the “config for bar”.
-You keep one source of truth and generate each variant by extending it.</p>
-</div>
-</div>
-<div class="sect2">
-<h3 id="_expression_evaluation">Expression evaluation</h3>
-<div class="paragraph">
-<p>jq++ also supports expression evaluation so you can compute values dynamically using jq expressions in string fields.</p>
+<p>In the diagram, ovals are <em>activities</em> and boxes are <em>artifacts</em>.
+Every arrow starts at an activity: a solid arrow means the activity reads the artifact, and a dashed arrow means it writes to it.</p>
 </div>
 <div class="paragraph">
-<p>Example: extend two files and build a greeting string from their fields and the current date:</p>
-</div>
-<div class="listingblock">
-<div class="title">sayHello.json</div>
-<div class="content">
-<pre class="highlight"><code class="language-json" data-lang="json">{
-  "$extends": ["greeting.json", "name.json"],
-  "sayHello": "eval:refexpr(\".greeting\") + \", \" + refexpr(\".yourname\") + \". Today is \" + (now|todate)"
-}</code></pre>
-</div>
-</div>
-<div class="paragraph">
-<p>With <code>greeting.json</code> as <code>{"greeting":"Hello"}</code> and <code>name.json</code> as <code>{"yourname":"Mark"}</code>, running <code>jq++ sayHello.json</code> produces:</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="highlight"><code class="language-json" data-lang="json">{
-  "greeting": "Hello",
-  "sayHello": "Hello, Mark. Today is 2026-02-14T13:07:57Z",
-  "yourname": "Mark"
-}</code></pre>
-</div>
-</div>
-</div>
-<div class="sect2">
-<h3 id="_yaml">YAML?</h3>
-<div class="paragraph">
-<p>JSON is often criticized as a configuration language<a href="#cr">[4]</a>.
-Whether or not you agree, jq&#43;&#43; can still improve a YAML-based workflow: you keep YAML for editing, then convert to JSON, run jq&#43;&#43; for structural reuse, and optionally convert back to YAML.</p>
-</div>
-<table class="tableblock frame-all grid-all stretch">
-<colgroup>
-<col style="width: 50%;">
-<col style="width: 50%;">
-</colgroup>
-<thead>
-<tr>
-<th class="tableblock halign-left valign-top">INPUT</th>
-<th class="tableblock halign-left valign-top">OUTPUT</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td class="tableblock halign-left valign-top"><div class="content"><div class="listingblock">
-<div class="content">
-<pre class="highlight"><code class="language-yaml" data-lang="yaml">$local:
-  database_default:
-    server:
-      ip: 192.168.1.5
-      port: 2000
-    db_name: test
-    user:
-      name: root
-      password: root
-
-foo_database:
-  $extends: [ database_default ]
-  server:
-    port: 2001
-  db_name: foo
-  user:
-    password: foo_root</code></pre>
-</div>
-</div></div></td>
-<td class="tableblock halign-left valign-top"><div class="content"><div class="listingblock">
-<div class="content">
-<pre class="highlight"><code class="language-yaml" data-lang="yaml">foo_database:
-  server:
-    ip: 192.168.1.5
-    port: 2001
-  db_name: foo
-  user:
-    name: root
-    password: foo_root</code></pre>
-</div>
-</div></div></td>
-</tr>
-</tbody>
-</table>
-<div class="paragraph">
-<p>Example pipeline (using <code>yq</code> for YAML↔JSON):<a href="#stackoverflow">[8]</a></p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="highlight"><code class="language-shell script" data-lang="shell script">$ yq . -j in.yaml | jq++ | yq . -y</code></pre>
-</div>
-</div>
-</div>
-<div class="sect2">
-<h3 id="_hocon">HOCON?</h3>
-<div class="paragraph">
-<p>HOCON<a href="#hocon">[hocon]</a> is another human-friendly format with inheritance and references.
-You might still prefer jq&#43;&#43;:</p>
+<p>Two artifacts are outside the repository.</p>
 </div>
 <div class="ulist">
 <ul>
 <li>
-<p><strong>Standard JSON in and out.</strong> jq++ reads and writes JSON, which fits into almost any toolchain.</p>
+<p>The <strong>GitHub Issue</strong> is optional and lives on GitHub.</p>
 </li>
 <li>
-<p><strong>Custom behavior via expression evaluation.</strong> You can define how values are computed using <code>eval:</code> expressions without leaving JSON.</p>
-</li>
-<li>
-<p><strong>Separation of concerns.</strong> Data structure (inheritance, references) and human-friendly syntax are different problems; jq++ focuses on structure so you can choose the syntax (JSON, YAML, etc.) separately.</p>
+<p><strong>Memory</strong> is volatile: it is the understanding of what to build, held in a human&#8217;s head or an agent&#8217;s context, and it survives nothing.</p>
 </li>
 </ul>
 </div>
 <div class="paragraph">
-<p>That separation matters in automation and CI/CD.
-Configs often need to be generated by programs; JSON is easy to generate and parse.
-HOCON, as a superset of JSON, is less straightforward to emit: a program might produce valid HOCON that looks different from hand-written style after a round trip.
-If you use jq++ for the “structure and value resolution” step and keep JSON (or YAML) as the interchange format, you avoid mixing style and semantics in one layer.</p>
+<p>Everything else is a file under version control.</p>
 </div>
+</div>
+<div class="sect2">
+<h3 id="_where_the_contract_lives">Where the Contract Lives</h3>
 <div class="paragraph">
-<p>You can combine jq++ with any JSON-oriented tools—including <a href="https://stedolan.github.io/jq/manual/">jq</a><a href="#jq">[7]</a> for querying and transformation—and still improve readability by editing in YAML or another format upstream.</p>
+<p>The specification is the contract, and it lives in exactly one place at a time.</p>
 </div>
-</div>
-</div>
-</div>
-<div class="sect1">
-<h2 id="_references">References</h2>
-<div class="sectionbody">
-<div class="ulist bibliography">
-<ul class="bibliography">
+<div class="ulist">
+<ul>
 <li>
-<p><a id="jqpp"></a>[1] jq (jqplusplus) on GitHub. https://github.com/dakusui/jqplusplus[jq]: 2025</p>
+<p>While a change is in progress, in <code>openspec/changes/&lt;change-id&gt;/specs/&lt;capability&gt;/spec.md</code>, written as a delta.</p>
 </li>
 <li>
-<p><a id="jq-front"></a>[2] jq-front (original concept). <a href="https://github.com/dakusui/jq-front">jq-front</a>: 2019</p>
-</li>
-<li>
-<p><a id="Cfront"></a>[3] Cfront. <a href="https://en.wikipedia.org/wiki/Cfront">Wikipedia</a>: 2019</p>
-</li>
-<li>
-<p><a id="cr"></a>[4] Thayne McCombs. <a href="https://www.lucidchart.com/techblog/2018/07/16/why-json-isnt-a-good-configuration-language/">Why JSON isn’t a Good Configuration Language</a>: 2018</p>
-</li>
-<li>
-<p><a id="yaml"></a>[5] YAML. <a href="https://en.wikipedia.org/wiki/YAML">Wikipedia</a>: 2019</p>
-</li>
-<li>
-<p><a id="json"></a>[6] JSON. <a href="http://www.json.org">json.org</a>: 2019</p>
-</li>
-<li>
-<p><a id="jq"></a>[7] jq manual. <a href="https://stedolan.github.io/jq/manual/">jq</a>: 2019</p>
-</li>
-<li>
-<p><a id="stackoverflow"></a>[8] More complex inheritance in YAML? <a href="https://stackoverflow.com/questions/14184971/more-complex-inheritance-in-yaml">Stack Overflow</a>: 2019</p>
-</li>
-<li>
-<p><a id="hocon"></a> HOCON. <a href="https://github.com/lightbend/config">HOCON</a>: 2020</p>
+<p>After the change is archived, in <code>openspec/specs/&lt;capability&gt;/spec.md</code>, merged into the current truth.</p>
 </li>
 </ul>
 </div>
-<div class="paragraph text-right">
-<p><a href="../index.html">top</a></p>
+<div class="paragraph">
+<p>Nothing else is normative.
+Neither the issue, nor <code>proposal.md</code>, nor <code>design.md</code> states what the system must do.
+When a document and the implementation disagree, that is a decision to be made, not a discrepancy to be silently edited away.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_the_three_planning_artifacts">The Three Planning Artifacts</h3>
+<div class="paragraph">
+<p>The artifacts differ in what they are <em>about</em>, not in who writes them.</p>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1"><code>proposal.md</code></dt>
+<dd>
+<p>The problem, the chosen direction at headline level, which capabilities are affected, and what is out of scope.</p>
+</dd>
+<dt class="hdlist1"><code>specs/</code> delta</dt>
+<dd>
+<p>Externally observable behaviour, as requirements and scenarios.
+This is the external design.</p>
+</dd>
+<dt class="hdlist1"><code>design.md</code></dt>
+<dd>
+<p>The internal approach — data structures, algorithms, risks, and rejected alternatives.
+This is the internal design.</p>
+</dd>
+</dl>
+</div>
+<div class="paragraph">
+<p>Requirements use a fixed shape that <code>openspec validate --strict</code> enforces.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-markdown" data-lang="markdown">### Requirement: Name
+The system SHALL &lt;observable behavior&gt;.
+
+#### Scenario: Specific case
+- GIVEN &lt;state&gt;
+- WHEN &lt;action&gt;
+- THEN &lt;observable outcome&gt;</code></pre>
 </div>
 </div>
 </div>
+<div class="sect2">
+<h3 id="_issues">Issues</h3>
+<div class="paragraph">
+<p>An issue records a <em>pain</em>, not a solution.</p>
 </div>
-<div id="footnotes">
-<hr>
-<div class="footnote" id="_footnotedef_1">
-<a href="#_footnoteref_1">1</a>. This limitation is not unique to JSON; YAML, for example, can reference object nodes but cannot embed one text value inside another by itself.
+<div class="ulist">
+<ul>
+<li>
+<p>State who is affected, what they cannot do today, and why it matters.</p>
+</li>
+<li>
+<p>Do not state the mechanism, the syntax, or the data model.</p>
+</li>
+<li>
+<p>Avoid acceptance criteria that read like scenarios; the spec delta is the only normative statement of behaviour.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>File an issue when the pain is noticed, not when there is time to work on it.
+Not every issue becomes a change, and a small self-evident change needs no issue.</p>
+</div>
+<div class="paragraph">
+<p>At archive time, close the issue with a pointer to the specification that now answers it.
+Do not copy the conclusion into the issue: two documents claiming to be the specification will drift.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_pull_requests">Pull Requests</h3>
+<div class="paragraph">
+<p>Planning and implementation are separated, so that design is reviewed as markdown before it is reviewed as code.</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p><strong>PR 1 — planning.</strong>
+Contains only <code>openspec/changes/&lt;change-id&gt;/</code>.
+Merged <strong>before</strong> any implementation begins.
+This is where semantics are argued.</p>
+</li>
+<li>
+<p><strong>PR 2 to n — implementation.</strong>
+One per phase in <code>tasks.md</code>, merged in order.
+Each ticks off its own checkboxes.</p>
+</li>
+<li>
+<p><strong>Final PR — archive.</strong>
+The delta is merged into <code>openspec/specs/</code> and the change folder is moved.
+This is the moment the recorded truth changes, so it is reviewed on its own.</p>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>Merging PR 1 into <code>main</code> does not make <code>main</code> lie.
+<code>openspec/changes/</code> is by definition pending work; only <code>openspec/specs/</code> claims to describe reality.</p>
+</div>
+<div class="paragraph">
+<p>Two consequences worth knowing.</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>tasks.md</code> is shared state, so concurrent implementation PRs conflict.
+Sequence them.</p>
+</li>
+<li>
+<p>If implementation shows the spec was wrong, amend the spec in its own PR before continuing.
+That makes the change visible as a decision.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Branch names follow the existing convention, <code>&lt;type&gt;/&lt;slug&gt;-&lt;issue&gt;</code>, for example <code>spec/array-composition-84</code>.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_commands">Commands</h3>
+<div class="paragraph">
+<p>The activities are driven by slash commands given to a coding agent.
+The <code>openspec</code> CLI is what the agent calls underneath, and what a human uses for inspection.</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 33.3333%;">
+<col style="width: 33.3333%;">
+<col style="width: 33.3334%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Activity</th>
+<th class="tableblock halign-left valign-top">Slash command</th>
+<th class="tableblock halign-left valign-top">Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">explore</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>/opsx:explore</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Conversation only; writes no artifact.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">propose</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>/opsx:propose</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Generates all four planning artifacts at once.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">propose, incrementally</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>/opsx:new</code> then <code>/opsx:continue</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">One artifact at a time, so each can be reviewed.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">revise</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>/opsx:update</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Edits existing artifacts and propagates the change to the others.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">apply</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>/opsx:apply</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Implements tasks and ticks the checkboxes.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">verify</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>/opsx:verify</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Compares code against the artifacts; reports findings, never blocks.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">archive</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>/opsx:archive</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Merges the delta into <code>openspec/specs/</code>.</p></td>
+</tr>
+</tbody>
+</table>
+<div class="paragraph">
+<p>For inspection outside any activity: <code>openspec list</code>, <code>openspec show</code>, <code>openspec status</code>, <code>openspec view</code>.
+<code>openspec validate --strict</code> is the structural check and is suitable for CI.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_notes_on_two_steps_that_are_easy_to_misread">Notes on Two Steps That Are Easy to Misread</h3>
+<div class="paragraph">
+<p><code>explore</code> writes nothing.
+Its only output is understanding, which is why the diagram shows it writing to volatile memory.
+Anything worth keeping — especially the alternatives that were considered and rejected — must be materialised in <code>proposal.md</code> or <code>design.md</code>, or it is lost.</p>
+</div>
+<div class="paragraph">
+<p><code>verify</code> is a judgement made by a language model, not a structural check.
+It reads the artifacts and the code and reports on completeness, correctness, and coherence.
+Treat its findings as a reviewer&#8217;s opinion.
+The mechanical check is <code>openspec validate --strict</code>, and the objective check is the autotest suite.</p>
+</div>
+</div>
+</div>
 </div>
 </div>
 <div id="footer">
