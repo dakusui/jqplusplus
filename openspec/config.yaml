@@ -1,0 +1,80 @@
+schema: spec-driven
+
+# Project context (optional)
+# This is shown to AI when creating artifacts.
+context: |
+  jq++ productizes jq-front: it extends JSON with file- and node-level
+  inheritance and expression evaluation, so configurations can be assembled
+  from reusable fragments. The language it defines is called JSON++; the tool
+  that evaluates it is called jq++.
+
+  Tech stack and layout
+  - Go (see go.mod for the required version), standard Go project layout.
+  - cmd/jqplusplus/  command entry point.
+  - internal/        the engine: evaluation, inheritance, JSON handling.
+  - tools/bin/       developer scripts (autotest, gendoc, pubdoc, version).
+  - tools/etc/docs/  AsciiDoc documentation sources.
+  - tools/etc/autotest/  the end-to-end test suite (see below).
+
+  Building and testing
+  - `make build` builds bin/jq++ and runs it.
+  - `make test` runs the Go unit tests (`go test ./...`).
+  - `tools/bin/autotest` runs the end-to-end autotest suite. Both must pass;
+    `make test` alone does not exercise the suite.
+
+  The autotest suite
+  Cases live under tools/etc/autotest/, grouped by concern -- for example
+  inheritance/ for structural composition and negative/ for cases that must
+  fail. Each case is a directory holding input.json, an expected result, and a
+  test.json declaring its testType: `normal` (evaluate input.json and diff the
+  output against expected.json), `negative` (evaluation must fail with the
+  expected diagnostics), `commandline` (drive the CLI with an option and check
+  its output), or `ignore` (skipped). Groups nest freely, so a case directory
+  may sit several levels below its group.
+
+  This suite is the objective check on behaviour. A change to evaluation
+  semantics should add or amend cases here, and a spec delta describing
+  observable behaviour should be traceable to them.
+
+  Documentation conventions
+  Recorded in AGENTS.md and binding on planning artifacts, not only on shipped
+  documentation.
+  - In AsciiDoc (.adoc) sources, write JSON{plus}{plus} and jq{plus}{plus}
+    rather than the literal spellings, including inside backticks, because
+    literal ++ can render incorrectly or vanish in generated HTML. Keep the
+    real spelling where the literal text matters, such as filename extensions
+    (.json++) or commands the user must type.
+  - Define each term at first use, or link to its definition in
+    tools/etc/docs/concepts/terminology.adoc. Use one name per concept; do not
+    alternate synonyms. New concepts introduced by a change belong in
+    terminology.adoc when that change lands.
+
+  Development workflow
+  tools/etc/docs/development/workflow.adoc describes how OpenSpec, GitHub
+  issues, and pull requests fit together here. In short: planning is reviewed
+  as markdown in its own pull request before any code is written, one further
+  pull request per phase in tasks.md, and the archive is reviewed on its own.
+  An issue records a pain, not a solution, and only openspec/specs/ claims to
+  describe reality.
+
+# Per-artifact rules (optional)
+# Add custom rules for specific artifacts.
+# Example:
+#   rules:
+#     proposal:
+#       - Keep proposals under 500 words
+#       - Always include a "Non-goals" section
+#     tasks:
+#       - Break tasks into chunks of max 2 hours
+
+# Per-operation guidance (optional)
+# Add advisory guidance for how apply and archive work should be conducted.
+# This is separate from artifact rules above.
+# Example:
+#   operations:
+#     apply:
+#       guidance:
+#         - Keep test summaries concise
+#     archive:
+#       guidance:
+#         - Summarize the archive outcome before finishing

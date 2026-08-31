@@ -133,11 +133,6 @@
     <text x="550" y="678" class="s">internal/, autotest/</text>
     <path d="M232,670 L44,670 L44,424 L62,424" class="rd"/>
 
-    <ellipse cx="320" cy="752" rx="78" ry="26" class="act"/>
-    <text x="320" y="757" class="t">verify</text>
-    <path d="M242,752 L30,752 L30,412 L62,412" class="rd"/>
-    <path d="M392,740 L524,698" class="rd"/>
-
     <ellipse cx="400" cy="838" rx="78" ry="26" class="act"/>
     <text x="400" y="843" class="t">archive</text>
     <path d="M400,864 L400,880 L16,880 L16,400 L62,400" class="rd"/>
@@ -153,8 +148,8 @@
   <text x="866" y="319" class="ch">propose</text>
   <text x="866" y="342" class="cm">/opsx:propose</text>
   <text x="866" y="356" class="cs">all four artifacts in one shot</text>
-  <text x="866" y="376" class="cm">/opsx:new + /opsx:continue</text>
-  <text x="866" y="390" class="cs">one artifact at a time (reviewable)</text>
+  <text x="866" y="376" class="cm">/opsx:update</text>
+  <text x="866" y="390" class="cs">revise artifacts, keep them coherent</text>
   <text x="866" y="412" class="cb">PR 1 — planning only</text>
   <text x="866" y="427" class="cs">merged before any code is written</text>
 
@@ -163,8 +158,6 @@
   <text x="866" y="629" class="ch">apply</text>
   <text x="866" y="652" class="cm">/opsx:apply</text>
   <text x="866" y="666" class="cs">implement tasks, tick the boxes</text>
-  <text x="866" y="686" class="cm">/opsx:verify</text>
-  <text x="866" y="700" class="cs">code vs spec — reports, never blocks</text>
   <text x="866" y="722" class="cb">PR 2…n — one per phase, in order</text>
 
   <rect x="850" y="786" width="252" height="112" rx="8" fill="var(--surface-1)" stroke="var(--border)"/>

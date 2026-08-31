@@ -48,7 +48,7 @@ This is the external design.
 The internal approach — data structures, algorithms, risks, and rejected alternatives.
 This is the internal design.
 
-Requirements use a fixed shape that `openspec validate --strict` enforces.
+Requirements use a fixed shape that `openspec validate --all --strict` enforces.
 
 [source,markdown]
 ----
@@ -106,6 +106,7 @@ Branch names follow the existing convention, `<type>/<slug>-<issue>`, for exampl
 
 The activities are driven by slash commands given to a coding agent.
 The `openspec` CLI is what the agent calls underneath, and what a human uses for inspection.
+These are the workflows of OpenSpec's default `core` profile, which is what a contributor gets without configuring anything.
 
 |===
 | Activity | Slash command | Notes
@@ -118,10 +119,6 @@ The `openspec` CLI is what the agent calls underneath, and what a human uses for
 | `/opsx:propose`
 | Generates all four planning artifacts at once.
 
-| propose, incrementally
-| `/opsx:new` then `/opsx:continue`
-| One artifact at a time, so each can be reviewed.
-
 | revise
 | `/opsx:update`
 | Edits existing artifacts and propagates the change to the others.
@@ -130,9 +127,10 @@ The `openspec` CLI is what the agent calls underneath, and what a human uses for
 | `/opsx:apply`
 | Implements tasks and ticks the checkboxes.
 
-| verify
-| `/opsx:verify`
-| Compares code against the artifacts; reports findings, never blocks.
+| sync
+| `/opsx:sync`
+| Merges the delta into `openspec/specs/` without archiving the change.
+Prefer `archive`, so that the recorded truth changes in one reviewable step.
 
 | archive
 | `/opsx:archive`
@@ -140,7 +138,9 @@ The `openspec` CLI is what the agent calls underneath, and what a human uses for
 |===
 
 For inspection outside any activity: `openspec list`, `openspec show`, `openspec status`, `openspec view`.
-`openspec validate --strict` is the structural check and is suitable for CI.
+`openspec validate --all --strict` is the structural check, and it runs on every pull request.
+The `--all` flag is what selects the items to validate; without it the command checks nothing and exits non-zero.
+The objective check on behaviour is the autotest suite.
 
 === Notes on Two Steps That Are Easy to Misread
 
@@ -148,7 +148,7 @@ For inspection outside any activity: `openspec list`, `openspec show`, `openspec
 Its only output is understanding, which is why the diagram shows it writing to volatile memory.
 Anything worth keeping — especially the alternatives that were considered and rejected — must be materialised in `proposal.md` or `design.md`, or it is lost.
 
-`verify` is a judgement made by a language model, not a structural check.
-It reads the artifacts and the code and reports on completeness, correctness, and coherence.
-Treat its findings as a reviewer's opinion.
-The mechanical check is `openspec validate --strict`, and the objective check is the autotest suite.
+`sync` writes, and it writes the one file that claims to describe reality.
+It is agent-driven rather than mechanical: it reads the delta and edits `openspec/specs/` directly, so a scenario can be merged into an existing requirement instead of the requirement being copied wholesale.
+That is also why it sits off the path described above.
+The recorded truth is meant to change in the archive pull request, where it is reviewed on its own, so reach for `archive` and leave `sync` for the case where a specification must be corrected before the change is finished.
