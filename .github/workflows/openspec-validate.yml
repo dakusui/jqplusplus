@@ -1,0 +1,22 @@
+name: Validate OpenSpec artifacts
+
+on:
+  pull_request:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Validate changes and specs
+        # --all selects what to validate. Without it the command validates
+        # nothing and exits 1 with a usage hint, so it would fail every pull
+        # request rather than gate any of them.
+        run: npx --yes @fission-ai/openspec@1 validate --all --strict
