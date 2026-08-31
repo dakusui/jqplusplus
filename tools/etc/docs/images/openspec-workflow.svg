@@ -1,0 +1,186 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1120 960" width="1120" height="960" role="img" aria-label="OpenSpec workflow: activities and artifacts">
+  <title>OpenSpec workflow — activities and artifacts</title>
+  <defs>
+    <marker id="j1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="var(--border-stronger)"/>
+    </marker>
+    <marker id="j2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="var(--text-accent)"/>
+    </marker>
+  </defs>
+  <style>
+    svg {
+      --surface-0: #ffffff;
+      --surface-1: #f5f7fa;
+      --surface-2: #ffffff;
+      --border: #d6dae1;
+      --border-strong: #a9b1bd;
+      --border-stronger: #79838f;
+      --text-primary: #1b1f24;
+      --text-secondary: #414a54;
+      --text-muted: #6b7480;
+      --text-accent: #1f6feb;
+      --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+      --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+      font-family: var(--font-sans);
+      background: var(--surface-0);
+    }
+    @media (prefers-color-scheme: dark) {
+      svg {
+        --surface-0: #14181d;
+        --surface-1: #1b2027;
+        --surface-2: #232a33;
+        --border: #333c47;
+        --border-strong: #4b5765;
+        --border-stronger: #8b95a3;
+        --text-primary: #e8ecf1;
+        --text-secondary: #c2c9d2;
+        --text-muted: #9099a5;
+        --text-accent: #5aa0ff;
+      }
+    }
+    .art { fill: var(--surface-2); stroke: var(--border-strong); }
+    .act { fill: var(--surface-1); stroke: var(--text-accent); stroke-width: 1.5; }
+    .t   { font-size: 13px; font-weight: 600; fill: var(--text-primary); text-anchor: middle; }
+    .st  { font-size: 9.5px; font-weight: 700; fill: var(--text-accent); text-anchor: middle; letter-spacing: .3px; }
+    .s   { font-size: 10.5px; fill: var(--text-muted); text-anchor: middle; }
+    .rd  { fill: none; stroke: var(--border-stronger); stroke-width: 1.5; marker-end: url(#j1); }
+    .wr  { fill: none; stroke: var(--text-accent); stroke-width: 1.5; stroke-dasharray: 6 4; marker-end: url(#j2); }
+    .ch  { font-size: 12.5px; font-weight: 700; fill: var(--text-accent); letter-spacing: .3px; }
+    .cm  { font-size: 10.5px; font-family: var(--font-mono); fill: var(--text-primary); }
+    .cs  { font-size: 10px; fill: var(--text-muted); }
+    .cb  { font-size: 11px; font-weight: 700; fill: var(--text-primary); }
+    .grp { fill: none; stroke: var(--text-accent); stroke-width: 2; }
+    .gl  { font-size: 12px; font-weight: 700; fill: var(--text-accent); letter-spacing: .4px; }
+    .hd  { font-size: 15px; font-weight: 700; fill: var(--text-primary); }
+    .lg  { font-size: 10px; fill: var(--text-secondary); }
+    .lgc { font-size: 10px; fill: var(--text-primary); text-anchor: middle; }
+  </style>
+
+  <rect x="0" y="0" width="1120" height="960" fill="var(--surface-0)"/>
+  <text x="16" y="22" class="hd">OpenSpec — activities (ovals) and artifacts (boxes)</text>
+
+  <rect x="30" y="60" width="142" height="64" rx="7" fill="var(--surface-2)" stroke="var(--text-muted)" stroke-dasharray="3 3"/>
+  <text x="101" y="80" class="st">&#171;volatile&#187;</text>
+  <text x="101" y="97" class="t">memory</text>
+  <text x="101" y="112" class="s">understanding of</text>
+  <text x="101" y="123" class="s">what to build</text>
+
+  <ellipse cx="101" cy="190" rx="72" ry="26" class="act"/>
+  <text x="101" y="195" class="t">explore</text>
+  <path d="M101,164 L101,130" class="wr"/>
+  <path d="M101,216 L101,296" class="rd"/>
+
+  <rect x="30" y="302" width="142" height="58" rx="7" class="art" stroke-dasharray="5 4"/>
+  <text x="101" y="321" class="st">&#171;optional&#187;</text>
+  <text x="101" y="338" class="t">GitHub Issue</text>
+  <text x="101" y="353" class="s">the pain</text>
+  <path d="M236,320 L178,320" class="rd"/>
+  <path d="M236,92 L178,92" class="rd"/>
+  <path d="M580,864 L580,896 L190,896 L190,344 L178,344" class="wr"/>
+
+  <g transform="translate(180,0)">
+    <rect x="60" y="104" width="526" height="516" rx="16" class="grp"/>
+    <text x="74" y="126" class="gl">propose</text>
+
+    <rect x="200" y="42" width="240" height="50" rx="7" class="art"/>
+    <text x="320" y="64" class="t">openspec/specs/</text>
+    <text x="320" y="81" class="s">current truth — how it behaves today</text>
+
+    <ellipse cx="320" cy="150" rx="78" ry="30" class="act"/>
+    <text x="320" y="146" class="st">&#171;entry point&#187;</text>
+    <text x="320" y="163" class="t">new</text>
+    <path d="M320,120 L320,96" class="rd"/>
+    <path d="M320,180 L320,206" class="wr"/>
+
+    <rect x="210" y="212" width="220" height="46" rx="7" class="art"/>
+    <text x="320" y="232" class="t">proposal.md</text>
+    <text x="320" y="248" class="s">why + scope</text>
+
+    <ellipse cx="175" cy="320" rx="80" ry="26" class="act"/>
+    <text x="175" y="325" class="t">write spec</text>
+    <ellipse cx="470" cy="320" rx="80" ry="26" class="act"/>
+    <text x="470" y="325" class="t">write design</text>
+    <path d="M205,300 L258,262" class="rd"/>
+    <path d="M440,300 L387,262" class="rd"/>
+    <path d="M175,346 L175,380" class="wr"/>
+    <path d="M470,346 L470,380" class="wr"/>
+
+    <rect x="70" y="386" width="210" height="52" rx="7" class="art"/>
+    <text x="175" y="407" class="t">specs/ delta</text>
+    <text x="175" y="424" class="s">ADDED / MODIFIED / REMOVED</text>
+    <rect x="370" y="386" width="200" height="52" rx="7" class="art"/>
+    <text x="470" y="407" class="t">design.md</text>
+    <text x="470" y="424" class="s">internal approach</text>
+
+    <ellipse cx="320" cy="498" rx="78" ry="26" class="act"/>
+    <text x="320" y="503" class="t">write tasks</text>
+    <path d="M268,486 L196,446" class="rd"/>
+    <path d="M374,486 L448,446" class="rd"/>
+    <path d="M320,524 L320,554" class="wr"/>
+
+    <rect x="215" y="560" width="210" height="46" rx="7" class="art"/>
+    <text x="320" y="580" class="t">tasks.md</text>
+    <text x="320" y="596" class="s">- [ ] checkboxes</text>
+
+    <ellipse cx="320" cy="668" rx="88" ry="26" class="act"/>
+    <text x="320" y="673" class="t">apply (implement)</text>
+    <path d="M296,642 L296,610" class="rd"/>
+    <path d="M348,642 L348,610" class="wr"/>
+    <path d="M410,664 L464,664" class="wr"/>
+    <rect x="470" y="642" width="160" height="48" rx="7" class="art"/>
+    <text x="550" y="662" class="t">source code</text>
+    <text x="550" y="678" class="s">internal/, autotest/</text>
+    <path d="M232,670 L44,670 L44,424 L62,424" class="rd"/>
+
+    <ellipse cx="320" cy="752" rx="78" ry="26" class="act"/>
+    <text x="320" y="757" class="t">verify</text>
+    <path d="M242,752 L30,752 L30,412 L62,412" class="rd"/>
+    <path d="M392,740 L524,698" class="rd"/>
+
+    <ellipse cx="400" cy="838" rx="78" ry="26" class="act"/>
+    <text x="400" y="843" class="t">archive</text>
+    <path d="M400,864 L400,880 L16,880 L16,400 L62,400" class="rd"/>
+    <path d="M322,838 L306,838" class="wr"/>
+    <rect x="120" y="812" width="180" height="52" rx="7" class="art"/>
+    <text x="210" y="833" class="t">changes/archive/</text>
+    <text x="210" y="849" class="s">&lt;date&gt;-&lt;change-id&gt;/</text>
+    <path d="M478,832 L650,832 L650,67 L448,67" class="wr"/>
+  </g>
+
+  <rect x="850" y="296" width="252" height="142" rx="8" fill="var(--surface-1)" stroke="var(--border)"/>
+  <rect x="850" y="296" width="4" height="142" fill="var(--text-accent)"/>
+  <text x="866" y="319" class="ch">propose</text>
+  <text x="866" y="342" class="cm">/opsx:propose</text>
+  <text x="866" y="356" class="cs">all four artifacts in one shot</text>
+  <text x="866" y="376" class="cm">/opsx:new + /opsx:continue</text>
+  <text x="866" y="390" class="cs">one artifact at a time (reviewable)</text>
+  <text x="866" y="412" class="cb">PR 1 — planning only</text>
+  <text x="866" y="427" class="cs">merged before any code is written</text>
+
+  <rect x="850" y="606" width="252" height="126" rx="8" fill="var(--surface-1)" stroke="var(--border)"/>
+  <rect x="850" y="606" width="4" height="126" fill="var(--text-accent)"/>
+  <text x="866" y="629" class="ch">apply</text>
+  <text x="866" y="652" class="cm">/opsx:apply</text>
+  <text x="866" y="666" class="cs">implement tasks, tick the boxes</text>
+  <text x="866" y="686" class="cm">/opsx:verify</text>
+  <text x="866" y="700" class="cs">code vs spec — reports, never blocks</text>
+  <text x="866" y="722" class="cb">PR 2…n — one per phase, in order</text>
+
+  <rect x="850" y="786" width="252" height="112" rx="8" fill="var(--surface-1)" stroke="var(--border)"/>
+  <rect x="850" y="786" width="4" height="112" fill="var(--text-accent)"/>
+  <text x="866" y="809" class="ch">archive</text>
+  <text x="866" y="832" class="cm">/opsx:archive</text>
+  <text x="866" y="846" class="cs">delta merged into openspec/specs/</text>
+  <text x="866" y="868" class="cb">Final PR — truth changes here</text>
+  <text x="866" y="883" class="cs">close the issue with a pointer</text>
+
+  <ellipse cx="62" cy="930" rx="32" ry="13" class="act"/>
+  <text x="62" y="934" class="lgc">activity</text>
+  <rect x="122" y="917" width="70" height="26" rx="5" class="art"/>
+  <text x="157" y="934" class="lgc">artifact</text>
+  <path d="M216,930 L268,930" class="rd"/>
+  <text x="298" y="934" class="lg">reads</text>
+  <path d="M348,930 L400,930" class="wr"/>
+  <text x="430" y="934" class="lg">writes</text>
+</svg>

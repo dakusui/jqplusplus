@@ -1,0 +1,154 @@
+== Development Workflow
+:imagesdir: ../images
+:data-uri:
+
+This project uses link:https://github.com/Fission-AI/OpenSpec[OpenSpec] for spec-driven development.
+This page describes how OpenSpec, GitHub issues, and pull requests fit together.
+
+It documents how the project is _built_.
+For documentation of the JSON{plus}{plus} language itself, see the concepts and manual pages.
+
+=== Activities and Artifacts
+
+image::openspec-workflow.svg[OpenSpec workflow,1120]
+
+In the diagram, ovals are _activities_ and boxes are _artifacts_.
+Every arrow starts at an activity: a solid arrow means the activity reads the artifact, and a dashed arrow means it writes to it.
+
+Two artifacts are outside the repository.
+
+* The *GitHub Issue* is optional and lives on GitHub.
+* *Memory* is volatile: it is the understanding of what to build, held in a human's head or an agent's context, and it survives nothing.
+
+Everything else is a file under version control.
+
+=== Where the Contract Lives
+
+The specification is the contract, and it lives in exactly one place at a time.
+
+* While a change is in progress, in `openspec/changes/<change-id>/specs/<capability>/spec.md`, written as a delta.
+* After the change is archived, in `openspec/specs/<capability>/spec.md`, merged into the current truth.
+
+Nothing else is normative.
+Neither the issue, nor `proposal.md`, nor `design.md` states what the system must do.
+When a document and the implementation disagree, that is a decision to be made, not a discrepancy to be silently edited away.
+
+=== The Three Planning Artifacts
+
+The artifacts differ in what they are _about_, not in who writes them.
+
+`proposal.md`::
+The problem, the chosen direction at headline level, which capabilities are affected, and what is out of scope.
+
+`specs/` delta::
+Externally observable behaviour, as requirements and scenarios.
+This is the external design.
+
+`design.md`::
+The internal approach — data structures, algorithms, risks, and rejected alternatives.
+This is the internal design.
+
+Requirements use a fixed shape that `openspec validate --strict` enforces.
+
+[source,markdown]
+----
+### Requirement: Name
+The system SHALL <observable behavior>.
+
+#### Scenario: Specific case
+- GIVEN <state>
+- WHEN <action>
+- THEN <observable outcome>
+----
+
+=== Issues
+
+An issue records a _pain_, not a solution.
+
+* State who is affected, what they cannot do today, and why it matters.
+* Do not state the mechanism, the syntax, or the data model.
+* Avoid acceptance criteria that read like scenarios; the spec delta is the only normative statement of behaviour.
+
+File an issue when the pain is noticed, not when there is time to work on it.
+Not every issue becomes a change, and a small self-evident change needs no issue.
+
+At archive time, close the issue with a pointer to the specification that now answers it.
+Do not copy the conclusion into the issue: two documents claiming to be the specification will drift.
+
+=== Pull Requests
+
+Planning and implementation are separated, so that design is reviewed as markdown before it is reviewed as code.
+
+. *PR 1 — planning.*
+Contains only `openspec/changes/<change-id>/`.
+Merged *before* any implementation begins.
+This is where semantics are argued.
+. *PR 2 to n — implementation.*
+One per phase in `tasks.md`, merged in order.
+Each ticks off its own checkboxes.
+. *Final PR — archive.*
+The delta is merged into `openspec/specs/` and the change folder is moved.
+This is the moment the recorded truth changes, so it is reviewed on its own.
+
+Merging PR 1 into `main` does not make `main` lie.
+`openspec/changes/` is by definition pending work; only `openspec/specs/` claims to describe reality.
+
+Two consequences worth knowing.
+
+* `tasks.md` is shared state, so concurrent implementation PRs conflict.
+Sequence them.
+* If implementation shows the spec was wrong, amend the spec in its own PR before continuing.
+That makes the change visible as a decision.
+
+Branch names follow the existing convention, `<type>/<slug>-<issue>`, for example `spec/array-composition-84`.
+
+=== Commands
+
+The activities are driven by slash commands given to a coding agent.
+The `openspec` CLI is what the agent calls underneath, and what a human uses for inspection.
+
+|===
+| Activity | Slash command | Notes
+
+| explore
+| `/opsx:explore`
+| Conversation only; writes no artifact.
+
+| propose
+| `/opsx:propose`
+| Generates all four planning artifacts at once.
+
+| propose, incrementally
+| `/opsx:new` then `/opsx:continue`
+| One artifact at a time, so each can be reviewed.
+
+| revise
+| `/opsx:update`
+| Edits existing artifacts and propagates the change to the others.
+
+| apply
+| `/opsx:apply`
+| Implements tasks and ticks the checkboxes.
+
+| verify
+| `/opsx:verify`
+| Compares code against the artifacts; reports findings, never blocks.
+
+| archive
+| `/opsx:archive`
+| Merges the delta into `openspec/specs/`.
+|===
+
+For inspection outside any activity: `openspec list`, `openspec show`, `openspec status`, `openspec view`.
+`openspec validate --strict` is the structural check and is suitable for CI.
+
+=== Notes on Two Steps That Are Easy to Misread
+
+`explore` writes nothing.
+Its only output is understanding, which is why the diagram shows it writing to volatile memory.
+Anything worth keeping — especially the alternatives that were considered and rejected — must be materialised in `proposal.md` or `design.md`, or it is lost.
+
+`verify` is a judgement made by a language model, not a structural check.
+It reads the artifacts and the code and reports on completeness, correctness, and coherence.
+Treat its findings as a reviewer's opinion.
+The mechanical check is `openspec validate --strict`, and the objective check is the autotest suite.
