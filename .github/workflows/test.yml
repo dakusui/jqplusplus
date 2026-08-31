@@ -1,0 +1,31 @@
+name: Test
+
+on:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - name: Run unit tests
+        run: make test
+
+      # The autotest suite invokes bin/jq++, a symlink the binary creates for
+      # itself the first time it runs. `make build` links the binary and then
+      # runs it, so this step is what puts bin/jq++ in place: it is a
+      # prerequisite of the suite, not a convenience.
+      - name: Build
+        run: make build
+
+      # The objective check on behaviour. `make test` alone does not exercise
+      # it. Needs jq and diff, both present on the runner image.
+      - name: Run the autotest suite
+        run: tools/bin/autotest
