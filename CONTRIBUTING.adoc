@@ -1,0 +1,36 @@
+= Contributing to jq{plus}{plus}
+
+Thank you for your interest in jq{plus}{plus}.
+
+== How This Project Is Built
+
+This project uses link:https://github.com/Fission-AI/OpenSpec[OpenSpec] for spec-driven development.
+Behaviour is specified before it is implemented, and the specification lives in the repository under `openspec/`.
+
+Read link:tools/etc/docs/development/workflow.adoc[Development Workflow] before opening a pull request.
+It covers the activities and artifacts, where the contract lives, what belongs in an issue, and how pull requests are split.
+
+== Quick Reference
+
+Filing an issue::
+Describe the pain, not the solution.
+See the issues section of the development workflow.
+
+Proposing a change::
+Planning artifacts are written and reviewed first, in their own pull request, before any code is written.
+
+Implementing::
+One pull request per phase in `tasks.md`, merged in order.
+
+== Building and Testing
+
+[source,bash]
+----
+make build
+make test
+----
+
+== Documentation Conventions
+
+Documentation conventions for agents and contributors are recorded in link:AGENTS.md[AGENTS.md].
+In particular, prefer `JSON{plus}{plus}` and `jq{plus}{plus}` over the literal spellings in AsciiDoc, and define each term at first use or link to `tools/etc/docs/concepts/terminology.adoc`.
