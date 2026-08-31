@@ -17,7 +17,9 @@ context: |
   - tools/etc/autotest/  the end-to-end test suite (see below).
 
   Building and testing
-  - `make build` builds bin/jq++ and runs it.
+  - `make build` builds bin/jqplusplus and runs it; that first run creates
+    the bin/jq++ symlink beside it, which is the path the autotest suite
+    invokes.
   - `make test` runs the Go unit tests (`go test ./...`).
   - `tools/bin/autotest` runs the end-to-end autotest suite. Both must pass;
     `make test` alone does not exercise the suite.
