@@ -1,0 +1,4 @@
+ERROR
+array composition marker requires an inherited array
+at '\.m'
+negative/array-composition/inherited-not-an-array/input.json
