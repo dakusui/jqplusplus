@@ -208,11 +208,22 @@ func valueToAny(v hocon.Value) any {
 }
 
 // mergeObjects merges parent and child objects, with child values taking precedence.
-func mergeObjects(parent, child map[string]any) map[string]any {
+func mergeObjects(parent, child map[string]any) (map[string]any, error) {
 	return MergeObjects(parent, child, MergePolicyDefault)
 }
 
-func MergeObjects(a, b map[string]interface{}, policy MergePolicy) map[string]interface{} {
+func MergeObjects(a, b map[string]interface{}, policy MergePolicy) (map[string]interface{}, error) {
+	return mergeObjectsAt(a, b, policy, nil)
+}
+
+func mergeObjectsAt(a, b map[string]interface{}, policy MergePolicy, path []any) (map[string]interface{}, error) {
+	// childPath copies rather than appending in place: sibling keys would
+	// otherwise share a backing array and overwrite each other's last segment.
+	childPath := func(k string) []any {
+		p := make([]any, len(path), len(path)+1)
+		copy(p, path)
+		return append(p, k)
+	}
 	result := make(map[string]interface{})
 	for k, v := range a {
 		result[k] = v
@@ -220,13 +231,92 @@ func MergeObjects(a, b map[string]interface{}, policy MergePolicy) map[string]in
 	for k, v := range b {
 		if av, ok := result[k].(map[string]interface{}); ok {
 			if bv, ok := v.(map[string]interface{}); ok {
-				result[k] = MergeObjects(av, bv, policy)
+				merged, err := mergeObjectsAt(av, bv, policy, childPath(k))
+				if err != nil {
+					return nil, err
+				}
+				result[k] = merged
 				continue
 			}
 		}
+		if child, ok := v.([]any); ok {
+			inherited, present := result[k]
+			composed, err := composeArrayAt(inherited, present, child, childPath(k))
+			if err != nil {
+				return nil, err
+			}
+			result[k] = composed
+			continue
+		}
 		result[k] = v
 	}
-	return result
+	return result, nil
+}
+
+// composeArrayAt composes a child array with the array it inherits. An unmarked
+// array replaces, exactly as it always has. A marked array is a delta: it
+// carries unchanged while the inherited array is absent, and resolves against
+// it once one is present.
+func composeArrayAt(inherited any, present bool, child []any, path []any) (any, error) {
+	kind, at, err := scanArrayMarkers(child)
+	if err != nil {
+		return nil, fmt.Errorf("%v: at '%s'", err, toPathExpression(path))
+	}
+	if !kind.IsMarker() {
+		return child, nil
+	}
+	if !present {
+		// Nothing to bind to yet. The delta carries, which is what lets a
+		// fragment resolved on its own contribute to a document that includes
+		// it later.
+		return child, nil
+	}
+	inheritedArray, ok := inherited.([]any)
+	if !ok {
+		return nil, fmt.Errorf("array composition marker requires an inherited array, but got %T: at '%s'", inherited, toPathExpression(path))
+	}
+	switch kind {
+	case SpliceMarker:
+		return spliceArray(inheritedArray, child, at), nil
+	default:
+		// MarkerPair is not implemented yet; it carries and is reported by
+		// grounding until pairing lands.
+		return child, nil
+	}
+}
+
+// spliceArray substitutes the inherited elements at the marker's position,
+// building a fresh slice: the node pool shares backing arrays between every
+// document that inherits a file, so appending into one would corrupt them all.
+//
+// Inherited elements are copied verbatim, markers included. That is what makes
+// two splice deltas compose into a third, still-pending delta.
+func spliceArray(inherited []any, child []any, at int) []any {
+	out := make([]any, 0, len(child)-1+len(inherited))
+	out = append(out, child[:at]...)
+	out = append(out, inherited...)
+	out = append(out, child[at+1:]...)
+	return out
+}
+
+// scanArrayMarkers finds the array's marker, rejecting an undefined spelling in
+// the reserved namespace and an array carrying more than one marker.
+func scanArrayMarkers(arr []any) (MarkerKind, int, error) {
+	kind, at := NotAMarker, -1
+	for i, e := range arr {
+		k, err := ClassifyMarkerElement(e)
+		if err != nil {
+			return NotAMarker, -1, err
+		}
+		if !k.IsMarker() {
+			continue
+		}
+		if at >= 0 {
+			return NotAMarker, -1, fmt.Errorf("more than one array composition marker: %v", arr)
+		}
+		kind, at = k, i
+	}
+	return kind, at, nil
 }
 
 // MergePolicy defines the policy for merging objects.
