@@ -1,15 +1,15 @@
 ## 1. The splice marker
 
-- [ ] 1.1 Choose the diagnostic wording for every error condition in the spec delta and record it in `design.md`, so that later negative cases match one settled format rather than inventing per-case text; verify by the wording being present in `design.md` before any negative case is written
-- [ ] 1.2 Add marker recognition to the inheritance stage, applying the reserved-namespace rule to strings in direct array element position at an ordinary key; verify unit tests in `internal/` cover `$super` and `$super*` as markers, `$super[1:]` and `$super?` as unknown-marker errors, and `$supervisor` as ordinary data
-- [ ] 1.3 Implement `$super` splicing through the `MergePolicy` seam in `internal/json.go`, constructing fresh slices rather than appending into an inherited backing array; verify autotest cases for append, prepend, wrap, and an empty inherited array
-- [ ] 1.4 Reject an array containing more than one marker; verify negative autotest cases for two `$super` and for `$super` mixed with `$super*`
-- [ ] 1.5 Carry a marked array unchanged through an ancestor that does not define the key, and keep markers verbatim in cached file resolutions; verify autotest cases for the grandparent-resolves case and for an `$includes` fragment composing with the including document
-- [ ] 1.6 Splice a marker present in the inherited value through verbatim, so two splice deltas compose into a third; verify an autotest case asserting the composed value is still pending
-- [ ] 1.7 Add grounding: report an error for any marker composition never resolved; verify autotest cases for no-ancestor-answers, a document inheriting nothing, a marker inside an array nested in an unmarked array, and a marker inside a `$super*` queue element
-- [ ] 1.8 Reject a marked array whose inherited value at that key is present and is not an array; verify a negative autotest case
-- [ ] 1.9 Verify `raw:$super` yields the literal string inside an array, and that a string produced by an `eval:` expression is never classified as a marker; add an autotest case for each
-- [ ] 1.10 Confirm an unmarked array still replaces the inherited array; verify the pre-existing inheritance autotest cases pass unchanged and add a case pinning the nested-array-inside-a-replaced-array behaviour
+- [x] 1.1 Choose the diagnostic wording for every error condition in the spec delta and record it in `design.md`, so that later negative cases match one settled format rather than inventing per-case text; verify by the wording being present in `design.md` before any negative case is written
+- [x] 1.2 Add marker recognition to the inheritance stage, applying the reserved-namespace rule to strings in direct array element position at an ordinary key; verify unit tests in `internal/` cover `$super` and `$super*` as markers, `$super[1:]` and `$super?` as unknown-marker errors, and `$supervisor` as ordinary data
+- [x] 1.3 Implement `$super` splicing through the `MergePolicy` seam in `internal/json.go`, constructing fresh slices rather than appending into an inherited backing array; verify autotest cases for append, prepend, wrap, and an empty inherited array
+- [x] 1.4 Reject an array containing more than one marker; verify negative autotest cases for two `$super` and for `$super` mixed with `$super*`
+- [x] 1.5 Carry a marked array unchanged through an ancestor that does not define the key, and keep markers verbatim in cached file resolutions; verify autotest cases for the grandparent-resolves case and for an `$includes` fragment composing with the including document
+- [x] 1.6 Splice a marker present in the inherited value through verbatim, so two splice deltas compose into a third; verify an autotest case asserting the composed value is still pending
+- [x] 1.7 Add grounding: report an error for any marker composition never resolved; verify autotest cases for no-ancestor-answers, a document inheriting nothing, a marker inside an array nested in an unmarked array, and a marker inside a `$super*` queue element
+- [x] 1.8 Reject a marked array whose inherited value at that key is present and is not an array; verify a negative autotest case
+- [x] 1.9 Verify `raw:$super` yields the literal string inside an array, and that a string produced by an `eval:` expression is never classified as a marker; add an autotest case for each
+- [x] 1.10 Confirm an unmarked array still replaces the inherited array; verify the pre-existing inheritance autotest cases pass unchanged and add a case pinning the nested-array-inside-a-replaced-array behaviour
 
 ## 2. The pairing marker
 

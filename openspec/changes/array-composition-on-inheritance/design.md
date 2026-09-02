@@ -148,6 +148,25 @@ Reserved by the same argument, not committed: `$super?` and `$super*?` for a pos
 - Two honest divergences from jq, worth documenting when this lands: jq errors on `array * array`, and this design lifts object-`*` index-wise into that gap; and jq's `*` on two atoms is arithmetic, where this design takes child-wins.
 - `$super?` was rejected as the pairing marker's name because `?` already means optional in `$extends`. It is now reserved for exactly that meaning.
 
+### Diagnostics
+
+Settled before any negative autotest case is written, because those cases match on message content and would otherwise each invent their own wording.
+
+Existing engine errors are lowercase, carry no trailing period, and take the shape `<what went wrong>: <detail>`, with callers appending context — `resolveInheritances` adds `: parent: <file>`, and `expandNodeLevelInheritances` adds `: at '<path>'`. The messages below follow that shape and share the prefix `array composition`, so that every diagnostic from this feature is greppable as a family and an autotest case can match the prefix plus its own distinguishing fragment.
+
+| Condition | Message |
+|---|---|
+| Unknown spelling in the namespace | `unknown array composition marker: %q; expected "$super" or "$super*"` |
+| More than one marker in an array | `more than one array composition marker: %v` |
+| Marker never resolved, reported at grounding | `unresolved array composition marker: %q: at '%s'` |
+| Inherited value present and not an array | `array composition marker requires an inherited array, but got %T: at '%s'` |
+| Pair of different kinds | `array composition pair mixes kinds at index %d: inherited %s, but got %s` |
+| A `$super*` delta composing with a marker | `array composition markers cannot compose: %q with %q` |
+
+Kind names in the cross-kind message are `object`, `array`, and `atom` — the spec delta's terms, not Go type names, so that the diagnostic reads in the language the documentation uses.
+
+Two notes on location. Errors raised while composing are reported without a path of their own and acquire one from the node-level wrapper, which is how the existing inheritance errors behave. Grounding is different: it walks the whole top-level object after composition has finished, so nothing upstream can supply the path, and it formats its own with `toPathExpression`.
+
 ### Implementation shape
 
 - Splicing and pairing build fresh slices. `MergeObjects` stores references into its result, so mutating an inherited `[]any` in place would corrupt the node-pool cache for every other document inheriting it.
@@ -210,4 +229,4 @@ An unmarked array composes exactly as it does today, so no configuration changes
 
 ## Open Questions
 
-- The exact wording and structure of the diagnostics. The spec requires that each condition is reported; it does not fix the message text. Settling this during implementation does not change the specs, the approach, or the task breakdown — but the negative autotest cases match on message content, so the wording should be chosen once, early in the first implementation phase, rather than per case.
+None outstanding. The diagnostic wording, which was the one open question at planning time, is settled in the Diagnostics section above.
