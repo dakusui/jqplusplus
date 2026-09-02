@@ -1,26 +1,26 @@
 ## Context
 
-See `proposal.md` — Why, for the motivation, and `specs/inheritance/array-composition/spec.md` for the required behaviour.
+See `proposal.md` — Why, for the motivation, and `specs/inheritance/array-composition/spec.md` for the required behaviour. The terms used below — marker, marked array, inherited array, delta, splice, prefix, queue, pairing, kind, grounding — are defined in the spec delta.
 
 Three facts about the current implementation shape the approach.
 
-- **Composition happens before evaluation.** The pipeline described in `tools/etc/docs/concepts/evaluation-model.adoc` resolves inheritance in its own stage, then evaluates `eval:` and `raw:` prefixes over the result, and no stage revisits earlier work. By the time an expression can run, the inherited array has already been discarded by the merge that replaced it.
+- **Composition happens before evaluation.** The pipeline in `tools/etc/docs/concepts/evaluation-model.adoc` resolves inheritance in its own stage, then evaluates `eval:` and `raw:` prefixes over the result, and no stage revisits earlier work. By the time an expression can run, the inherited array has already been discarded by the merge that replaced it.
 - **Array replacement is not a decision the code makes.** `MergeObjects` in `internal/json.go` recurses only when both sides are objects; every other pair falls through to child-replaces. Arrays are replaced because they are not objects, not because anything chose that for them. The function already carries a `MergePolicy` parameter with a single value, which is the seam this change uses.
-- **The reverted implementation is recoverable.** PR #56 (commit `80908b2`, reverted in `59282d9`) implemented index-wise recursive merge for arrays. Its pairing engine is source material for `$super*`; what has to change is that it applied everywhere rather than where asked.
+- **The reverted implementation is recoverable.** PR #56 (commit `80908b2`, reverted in `59282d9`) implemented index-wise recursive merge for arrays, in `mergeValues` / `mergeArrays`. Its index-wise recursion and keep-extras logic are the skeleton for pairing. What it lacks is marker detection, prefix handling, the cross-kind error path, and grounding — and it applied everywhere rather than where asked, which is why it was reverted.
 
 ## Goals / Non-Goals
 
 **Goals:**
 
 - Put the composition choice at the site, in a form where reading the child tells you what happens.
-- Leave every existing configuration meaning exactly what it means today.
+- Keep composition independent of how contributions are divided across files, so that refactoring the file layout cannot change the output.
 - Keep the space of unwritten spellings large, so that the deferred capabilities below can be added later without breaking anyone.
 
 **Non-Goals:**
 
-- Changing what an array without a marker does.
+- Changing what an unmarked array does.
 - Making arrays composable through the evaluation layer.
-- Repairing the behaviour of `$extends`, `$includes`, and `$local` in positions where they have no meaning (#92).
+- Validating marker-family strings outside array element position. See the proposal's out-of-scope section; that belongs with #92.
 
 ## Decisions
 
@@ -42,13 +42,37 @@ An alternative is to express composition with the existing evaluation machinery 
 
 Rejected for this purpose. Evaluation runs over the composed document, so it can reach any value that survived the merge but never the value the merge consumed. That is precisely the value this change is about. Evaluation remains the right tool for composing values that do survive, which is a different need.
 
+This ordering is also why `eval:`-produced strings are exempt from marker classification: composition and grounding both finish before value-side evaluation begins. The check is on what the author wrote, not on what the document renders.
+
 ### Two markers, not one
 
 `$super` and `$super*` are not one feature plus an embellishment. #53 asked for index-wise merging, #56 delivered it, and #58 reverted it for being global rather than for being unwanted. Both behaviours survived that revert and both need a spelling; providing only the splice would leave the #53 case unanswered.
 
-### A marker is valid only as a direct array element
+### A `$super*` delta may not compose with a marker on either side
 
-The alternative considered — and it is a good one — is to define a marker by its structural position: `$super` stands for the elements of the inherited array found at the path of the array that contains it. That is uniform, works at any depth, and makes the nested case expressible without any special rule:
+The two markers behave differently under composition, and the difference decides this.
+
+`$super` is a *variable occurrence*: it denotes the inherited value and means the same thing wherever it lands. So composing two splice deltas always yields something expressible as another splice delta — `["$super","a"]` under `["$super","c"]` is just `["$super","a","c"]`, still pending. Nothing new is ever needed.
+
+`$super*` is a *positional delimiter*: its meaning is where it sits relative to the queue. Splicing a delimiter into new surroundings changes the parse. With an inherited `["$super*", {"a":1}]` and a child `["$super", {"b":2}]`, flattening gives `["$super*", {"a":1}, {"b":2}]`, which grounds against `[{"x":0},{"y":0}]` as `[{"x":0,"a":1},{"y":0,"b":2}]` — the child's contribution absorbed into the queue and pair-merged. The intended composition appends it instead: `[{"x":0,"a":1},{"y":0},{"b":2}]`. The other direction fails earlier, since pairing needs concrete elements and a length, and an unresolved splice has neither.
+
+Representing these faithfully needs nesting the flat array syntax cannot express, so v1 refuses. This is not a taste call: it excludes exactly the compositions whose result would depend on how files happen to be split, which is what makes the grouping-independence requirement true and the node-pool cache sound rather than merely convenient. Some subcases are provably safe — a pure-prepend child never touches the queue — and stay errors for rule simplicity, recoverable later from the error space.
+
+### Nested markers are rejected by grounding, not by a position rule
+
+An earlier draft carried a requirement that a marker is valid only as a direct array element, with scenarios rejecting object keys, scalar values, and nested positions. That requirement is gone. Marker-family strings outside array element position belong with #92, and the two nested cases fall out of rules this change already has:
+
+```
+{ "m": [["$super", 5]] }              outer array unmarked -> replaces wholesale
+                                      inner marker never bound -> unresolved -> error
+
+{ "m": ["$super*", ["$super", 5]] }   pair is array x array -> queue element taken whole
+                                      inner marker never bound -> unresolved -> error
+```
+
+Note the second depends on array-with-array taking the queue element rather than recursing into it. The two are coupled: adopting recursion later would remove this rejection, which is the point — nested composition then becomes expressible rather than erroring.
+
+The alternative considered — and it is a good one — is to define a marker by its structural position: `$super` stands for the elements of the inherited array found at the path of the array containing it. That is uniform, works at any depth, and makes the nested case expressible without any special rule:
 
 ```
 ancestor   { "m": [ [1,2], [3,4] ] }
@@ -56,19 +80,29 @@ child      { "m": [ ["$super", 5], [9] ] }
 result     { "m": [ [1,2,5],   [9] ] }
 ```
 
-Deferred rather than rejected on its merits, for two reasons.
-
-First, it collides with `$super*`. The two use different alignment models: a path says the child element at index 1 corresponds to the inherited element at index 1, while `$super*` occupies a slot and pairs the element at index 1 with the inherited element at index 0. Every index after the marker disagrees by one. Resolving that means either excluding `$super*`, or defining paths to be computed after marker slots are discounted — a second alignment rule to specify and test.
-
-Second, the restriction is in the error space. Markers in nested positions are rejected today, so the path interpretation can be adopted later as a compatible extension once the alignment question has been settled on its own.
+Deferred rather than rejected on its merits, because it collides with `$super*`. The two use different alignment models: a path says the child element at index 1 corresponds to the inherited element at index 1, while `$super*` occupies a slot and pairs the element at index 1 with the inherited element at index 0. Every index after the marker disagrees by one. Resolving that means either excluding `$super*`, or defining paths to be computed after marker slots are discounted — a second alignment rule to specify and test. Since nested markers error today, the interpretation stays available.
 
 ### Strictness is chosen wherever the lenient option would be unrecoverable
 
-Unresolved markers, unknown spellings in the `$super` namespace, cross-kind pairs, and an inherited value that is not an array are all errors. In each case the lenient alternative — silently yielding nothing, or emitting the marker as data — is a decision that cannot be reversed later, because configurations would come to depend on it. The strict choice can always be relaxed; the lenient one cannot be tightened. This is the same reasoning that keeps `$super[1:]` available below.
+Unresolved markers, unknown spellings in the `$super` namespace, cross-kind pairs, and an inherited value that is not an array are all errors. In each case the lenient alternative — silently yielding nothing, or emitting the marker as data — is a decision that cannot be reversed later, because configurations would come to depend on it. The strict choice can always be relaxed; the lenient one cannot be tightened.
 
-### Splicing builds fresh slices
+Erroring on an unresolved marker in particular surfaces three real mistakes that grounding to an empty splice would hide: a mistyped key, a forgotten `$extends`, and a parent skipped silently by the optional-file `?` marker.
 
-Nodes are cached in a pool, so a spliced result that shares a backing array with an inherited value can alias it. Splice and pair operations construct new slices rather than appending into an existing one.
+Reserved by the same argument, not committed: `$super?` and `$super*?` for a possible lenient variant meaning "splice if inherited, otherwise nothing", matching the optional-file `?` of `$extends`. The explicit workaround today is for the parent to declare `key: []`.
+
+### Naming
+
+- **`$super`** names the inheritance axis, following Jsonnet. It is deliberately distinct from the `parent` and `parentof` builtins, which address the structural path axis; the two axes must not share a word.
+- **`$super*`** borrows jq's `*`, the recursive object-merge operator. The analogy is faithful in direction as well as operation: `A * B` in jq lets B win, and in `["$super*", o1]` the queue sits to the right of the marker and wins. The array reads as the expression it means — `[new] + ($super * [o1, o2])`.
+- Two honest divergences from jq, worth documenting when this lands: jq errors on `array * array`, and this design lifts object-`*` index-wise into that gap; and jq's `*` on two atoms is arithmetic, where this design takes child-wins.
+- `$super?` was rejected as the pairing marker's name because `?` already means optional in `$extends`. It is now reserved for exactly that meaning.
+
+### Implementation shape
+
+- Splicing and pairing build fresh slices. `MergeObjects` stores references into its result, so mutating an inherited `[]any` in place would corrupt the node-pool cache for every other document inheriting it.
+- The node pool caches resolved files with their markers verbatim. A cached fragment whose marker had been resolved or dropped at cache time would arrive at the including document with its intent already destroyed.
+- Grounding runs on the top-level object only, after node-level inheritance and before key-side evaluation. Per-file cached resolutions keep their markers.
+- The value walker (`internal/obj.go`, `walkAnyPath`) already descends into arrays, so `raw:` unescaping inside arrays needs no new code.
 
 ## Risks / Trade-offs
 
@@ -86,25 +120,34 @@ child     unchanged                            -->  ["A", "b", "c", "z"]
 
 Both `"z"` and `"d"` are atoms, so no cross-kind check fires and nothing is reported. An intended append has become a silent override — the same staleness this change exists to remove, reintroduced by the feature meant to fix it.
 
-→ Mitigation: state the boundary in the shipped documentation rather than leaving it to be discovered, and describe the padding idiom as unsafe when the ancestor may grow. The durable fix is slicing (below).
+→ Mitigation: state the boundary in the shipped documentation rather than leaving it to be discovered, and describe the padding idiom as unsafe when the ancestor may grow. The durable fixes are slicing and key-based pairing, both below.
 
-**There is no escape hatch for a composition the markers cannot express.** Evaluation cannot reach the inherited value, for the reason given above. Parking the value under a second key that nobody overrides does make it reachable by `ref`, but that key then appears in the output: `$local` is removed before processing, but it holds node definitions for `$extends` and `$includes` by name, not values an expression can address, and there is no other way to hide a key.
+**Index-wise pairing is fragile under reordering.** Inserting or moving an inherited element silently changes which queue element pairs with which.
+
+→ Mitigation: the cross-kind error catches misalignment whenever the kinds differ, which is the common case for structured elements. It cannot catch a reorder among same-kind elements. Key-based pairing is the real answer and is deferred.
+
+**A literal `$super` array element changes meaning.** Documents that use that exact string as data are affected.
+
+→ Mitigation: `raw:$super`, a minor version bump, and a changelog entry. Recorded in the proposal rather than described as a change with no compatibility effect.
+
+**There is no escape hatch for a composition the markers cannot express.** Evaluation cannot reach the inherited value. Parking it under a second key that nobody overrides does make it reachable by `ref`, but that key then appears in the output: `$local` is removed before processing, but it holds node definitions for `$extends` and `$includes` by name, not values an expression can address, and there is no other way to hide a key.
 
 → Mitigation: describe the boundary honestly. Do not document `eval:` as a general fallback, because it is not one today.
 
-**#92 may be read as partly addressed here.** A marker in a meaningless position is an error under this change, which resembles the hazard #92 describes.
+**Marker-family strings outside array element position stay silent until #92.** `{"m": "$super"}` — the missing-brackets mistake — emits `$super` as data in the meantime.
 
-→ Mitigation: the two are distinct and the proposal says so. A new construct must define where it is valid; that is its grammar. The behaviour of `$extends`, `$includes`, and `$local` in meaningless positions is unchanged by this work.
+→ Mitigation: the window is bounded by #92, which covers every reserved word under one rule rather than each feature bringing its own.
 
-**Terminology.** This change introduces a concept the documentation has no name for. One name is used throughout — *marker* — and it belongs in `tools/etc/docs/concepts/terminology.adoc` when the change lands.
+**Terminology.** This change introduces concepts the documentation has no names for. The terms are defined once in the spec delta and belong in `tools/etc/docs/concepts/terminology.adoc` when the change lands.
 
 ## Future Concerns
 
 Recorded here because they were considered during this change and would otherwise be lost. Each is currently in the error space or otherwise unclaimed, so each remains addable without breaking anyone.
 
 - **Slicing — `$super[1:]`, `$super[:-1]`.** Generalises the marker from an opaque token to an expression over the inherited array, with the bare `$super` as sugar for the whole of it. It makes override-then-append expressible and correct as the ancestor grows: `["A", "$super[1:]", "z"]`. Its own questions — whether several markers may appear in one array, what overlapping slices do, whether an out-of-range slice is empty or an error, how a slice composes when carried through an ancestor that omits the key — are why it is not in this change. Reserved: `$super` followed by `[` is an error today.
+- **Key-based pairing — `$super*(name)`.** Match elements by a key field instead of by index. Answers both the reorder fragility above and, in part, override-then-append.
 - **Path-based markers.** See the decision above.
-- **Binding the inherited value for evaluation.** Would let an author write arbitrary jq against what the merge consumed, covering everything positional markers cannot. Requires the inheritance stage to preserve what it currently discards, and the evaluation layer to bind more than `$cur` and `$curexpr`.
+- **Binding the inherited value for evaluation.** Would let an author write arbitrary jq against what the merge consumed, covering everything positional markers cannot — for example `{"$merge": "<expr>"}` evaluated at merge time. Requires the inheritance stage to preserve what it currently discards, and the evaluation layer to bind more than `$cur` and `$curexpr`.
 - **A `merge` builtin exposed to JSON++ authors.** Independently useful over values that survive composition, and orthogonal to this change. If it lands, the same-kind rule has to govern it too, or the language ends up with two divergent definitions of merging.
 - **A way to hide a key from the output.** Without it, the helper-key technique described above pollutes what the document produces.
 
@@ -112,7 +155,7 @@ The last three are their own pains and belong in their own issues rather than in
 
 ## Migration Plan
 
-None. An array containing no marker composes exactly as it does today, and every marker spelling is currently either an error or absent from real configurations. There is no configuration whose meaning changes, which is the property #58 established as a requirement.
+An unmarked array composes exactly as it does today, so no configuration changes meaning through composition. The one exception is the literal `$super` array element described above, which is why this ships as a minor version bump with a changelog entry pointing at `raw:` rather than as a change with no compatibility effect.
 
 ## Open Questions
 
