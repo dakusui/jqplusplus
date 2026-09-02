@@ -1,0 +1,4 @@
+ERROR
+more than one array composition marker
+at '\.m'
+negative/array-composition/mixed-markers/input.json
