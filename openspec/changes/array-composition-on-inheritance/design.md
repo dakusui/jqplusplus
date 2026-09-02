@@ -48,6 +48,57 @@ This ordering is also why `eval:`-produced strings are exempt from marker classi
 
 `$super` and `$super*` are not one feature plus an embellishment. #53 asked for index-wise merging, #56 delivered it, and #58 reverted it for being global rather than for being unwanted. Both behaviours survived that revert and both need a spelling; providing only the splice would leave the #53 case unanswered.
 
+### Composition must be associative
+
+Composing is a binary operation, `base ⊕ child`, applied repeatedly when a document has several contributions. **Associativity** is the property that `(a ⊕ b) ⊕ c` equals `a ⊕ (b ⊕ c)` — that the bracketing does not affect the result. It matters here because the author does not choose the bracketing: it falls out of how content happens to be divided across files, and out of the node pool, which resolves each file once, standalone.
+
+This is not visible in any single render. A given set of files has exactly one bracketing, so nobody ever sees two answers to compare. It becomes visible across an edit intended to change nothing.
+
+Take a base and two mixins — one enables TLS on the first server, one adds a server:
+
+```
+base.json    { "servers": [{"host":"a"}, {"host":"b"}] }
+X.json       { "servers": ["$super*", {"tls": true}] }
+Y.json       { "servers": ["$super", {"host":"c"}] }
+```
+
+The application pulls in both:
+
+```
+app.json     { "$extends": ["base.json"], "$includes": ["X.json", "Y.json"] }
+
+base ⊕ X     pair {"host":"a"} with {"tls":true}; {"host":"b"} unpaired
+          =  [{"host":"a","tls":true}, {"host":"b"}]
+     ⊕ Y     append
+          =  [{"host":"a","tls":true}, {"host":"b"}, {"host":"c"}]        3 servers
+```
+
+Someone notices X and Y always travel together and bundles them. Same mixins, same order, nothing about the contributions touched:
+
+```
+policy.json  { "$includes": ["X.json", "Y.json"] }
+app.json     { "$extends": ["base.json"], "$includes": ["policy.json"] }
+```
+
+But `policy.json` is now resolved on its own, so `X ⊕ Y` happens before `base` is in scope. Were that composition allowed to flatten:
+
+```
+X ⊕ Y        ["$super*", {"tls":true}]  under  ["$super", {"host":"c"}]
+          =  ["$super*", {"tls":true}, {"host":"c"}]     <- {"host":"c"} is now in the queue
+
+base ⊕ that  {"host":"a"} x {"tls":true}   ->  {"host":"a","tls":true}
+             {"host":"b"} x {"host":"c"}   ->  {"host":"c"}      merged, not appended
+          =  [{"host":"a","tls":true}, {"host":"c"}]             2 servers
+```
+
+Server `b` is gone. A file reorganization dropped a server, and nothing in the diff points at why.
+
+So the property the documentation can promise is: **how a configuration is split across files is a matter of taste, not of meaning.** That is what lets someone extract a shared mixin without re-verifying downstream output.
+
+It is also what makes the node-pool cache correct rather than merely fast. Caching a file's standalone resolution *is* a choice of bracketing, so without associativity the answer would depend on whether a file happened to be cached — a bug, not an inconvenience.
+
+Because the property is invisible within one render, it cannot be checked by inspecting a single document. The two scenarios in the spec delta — the layered layout and the flat layout, asserted to render identically — are the only thing pinning it. Removing them silently stops the property from being tested.
+
 ### A `$super*` delta may not compose with a marker on either side
 
 The two markers behave differently under composition, and the difference decides this.
@@ -56,7 +107,7 @@ The two markers behave differently under composition, and the difference decides
 
 `$super*` is a *positional delimiter*: its meaning is where it sits relative to the queue. Splicing a delimiter into new surroundings changes the parse. With an inherited `["$super*", {"a":1}]` and a child `["$super", {"b":2}]`, flattening gives `["$super*", {"a":1}, {"b":2}]`, which grounds against `[{"x":0},{"y":0}]` as `[{"x":0,"a":1},{"y":0,"b":2}]` — the child's contribution absorbed into the queue and pair-merged. The intended composition appends it instead: `[{"x":0,"a":1},{"y":0},{"b":2}]`. The other direction fails earlier, since pairing needs concrete elements and a length, and an unresolved splice has neither.
 
-Representing these faithfully needs nesting the flat array syntax cannot express, so v1 refuses. This is not a taste call: it excludes exactly the compositions whose result would depend on how files happen to be split, which is what makes the grouping-independence requirement true and the node-pool cache sound rather than merely convenient. Some subcases are provably safe — a pure-prepend child never touches the queue — and stay errors for rule simplicity, recoverable later from the error space.
+Representing these faithfully needs nesting the flat array syntax cannot express, so v1 refuses. This is not a taste call: it excludes exactly the compositions that would break associativity, which is why the bundling refactor above fails loudly at the point of the edit instead of quietly dropping a server. Some subcases are provably safe — a pure-prepend child never touches the queue — and stay errors for rule simplicity, recoverable later from the error space.
 
 ### Nested markers are rejected by grounding, not by a position rule
 
