@@ -1,0 +1,4 @@
+ERROR
+unresolved array composition marker
+[$]super
+negative/array-composition/unresolved-no-ancestor/input.json

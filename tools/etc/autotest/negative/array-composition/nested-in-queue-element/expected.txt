@@ -1,0 +1,4 @@
+ERROR
+unresolved array composition marker
+[$]super
+negative/array-composition/nested-in-queue-element/input.json

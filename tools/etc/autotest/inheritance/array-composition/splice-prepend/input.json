@@ -1,0 +1,1 @@
+{ "$extends": ["P.json"], "m": ["z", "$super"] }
