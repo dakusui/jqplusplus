@@ -198,7 +198,7 @@ Both `"z"` and `"d"` are atoms, so no cross-kind check fires and nothing is repo
 
 **A literal `$super` array element changes meaning.** Documents that use that exact string as data are affected.
 
-→ Mitigation: `raw:$super`, a minor version bump, and a changelog entry. Recorded in the proposal rather than described as a change with no compatibility effect.
+→ Mitigation: `raw:$super`, the next patch release, and a changelog entry. Recorded in the proposal rather than described as a change with no compatibility effect.
 
 **There is no escape hatch for a composition the markers cannot express.** Evaluation cannot reach the inherited value. Parking it under a second key that nobody overrides does make it reachable by `ref`, but that key then appears in the output: `$local` is removed before processing, but it holds node definitions for `$extends` and `$includes` by name, not values an expression can address, and there is no other way to hide a key.
 
@@ -225,7 +225,7 @@ The last three are their own pains and belong in their own issues rather than in
 
 ## Migration Plan
 
-An unmarked array composes exactly as it does today, so no configuration changes meaning through composition. The one exception is the literal `$super` array element described above, which is why this ships as a minor version bump with a changelog entry pointing at `raw:` rather than as a change with no compatibility effect.
+An unmarked array composes exactly as it does today, so no configuration changes meaning through composition. The one exception is the literal `$super` array element described above, which is why this ships in the next patch release with a changelog entry pointing at `raw:` rather than as a change with no compatibility effect.
 
 ## Open Questions
 

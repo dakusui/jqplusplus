@@ -45,6 +45,30 @@ When multiple parents are listed, earlier entries in the `$extends` array take p
 
 Priority from highest to lowest: current object → first parent → … → last parent.
 
+=== Array Composition
+
+*Array composition* is an explicit way for a child array to combine with the array it inherits during structural composition.
+
+*Marker*:: A marker is the direct array-element string `$super` or `$super*` that selects array composition.
+
+*Marked array*:: A marked array is an array containing exactly one marker.
+
+*Inherited array*:: An inherited array is the array supplied by the lower-precedence side of a structural composition.
+
+*Delta*:: A delta is a marked array carried forward until an inherited array is available to resolve it.
+
+*Splice*:: A splice is the `$super` operation that substitutes every inherited-array element at the marker's position.
+
+*Prefix*:: A prefix is the literal sequence before `$super*` in a marked array.
+
+*Queue*:: A queue is the sequence after `$super*` whose elements pair with inherited-array elements by index.
+
+*Pairing*:: Pairing is the `$super*` operation that combines corresponding queue and inherited-array elements.
+
+*Kind*:: A kind is one of object, array, or atom, where strings, numbers, booleans, and null are atoms.
+
+*Grounding*:: Grounding is the final check that reports a marker which no inherited array resolved.
+
 === Inclusion (`$includes`)
 
 *Inclusion* is the mechanism by which an object pulls in one or more external fragments that are applied on top of the including object.
