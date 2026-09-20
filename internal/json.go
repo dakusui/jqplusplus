@@ -241,7 +241,7 @@ func mergeObjectsAt(a, b map[string]interface{}, policy MergePolicy, path []any)
 		}
 		if child, ok := v.([]any); ok {
 			inherited, present := result[k]
-			composed, err := composeArrayAt(inherited, present, child, childPath(k))
+			composed, err := composeArrayAt(inherited, present, child, policy, childPath(k))
 			if err != nil {
 				return nil, err
 			}
@@ -257,7 +257,7 @@ func mergeObjectsAt(a, b map[string]interface{}, policy MergePolicy, path []any)
 // array replaces, exactly as it always has. A marked array is a delta: it
 // carries unchanged while the inherited array is absent, and resolves against
 // it once one is present.
-func composeArrayAt(inherited any, present bool, child []any, path []any) (any, error) {
+func composeArrayAt(inherited any, present bool, child []any, policy MergePolicy, path []any) (any, error) {
 	kind, at, err := scanArrayMarkers(child)
 	if err != nil {
 		return nil, fmt.Errorf("%v: at '%s'", err, toPathExpression(path))
@@ -275,13 +275,20 @@ func composeArrayAt(inherited any, present bool, child []any, path []any) (any, 
 	if !ok {
 		return nil, fmt.Errorf("array composition marker requires an inherited array, but got %T: at '%s'", inherited, toPathExpression(path))
 	}
+	inheritedKind, _, err := scanArrayMarkers(inheritedArray)
+	if err != nil {
+		return nil, fmt.Errorf("%v: at '%s'", err, toPathExpression(path))
+	}
+	if (kind == PairMarker && inheritedKind.IsMarker()) || (inheritedKind == PairMarker && kind.IsMarker()) {
+		return nil, fmt.Errorf("array composition markers cannot compose: %q with %q", inheritedKind.String(), kind.String())
+	}
 	switch kind {
 	case SpliceMarker:
 		return spliceArray(inheritedArray, child, at), nil
+	case PairMarker:
+		return pairArray(inheritedArray, child, at, policy, path)
 	default:
-		// MarkerPair is not implemented yet; it carries and is reported by
-		// grounding until pairing lands.
-		return child, nil
+		panic("unreachable: marked array has no marker kind")
 	}
 }
 
@@ -297,6 +304,70 @@ func spliceArray(inherited []any, child []any, at int) []any {
 	out = append(out, inherited...)
 	out = append(out, child[at+1:]...)
 	return out
+}
+
+// pairArray emits the literal prefix before $super*, then combines the queue
+// after it with inherited elements at matching offsets. Elements without a
+// partner survive in their original order.
+func pairArray(inherited, child []any, at int, policy MergePolicy, path []any) ([]any, error) {
+	prefix := child[:at]
+	queue := child[at+1:]
+	maxLen := len(inherited)
+	if len(queue) > maxLen {
+		maxLen = len(queue)
+	}
+	out := make([]any, 0, len(prefix)+maxLen)
+	out = append(out, prefix...)
+	for i := 0; i < maxLen; i++ {
+		switch {
+		case i >= len(inherited):
+			out = append(out, queue[i])
+		case i >= len(queue):
+			out = append(out, inherited[i])
+		default:
+			paired, err := pairValues(inherited[i], queue[i], policy, appendPathSegment(path, i))
+			if err != nil {
+				return nil, err
+			}
+			out = append(out, paired)
+		}
+	}
+	return out, nil
+}
+
+// pairValues implements the same-kind rule for $super* pairing. A pair of
+// objects merges; arrays and atoms are queue-wins overrides. Cross-kind pairs
+// are errors because they signal a likely index misalignment.
+func pairValues(inherited, queue any, policy MergePolicy, path []any) (any, error) {
+	inheritedKind := valueKind(inherited)
+	queueKind := valueKind(queue)
+	if inheritedKind != queueKind {
+		return nil, fmt.Errorf("array composition pair mixes kinds at index %d: inherited %s, but got %s", path[len(path)-1], inheritedKind, queueKind)
+	}
+	if inheritedObject, ok := inherited.(map[string]any); ok {
+		queueObject := queue.(map[string]any)
+		return mergeObjectsAt(inheritedObject, queueObject, policy, path)
+	}
+	return queue, nil
+}
+
+type arrayCompositionKind string
+
+const (
+	objectKind arrayCompositionKind = "object"
+	arrayKind  arrayCompositionKind = "array"
+	atomKind   arrayCompositionKind = "atom"
+)
+
+func valueKind(v any) arrayCompositionKind {
+	switch v.(type) {
+	case map[string]any:
+		return objectKind
+	case []any:
+		return arrayKind
+	default:
+		return atomKind
+	}
 }
 
 // scanArrayMarkers finds the array's marker, rejecting an undefined spelling in

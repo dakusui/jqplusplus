@@ -1,0 +1,3 @@
+ERROR
+array composition markers cannot compose
+negative/array-composition/pair-over-splice/input.json
