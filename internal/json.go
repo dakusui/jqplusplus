@@ -325,7 +325,7 @@ func pairArray(inherited, child []any, at int, policy MergePolicy, path []any) (
 		case i >= len(queue):
 			out = append(out, inherited[i])
 		default:
-			paired, err := pairValues(inherited[i], queue[i], policy, appendPathSegment(path, i))
+			paired, err := pairValues(inherited[i], queue[i], policy, appendPathSegment(path, len(prefix)+i))
 			if err != nil {
 				return nil, err
 			}
