@@ -1,8 +1,8 @@
 # Changelog
 
-## v0.0.53
+## v0.0.50
 
 ### Compatibility
 
-- A direct array element whose literal value is `$super` is now interpreted as an array-composition marker.
-  Write `raw:$super` when that literal string must remain data.
+- A direct array element whose literal value is `$super` or `$super*` is now interpreted as an array-composition marker.
+  Write `raw:$super` or `raw:$super*` when either literal string must remain data.

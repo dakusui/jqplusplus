@@ -227,6 +227,9 @@ The result is `{ "m": ["a", "b", "z"] }`.
 `$super*` keeps the elements before it as a literal prefix and pairs each element after it with the inherited element at the same index.
 Object pairs merge recursively, while array and atom pairs take the child element.
 Unpaired elements on either side remain in their original order.
+Each pair must have the same kind: object, array, or atom.
+Strings, numbers, booleans, and null are atoms.
+A pair of different kinds is an error.
 
 `P.json`:
 
@@ -246,7 +249,7 @@ The result is `{ "m": [{"a": 1, "b": 20}] }`.
 
 Markers use the reserved `$super` namespace only in direct array-element position.
 An unrecognized spelling in that position, or more than one marker in the same array, is an error.
-Use `raw:$super` when the literal string `$super` is required as an array element.
+Use `raw:$super` or `raw:$super*` when either literal string is required as an array element.
 
 `$super*` resembles jq's recursive object-merge operator, but differs in two ways.
 It pairs arrays by index even though jq rejects the corresponding operation on two arrays, and it takes the child value for atom pairs even though jq applies arithmetic to two atoms.

@@ -126,7 +126,7 @@ A marked child array uses `$super` to splice inherited elements at the marker or
 In jq{plus}{plus} terminology, a child value replacing an inherited value is an _override_.
 This is the link:design-principles.html[same-kind merge principle].
 
-See the link:../reference/syntax-reference.html#array-composition[Syntax Reference] for the marker syntax and its constraints.
+See the link:../reference/syntax-reference.html#_array_composition[Syntax Reference] for the marker syntax and its constraints.
 
 Given `$extends: [A, B]`, A is merged over B first, then the current object is merged over that result, giving the priority order: current object → A → B.
 
