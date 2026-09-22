@@ -1,4 +1,8 @@
-Each numbered section is intended to be delivered as one implementation pull request, in order.
+## Delivery plan
+
+An implementation **review slice** is a focused pull request that makes one phase tractable to review. A **delivery unit** is the smallest set of changes that can truthfully be released and documented as complete.
+
+Sections 1 through 4 are review slices in one delivery unit. Create them as a GitHub stack, with each pull request based on the preceding slice, and keep the entire implementation stack out of `main` until all four sections satisfy the agreed specification. Then merge the stack in dependency order. The planning pull request and final archive pull request remain separate from this implementation stack.
 
 ## 1. Auxiliary state and structural composition
 
