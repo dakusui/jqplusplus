@@ -674,7 +674,8 @@ How each key is combined depends on the type of its value:</p>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Array</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Replaced entirely — the child array overrides the parent; arrays are never merged element-wise.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">An unmarked child array replaces the inherited array.
+A marked child array uses <code>$super</code> to splice inherited elements at the marker or <code>$super*</code> to pair elements after the marker by index.</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Scalar (string, number, boolean, null)</p></td>
@@ -683,25 +684,12 @@ How each key is combined depends on the type of its value:</p>
 </tbody>
 </table>
 <div class="paragraph">
-<p>"Recursive" therefore applies only to nested objects; arrays and scalars are always replaced wholesale, never merged.
-In jq++ terminology these wholesale replacements are <em>overrides</em>: the only <em>merge</em> the engine performs is between two objects.
+<p>"Recursive" therefore applies only to nested objects and to object pairs created by <code>$super*</code> array composition.
+In jq++ terminology, a child value replacing an inherited value is an <em>override</em>.
 This is the <a href="design-principles.html">same-kind merge principle</a>.</p>
 </div>
-<div class="admonitionblock note">
-<table>
-<tr>
-<td class="icon">
-<div class="title">Note</div>
-</td>
-<td class="content">
 <div class="paragraph">
-<p>Array replacement is the current behavior.
-We are considering enhancing the syntax so that a child can explicitly <strong>append</strong>, <strong>prepend</strong>, or <strong>merge</strong> an array with the one inherited from its ancestors, instead of always replacing it.
-This is a future consideration and not yet supported; see <a href="https://github.com/dakusui/jqplusplus/issues/74">issue #74</a> for the tracking discussion.</p>
-</div>
-</td>
-</tr>
-</table>
+<p>See the <a href="../reference/syntax-reference.html#_array_composition">Syntax Reference</a> for the marker syntax and its constraints.</p>
 </div>
 <div class="paragraph">
 <p>Given <code>$extends: [A, B]</code>, A is merged over B first, then the current object is merged over that result, giving the priority order: current object → A → B.</p>
@@ -1231,6 +1219,56 @@ When multiple parents are listed, earlier entries in the <code>$extends</code> a
 </div>
 <div class="paragraph">
 <p>Priority from highest to lowest: current object → first parent → … → last parent.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_array_composition">Array Composition</h3>
+<div class="paragraph">
+<p><strong>Array composition</strong> is an explicit way for a child array to combine with the array it inherits during structural composition.</p>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1"><strong>Marker</strong></dt>
+<dd>
+<p>A marker is the direct array-element string <code>$super</code> or <code>$super*</code> that selects array composition.</p>
+</dd>
+<dt class="hdlist1"><strong>Marked array</strong></dt>
+<dd>
+<p>A marked array is an array containing exactly one marker.</p>
+</dd>
+<dt class="hdlist1"><strong>Inherited array</strong></dt>
+<dd>
+<p>An inherited array is the array supplied by the lower-precedence side of a structural composition.</p>
+</dd>
+<dt class="hdlist1"><strong>Delta</strong></dt>
+<dd>
+<p>A delta is a marked array carried forward until an inherited array is available to resolve it.</p>
+</dd>
+<dt class="hdlist1"><strong>Splice</strong></dt>
+<dd>
+<p>A splice is the <code>$super</code> operation that substitutes every inherited-array element at the marker’s position.</p>
+</dd>
+<dt class="hdlist1"><strong>Prefix</strong></dt>
+<dd>
+<p>A prefix is the literal sequence before <code>$super*</code> in a marked array.</p>
+</dd>
+<dt class="hdlist1"><strong>Queue</strong></dt>
+<dd>
+<p>A queue is the sequence after <code>$super*</code> whose elements pair with inherited-array elements by index.</p>
+</dd>
+<dt class="hdlist1"><strong>Pairing</strong></dt>
+<dd>
+<p>Pairing is the <code>$super*</code> operation that combines corresponding queue and inherited-array elements.</p>
+</dd>
+<dt class="hdlist1"><strong>Kind</strong></dt>
+<dd>
+<p>A kind is one of object, array, or atom, where strings, numbers, booleans, and null are atoms.</p>
+</dd>
+<dt class="hdlist1"><strong>Grounding</strong></dt>
+<dd>
+<p>Grounding is the final check that reports a marker which no inherited array resolved.</p>
+</dd>
+</dl>
 </div>
 </div>
 <div class="sect2">
@@ -2563,6 +2601,14 @@ Priority is: last fragment → …​ → first fragment → current object.
 If both <code>$extends</code> and <code>$includes</code> are present, <code>$includes</code> wins over the combined result.</p></td>
 </tr>
 <tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>$super</code> and <code>$super*</code> in an array</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Array composition</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">A marked child array combines with its inherited array instead of replacing it.
+<code>$super</code> splices inherited elements, while <code>$super*</code> pairs elements after the marker by index.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">A marker must be a direct array element.
+An unmarked child array still replaces the inherited array.</p></td>
+</tr>
+<tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><code>$local</code></p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Local node definitions</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Defines reusable named objects inside the current file.
@@ -2756,6 +2802,78 @@ Switching environments is a matter of changing <code>JF_PATH</code>—the config
 <div class="paragraph">
 <p>This pattern lets teams publish versioned "standard" fragments that any project can <code>$includes</code> without copying content.
 The result is a small but coherent DSL: every configuration file speaks the same vocabulary of shared fragments, and individual files only spell out what makes them different.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_array_composition">Array Composition</h4>
+<div class="paragraph">
+<p>A child array normally overrides the inherited array.
+Place exactly one marker as a direct element of the child array to compose instead.</p>
+</div>
+<div class="paragraph">
+<p><code>$super</code> splices all inherited elements at the marker’s position.
+It can therefore append, prepend, or wrap them.</p>
+</div>
+<div class="paragraph">
+<p><code>P.json</code>:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-json" data-lang="json">{ "m": ["a", "b"] }</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p><code>input.json</code>:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-json" data-lang="json">{ "$extends": ["P.json"], "m": ["$super", "z"] }</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The result is <code>{ "m": ["a", "b", "z"] }</code>.</p>
+</div>
+<div class="paragraph">
+<p><code>$super*</code> keeps the elements before it as a literal prefix and pairs each element after it with the inherited element at the same index.
+Object pairs merge recursively, while array and atom pairs take the child element.
+Unpaired elements on either side remain in their original order.
+Each pair must have the same kind: object, array, or atom.
+Strings, numbers, booleans, and null are atoms.
+A pair of different kinds is an error.</p>
+</div>
+<div class="paragraph">
+<p><code>P.json</code>:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-json" data-lang="json">{ "m": [{"a": 1, "b": 2}] }</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p><code>input.json</code>:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-json" data-lang="json">{ "$extends": ["P.json"], "m": ["$super*", {"b": 20}] }</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The result is <code>{ "m": [{"a": 1, "b": 20}] }</code>.</p>
+</div>
+<div class="paragraph">
+<p>Markers use the reserved <code>$super</code> namespace only in direct array-element position.
+An unrecognized spelling in that position, or more than one marker in the same array, is an error.
+Use <code>raw:$super</code> or <code>raw:$super*</code> when either literal string is required as an array element.</p>
+</div>
+<div class="paragraph">
+<p><code>$super*</code> resembles jq’s recursive object-merge operator, but differs in two ways.
+It pairs arrays by index even though jq rejects the corresponding operation on two arrays, and it takes the child value for atom pairs even though jq applies arithmetic to two atoms.</p>
+</div>
+<div class="paragraph">
+<p>An array containing <code>$super*</code> cannot compose with an array containing either marker.
+As a result, an override followed by an append is not expressible in one array composition.
+Do not restate inherited elements as padding to simulate it: if the inherited array later grows, the intended appended element silently overrides the new inherited element instead.
+Use <code>$super</code> when the goal is to append without overriding, or restructure the configuration so that the values have stable object keys.</p>
 </div>
 </div>
 <div class="sect3">

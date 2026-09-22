@@ -444,6 +444,7 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 <li><a href="#_structural_reuse">Structural Reuse</a></li>
 <li><a href="#_structural_composition">Structural Composition</a></li>
 <li><a href="#_inheritance_extends">Inheritance (<code>$extends</code>)</a></li>
+<li><a href="#_array_composition">Array Composition</a></li>
 <li><a href="#_inclusion_includes">Inclusion (<code>$includes</code>)</a></li>
 <li><a href="#_expression_evaluation_eval">Expression Evaluation (<code>eval:</code>)</a></li>
 <li><a href="#_escaping_meta_keywords_raw">Escaping Meta Keywords (<code>raw:</code>)</a></li>
@@ -527,6 +528,56 @@ When multiple parents are listed, earlier entries in the <code>$extends</code> a
 </div>
 </div>
 <div class="sect2">
+<h3 id="_array_composition">Array Composition</h3>
+<div class="paragraph">
+<p><strong>Array composition</strong> is an explicit way for a child array to combine with the array it inherits during structural composition.</p>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1"><strong>Marker</strong></dt>
+<dd>
+<p>A marker is the direct array-element string <code>$super</code> or <code>$super*</code> that selects array composition.</p>
+</dd>
+<dt class="hdlist1"><strong>Marked array</strong></dt>
+<dd>
+<p>A marked array is an array containing exactly one marker.</p>
+</dd>
+<dt class="hdlist1"><strong>Inherited array</strong></dt>
+<dd>
+<p>An inherited array is the array supplied by the lower-precedence side of a structural composition.</p>
+</dd>
+<dt class="hdlist1"><strong>Delta</strong></dt>
+<dd>
+<p>A delta is a marked array carried forward until an inherited array is available to resolve it.</p>
+</dd>
+<dt class="hdlist1"><strong>Splice</strong></dt>
+<dd>
+<p>A splice is the <code>$super</code> operation that substitutes every inherited-array element at the marker&#8217;s position.</p>
+</dd>
+<dt class="hdlist1"><strong>Prefix</strong></dt>
+<dd>
+<p>A prefix is the literal sequence before <code>$super*</code> in a marked array.</p>
+</dd>
+<dt class="hdlist1"><strong>Queue</strong></dt>
+<dd>
+<p>A queue is the sequence after <code>$super*</code> whose elements pair with inherited-array elements by index.</p>
+</dd>
+<dt class="hdlist1"><strong>Pairing</strong></dt>
+<dd>
+<p>Pairing is the <code>$super*</code> operation that combines corresponding queue and inherited-array elements.</p>
+</dd>
+<dt class="hdlist1"><strong>Kind</strong></dt>
+<dd>
+<p>A kind is one of object, array, or atom, where strings, numbers, booleans, and null are atoms.</p>
+</dd>
+<dt class="hdlist1"><strong>Grounding</strong></dt>
+<dd>
+<p>Grounding is the final check that reports a marker which no inherited array resolved.</p>
+</dd>
+</dl>
+</div>
+</div>
+<div class="sect2">
 <h3 id="_inclusion_includes">Inclusion (<code>$includes</code>)</h3>
 <div class="paragraph">
 <p><strong>Inclusion</strong> is the mechanism by which an object pulls in one or more external fragments that are applied on top of the including object.
@@ -599,7 +650,7 @@ In practice, jq&#43;&#43; keeps inheritance-time control keywords in the <code>$
 </div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2026-09-22 07:03:30 UTC
+Last updated 2026-09-22 07:05:23 UTC
 </div>
 </div>
 </body>

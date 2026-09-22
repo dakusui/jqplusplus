@@ -529,7 +529,8 @@ How each key is combined depends on the type of its value:</p>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Array</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Replaced entirely — the child array overrides the parent; arrays are never merged element-wise.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">An unmarked child array replaces the inherited array.
+A marked child array uses <code>$super</code> to splice inherited elements at the marker or <code>$super*</code> to pair elements after the marker by index.</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Scalar (string, number, boolean, null)</p></td>
@@ -538,25 +539,12 @@ How each key is combined depends on the type of its value:</p>
 </tbody>
 </table>
 <div class="paragraph">
-<p>"Recursive" therefore applies only to nested objects; arrays and scalars are always replaced wholesale, never merged.
-In jq&#43;&#43; terminology these wholesale replacements are <em>overrides</em>: the only <em>merge</em> the engine performs is between two objects.
+<p>"Recursive" therefore applies only to nested objects and to object pairs created by <code>$super*</code> array composition.
+In jq&#43;&#43; terminology, a child value replacing an inherited value is an <em>override</em>.
 This is the <a href="design-principles.html">same-kind merge principle</a>.</p>
 </div>
-<div class="admonitionblock note">
-<table>
-<tr>
-<td class="icon">
-<div class="title">Note</div>
-</td>
-<td class="content">
 <div class="paragraph">
-<p>Array replacement is the current behavior.
-We are considering enhancing the syntax so that a child can explicitly <strong>append</strong>, <strong>prepend</strong>, or <strong>merge</strong> an array with the one inherited from its ancestors, instead of always replacing it.
-This is a future consideration and not yet supported; see <a href="https://github.com/dakusui/jqplusplus/issues/74">issue #74</a> for the tracking discussion.</p>
-</div>
-</td>
-</tr>
-</table>
+<p>See the <a href="../reference/syntax-reference.html#_array_composition">Syntax Reference</a> for the marker syntax and its constraints.</p>
 </div>
 <div class="paragraph">
 <p>Given <code>$extends: [A, B]</code>, A is merged over B first, then the current object is merged over that result, giving the priority order: current object → A → B.</p>
@@ -704,7 +692,7 @@ This follows the <a href="design-principles.html">same-kind merge principle</a>:
 </div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2026-09-22 07:03:30 UTC
+Last updated 2026-09-22 07:05:23 UTC
 </div>
 </div>
 </body>
