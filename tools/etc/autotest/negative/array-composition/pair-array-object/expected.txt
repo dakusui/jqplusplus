@@ -1,0 +1,3 @@
+ERROR
+array composition pair mixes kinds at index 0
+negative/array-composition/pair-array-object/input.json
