@@ -26,7 +26,7 @@ Supporting rules:
 
 ### Compatibility
 
-No configuration changes meaning through composition: an unmarked array behaves exactly as before. There is one narrow break — **a document that contains the literal string `$super` as an array element**, which is data today and a marker afterwards. The remedy is `raw:$super`. This warrants a minor version bump and a changelog entry rather than being described as a change with no effect on existing documents.
+No configuration changes meaning through composition: an unmarked array behaves exactly as before. There is one narrow break — **a document that contains the literal string `$super` as an array element**, which is data today and a marker afterwards. The remedy is `raw:$super`. Marker recognition introduced that break in `v0.0.50`, so the changelog records it under that release rather than describing the feature as having no effect on existing documents.
 
 ### Deliberately not included
 
