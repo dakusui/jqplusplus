@@ -132,7 +132,7 @@ Add dedicated command-level coverage for `yq++`; the current normal autotest exe
 
 **A new reserved root key can consume existing data.** A document currently using literal `$aux` would change meaning. → Document this as a breaking change, preserve `raw:$aux`, and add coexistence coverage for control and escaped literal keys.
 
-**Removing the underscore convention can expose former holder fields.** Existing `yq++` users may see fields they expected the wrapper to delete. → Ship `$aux` and underscore preservation atomically and provide a direct migration example.
+**Removing the underscore convention can expose former holder fields.** Existing `yq++` users may see fields they expected the wrapper to delete. → Ship `$aux` and underscore preservation atomically and document the output compatibility break.
 
 **Eager auxiliary preparation can reject unused definitions.** An invalid auxiliary expression fails even when ordinary output does not reference it. → State this rule explicitly and test it; eager preparation is the cost of a stable, fully processed `$aux` variable for key-side use.
 
@@ -142,12 +142,10 @@ Add dedicated command-level coverage for `yq++`; the current normal autotest exe
 
 **Evaluation refactoring can change existing paths or recursion.** Separating target and context touches both evaluation passes. → Characterize existing key/value, `ref`, `reftag`, `$cur`, `$curexpr`, and cycle behavior before refactoring, then run all unit and end-to-end tests.
 
-## Migration Plan
+## Compatibility Policy
 
-1. Release `$aux` support and underscore preservation together.
-2. Move each `_`-prefixed holder into the root `$aux` object, preserving any desired nested organization.
-3. Replace direct holder references with `$aux` variable access; use `ref(["$aux", ...])` inside auxiliary value preparation when lazy resolution of another computed auxiliary definition is required.
-4. Leave legitimate `_`-prefixed output fields unchanged; `yq++` will preserve them.
-5. Rewrite an intended literal root `$aux` key as `raw:$aux`.
+While the project remains at `0.0.x` with limited adoption, incompatible changes are acceptable when they are documented. Unless a change explicitly requires otherwise, the project does not provide a deprecation period, dual syntax, automated migration, or a rollback procedure for such a change.
 
-Rolling back to an older release requires restoring the former holder convention in affected inputs because the older evaluator does not recognize `$aux`. No automatic dual-syntax period is provided: retaining prefix-based deletion would continue the silent data-loss defect this change removes.
+This policy does not reduce the documentation obligation: the README and user documentation must state the pre-1.0 stability expectation, and the changelog must identify the concrete incompatibilities in the release that introduces them. Existing statements that reserve new keyword families for a major-version change must be reconciled with this policy.
+
+For this change, reserving `$aux` and preserving underscore-prefixed fields in `yq++` form one delivery unit and are released together. No transitional behavior is provided.
