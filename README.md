@@ -8,10 +8,11 @@ This project follows the standard Go project layout.
 > [!NOTE]
 > 📄 **Forthcoming in IEEE Software**
 >
-> A feature article on JSON++ and jq++ by Hiroshi Ukai has been accepted for
-> publication in [IEEE Software](https://www.computer.org/csdl/magazine/so).
-> A link to the published article will be added here once it is available.
-<!-- TODO: Add the article title and DOI / IEEE Xplore link once published. -->
+> A feature article on JSON++ and jq++ has been accepted for publication in
+> [IEEE Software](https://www.computer.org/csdl/magazine/so):
+>
+> Hiroshi Ukai, "JSON++ in Practice: An Experience Report on Lightweight Configuration Reuse,"
+> *IEEE Software*. DOI: [10.1109/MS.2026.3733477](https://doi.org/10.1109/MS.2026.3733477)
 
 ## Installation
 
