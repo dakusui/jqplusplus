@@ -5,6 +5,14 @@ jq-front is a simple utility that extends JSON files with file- and node-level i
 
 This project follows the standard Go project layout.
 
+> [!NOTE]
+> 📄 **Forthcoming in IEEE Software**
+>
+> The paper describing JSON++ and jq++, *"<PAPER TITLE>"* by <AUTHORS>,
+> has been accepted for publication in [IEEE Software](https://www.computer.org/csdl/magazine/so).
+> A link to the published article will be added here once it is available.
+<!-- TODO: Replace the placeholders above and add the DOI / IEEE Xplore link once published. -->
+
 ## Installation
 
 ### Prerequisites
